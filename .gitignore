@@ -1,0 +1,9 @@
+# compilation
+build/
+bin/
+*.o
+*.a
+*.exe
+
+# server files
+*.db
