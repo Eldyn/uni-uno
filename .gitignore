@@ -4,6 +4,13 @@ bin/
 *.o
 *.a
 *.exe
+compile_commands.json
 
 # server files
 *.db
+cert.pem
+key.pem
+*.key
+*.crt
+
+public/*
