@@ -1,5 +1,7 @@
-#include "WebSocketData.h"
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
+#include <map>
 #include <ostream>
 #include <string>
 #include <fstream>
@@ -7,119 +9,154 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <uWebSockets/src/App.h>
+#include "WebSocketData.h"
+
+
+namespace fs = std::filesystem;
+using json = nlohmann::json;
+using std::to_string, std::move, std::ios, std::ifstream, std::stringstream, std::string_view, std::exception, std::cout, std::endl, std::string;
 
 // Ogni Client avrà sta roba
 struct PerSocketData {
-  int user_id;
-  std::string username;
+  string username;
+  string room;
 };
 
-namespace fs = std::filesystem;
 using AppWebSocket = uWS::WebSocket<true, true, PerSocketData>;
 using AppRequest = uWS::HttpRequest;
 using AppResponse = uWS::HttpResponse<true>;
 
-std::string readFile(std::string_view path) {
-    std::ifstream is(path.data(), std::ios::binary);
+string readFile(string_view path) {
+    ifstream is(path.data(), ios::binary);
     if (!is) return "";
-    std::stringstream buffer;
+    stringstream buffer;
     buffer << is.rdbuf();
     return buffer.str();
 }
 
-std::string getMimeType(std::string path) {
+string getMimeType(string path) {
     if (path.ends_with(".html")) return "text/html";
     if (path.ends_with(".js"))   return "text/javascript";
     if (path.ends_with(".css"))  return "text/css";
     if (path.ends_with(".svg"))  return "image/svg+xml";
     if (path.ends_with(".png"))  return "image/png";
     return "application/octet-stream";
-}
-using json = nlohmann::json;
+};
+
 
 int main() {
+  srand(time(NULL));
+
   uWS::SocketContextOptions ssl_options;
   ssl_options.key_file_name = "key.pem";
   ssl_options.cert_file_name = "cert.pem";
 
   const int PORT = 9999;
 
-  uWS::SSLApp app = uWS::SSLApp(ssl_options)
-    .post("/create-topic", [](AppResponse *response, AppRequest *request) {
-      response->onAborted([]() {});
-      std::string buffer;
+  // Room to Click count
+  std::map<string, int> clickCounter;
 
-      std::cout << "[POST]: /create-topic RECEIVED" << std::endl;
-      response->onData([response, buffer = std::move(buffer)](std::string_view chunk, bool isLast) mutable {
+  uWS::SSLApp app = uWS::SSLApp(ssl_options);
+  app.post("/room", [](AppResponse *response, AppRequest *request) {
+      response->onAborted([]() {});
+      string buffer;
+
+      cout << "[POST]: /create-topic RECEIVED" << endl;
+      response->onData([response, buffer = move(buffer)](string_view chunk, bool isLast) mutable {
         buffer.append(chunk.data(), chunk.length());
   
         if (isLast) {
           try {
             auto data = nlohmann::json::parse(buffer);
           
-            std::string topic = data.value("topic", "default");
-            std::cout << "[POST]: /create-topic DATA:" << topic << std::endl;
+            string topic = data.value("topic", "default");
+            cout << "[POST]: /create-topic DATA:" << topic << endl;
     
             response->writeHeader("Content-Type", "application/json")
                     ->end("{\"status\": \"OK\", \"topic\": \"" + topic + "\"}");
     
-          } catch (const std::exception &e) {
+          } catch (const exception &e) {
             response->writeStatus("400 Bad Request")->end("Invalid JSON");
           }
         }
       });
-    })
-    .get("/*", [](AppResponse *response, AppRequest *request) {
+    });
+  app.get("/*", [](AppResponse *response, AppRequest *request) {
       response->onAborted([]() { /* Gestione cleanup */ });
 
-      std::string url = std::string(request->getUrl());
-      std::string relativePath = (url == "/") ? "index.html" : url.substr(1);
+      string url = string(request->getUrl());
+      string relativePath = (url == "/") ? "index.html" : url.substr(1);
 
       fs::path baseDir = fs::current_path() / "public";
       fs::path filePath = baseDir / relativePath;
 
 
-      if (std::filesystem::exists(filePath) && !std::filesystem::is_directory(filePath)) {
-        std::string pathStr = filePath.string();
-        std::string_view mime = getMimeType(pathStr);
+      if (fs::exists(filePath) && !fs::is_directory(filePath)) {
+        string pathStr = filePath.string();
+        string_view mime = getMimeType(pathStr);
 
-        response->writeHeader("Content-Type", std::string(mime))
+        response->writeHeader("Content-Type", string(mime))
            ->writeHeader("X-Content-Type-Options", "nosniff")
            ->end(readFile(pathStr));
       } else {
-        std::cout << "Tried finding: " << filePath << " but 404!" << std::endl;
+        cout << "Tried finding: " << filePath << " but 404!" << endl;
         // Fallback su index.html per gestire il routing lato client (Svelte)
         response->writeStatus("404 Not Found")->end("File non trovato");
       }
-    })
-    .ws<PerSocketData>("/*", {
-    .open = [](AppWebSocket *ws) {
-      std::cout << "Nuovo Socket Aperto!" << std::endl;
-    },
-    .message = [](AppWebSocket *ws, std::string_view message, uWS::OpCode opCode) {
-      try {
-        auto j = json::parse(message);
-        std::string action = j["action"];
+    });
+  app.ws<PerSocketData>("/*", {
+      .open = [](AppWebSocket *ws) {
+        PerSocketData* socketData = ws->getUserData();
   
-        if (action == "join") {
-          std::string topic = j["topic"];
-          ws->subscribe(topic); // Il cuore del sistema!
-          std::cout << "Client iscritto al topic: " << topic << std::endl;
-        } 
-        else if (action == "broadcast") {
-          std::string topic = j["topic"];
-          std::string msg = j["msg"];
-          // Invia a tutti gli iscritti a quel topic, TRANNE chi invia
-          ws->publish(topic, message, opCode, false);
-        }
-      } catch (...) {}
+        socketData->username = "giovannino_" + to_string(rand() % 100);
+        cout << "[SOCKET]: " << socketData->username << " 101 Connection Upgraded."<< endl;
+      },
+      .message = [&clickCounter](AppWebSocket *ws, string_view message, uWS::OpCode opCode) {
+        try {
+          PerSocketData* socketData = ws->getUserData();
+          auto message_json = json::parse(message);
+          string action = message_json["action"];
+    
+          if (action == "query") {
+            string topic = message_json["topic"];
+            ws->send(to_string(clickCounter.at(topic)));
+          }
+          if (action == "join") {
+            string topic = message_json["topic"];
+            
+            if (!socketData->room.empty()) {
+              ws->send("Sei già in una room");
+              return;
+            }
+            
+            socketData->room = topic;
+            cout << socketData->username << " " << socketData->room << endl;
+
+            ws->subscribe(topic);
+            ws->send("Sei iscritto alla room bro.", opCode);
+
+            clickCounter.insert({topic, 0});
+
+            ws->send("La room ha ben " + to_string(clickCounter.at(topic)) + " click.", opCode);
+
+            cout << "[SOCKET]: " << socketData->username << " iscritto alla topic: " << topic << endl;
+          } 
+          else if (action == "click") {
+            cout << socketData->room << " pre: " << clickCounter.at(socketData->room) << endl;
+            clickCounter.at(socketData->room) = clickCounter.at(socketData->room) + 1;
+            cout << socketData->room << " post: " << clickCounter.at(socketData->room) << endl;
+
+            // Invia a tutti gli iscritti a quel topic, TRANNE chi invia
+            ws->publish(socketData->room, message, opCode, false);
+          }
+        } catch (...) {}
     }});
 
-    app.listen(9999, [](auto *listen_socket) {
-      if (listen_socket) {
-        std::cout << "Server HTTPS/WSS in ascolto su https://localhost:9999" << std::endl;
-      }
-    })
-  .run();
+  app.listen(9999, [](auto *listen_socket) {
+    if (listen_socket) {
+      cout << "Server HTTPS/WSS in ascolto su https://localhost:9999" << endl;
+    }
+  });
+  app.run();
   return 0;
 }

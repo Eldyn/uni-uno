@@ -4,28 +4,46 @@
   import heroImg from "./assets/hero.png";
   import Counter from "./lib/Counter.svelte";
 
+  let HAS_WS_CONNECTION = false;
+  let socket: WebSocket;
+
+  function connectToSocket(): boolean {
+    if (HAS_WS_CONNECTION) return false;
+    const host = window.location.host;
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const socketUrl = `${protocol}//${host}/ws`;
+
+    try {
+      socket = new WebSocket(socketUrl);
+      HAS_WS_CONNECTION = true;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function handleSubmit(event: SubmitEvent) {
     const formData = new FormData(event.target as HTMLFormElement);
 
-    console.log(JSON.stringify({ topic: formData.get("topic") }));
+    // console.log(JSON.stringify({ topic: formData.get("topic") }));
 
     try {
-      const response = await fetch("https://localhost:9999/create-topic", {
+      const response = await fetch("https://localhost:9999/room", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic: formData.get("topic") }),
       });
+
       const result = await response.json();
-      console.log(result);
 
       if (result.status === "OK") {
-        const host = window.location.host;
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const socketUrl = `${protocol}//${host}/ws`;
-        const socket = new WebSocket(socketUrl);
+        if (!connectToSocket()) return;
 
         socket.onopen = () => {
           socket.send(JSON.stringify({ action: "join", topic: result.topic }));
+        };
+        socket.onmessage = (event: MessageEvent) => {
+          console.log(JSON.stringify(event.data));
         };
       }
     } catch (error) {
