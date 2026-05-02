@@ -61,7 +61,7 @@ int main() {
       response->onAborted([]() {});
       string buffer;
 
-      cout << "[POST]: /create-topic RECEIVED" << endl;
+      cout << "[POST]: /room RECEIVED" << endl;
       response->onData([response, buffer = move(buffer)](string_view chunk, bool isLast) mutable {
         buffer.append(chunk.data(), chunk.length());
   
@@ -70,7 +70,7 @@ int main() {
             auto data = nlohmann::json::parse(buffer);
           
             string topic = data.value("topic", "default");
-            cout << "[POST]: /create-topic DATA:" << topic << endl;
+            cout << "[POST]: /room DATA:" << topic << endl;
     
             response->writeHeader("Content-Type", "application/json")
                     ->end("{\"status\": \"OK\", \"topic\": \"" + topic + "\"}");
@@ -96,8 +96,11 @@ int main() {
         string_view mime = getMimeType(pathStr);
 
         response->writeHeader("Content-Type", string(mime))
-           ->writeHeader("X-Content-Type-Options", "nosniff")
-           ->end(readFile(pathStr));
+                ->writeHeader("Cache-Control", "no-cache, no-store, must-revalidate")
+                ->writeHeader("Pragma", "no-cache")
+                ->writeHeader("Expires", "0")
+                ->writeHeader("X-Content-Type-Options", "nosniff")
+                ->end(readFile(pathStr));
       } else {
         cout << "Tried finding: " << filePath << " but 404!" << endl;
         // Fallback su index.html per gestire il routing lato client (Svelte)
@@ -111,7 +114,7 @@ int main() {
         socketData->username = "giovannino_" + to_string(rand() % 100);
         cout << "[SOCKET]: " << socketData->username << " 101 Connection Upgraded."<< endl;
       },
-      .message = [&clickCounter](AppWebSocket *ws, string_view message, uWS::OpCode opCode) {
+      .message = [&app, &clickCounter](AppWebSocket *ws, string_view message, uWS::OpCode opCode) {
         try {
           PerSocketData* socketData = ws->getUserData();
           auto message_json = json::parse(message);
@@ -125,29 +128,37 @@ int main() {
             string topic = message_json["topic"];
             
             if (!socketData->room.empty()) {
-              ws->send("Sei già in una room");
+              cout << "[SOCKET]: " << socketData->username << " attempted to join a room whilst being in one." << endl;
               return;
             }
             
             socketData->room = topic;
-            cout << socketData->username << " " << socketData->room << endl;
-
             ws->subscribe(topic);
-            ws->send("Sei iscritto alla room bro.", opCode);
-
-            clickCounter.insert({topic, 0});
-
-            ws->send("La room ha ben " + to_string(clickCounter.at(topic)) + " click.", opCode);
 
             cout << "[SOCKET]: " << socketData->username << " iscritto alla topic: " << topic << endl;
+
+            clickCounter.insert({topic, 0});
+            ws->send(json({
+              {"action","sync_data"},
+              {"username", socketData->username},
+              {"room", socketData->room}
+            }).dump(), uWS::OpCode::TEXT);
           } 
           else if (action == "click") {
             cout << socketData->room << " pre: " << clickCounter.at(socketData->room) << endl;
             clickCounter.at(socketData->room) = clickCounter.at(socketData->room) + 1;
             cout << socketData->room << " post: " << clickCounter.at(socketData->room) << endl;
 
-            // Invia a tutti gli iscritti a quel topic, TRANNE chi invia
-            ws->publish(socketData->room, message, opCode, false);
+            // Invia a tutti gli iscritti a quel topic
+            app.publish(
+              socketData->room,
+              json({{"action", "sync_count"},
+                {"count", to_string(clickCounter.at(socketData->room))},
+                {"last_clicker", socketData->username}
+              }).dump(),
+              opCode,
+              true
+            );
           }
         } catch (...) {}
     }});

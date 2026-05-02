@@ -1,31 +1,16 @@
 <script lang="ts">
+  import SocketManager, {
+    type AppSocketData,
+  } from "./lib/SocketManager.svelte";
   import svelteLogo from "./assets/svelte.svg";
   import viteLogo from "./assets/vite.svg";
   import heroImg from "./assets/hero.png";
   import Counter from "./lib/Counter.svelte";
 
-  let HAS_WS_CONNECTION = false;
-  let socket: WebSocket;
-
-  function connectToSocket(): boolean {
-    if (HAS_WS_CONNECTION) return false;
-    const host = window.location.host;
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const socketUrl = `${protocol}//${host}/ws`;
-
-    try {
-      socket = new WebSocket(socketUrl);
-      HAS_WS_CONNECTION = true;
-      return true;
-    } catch {
-      return false;
-    }
-  }
+  let currentScreen: "index" | "buttonTest" = "index";
 
   async function handleSubmit(event: SubmitEvent) {
     const formData = new FormData(event.target as HTMLFormElement);
-
-    // console.log(JSON.stringify({ topic: formData.get("topic") }));
 
     try {
       const response = await fetch("https://localhost:9999/room", {
@@ -37,14 +22,15 @@
       const result = await response.json();
 
       if (result.status === "OK") {
-        if (!connectToSocket()) return;
+        let socketManager = SocketManager.getInstance();
+        await socketManager.connect();
+        await socketManager.emitAndWait(
+          "join",
+          { topic: result.topic },
+          "sync_data",
+        );
 
-        socket.onopen = () => {
-          socket.send(JSON.stringify({ action: "join", topic: result.topic }));
-        };
-        socket.onmessage = (event: MessageEvent) => {
-          console.log(JSON.stringify(event.data));
-        };
+        currentScreen = "buttonTest";
       }
     } catch (error) {
       console.error("Errore durante il fetch:", error);
@@ -52,111 +38,57 @@
   }
 </script>
 
-<section id="center">
-  <div class="hero">
-    <img src={heroImg} class="base" width="170" height="179" alt="" />
-    <img src={svelteLogo} class="framework" alt="Svelte logo" />
-    <img src={viteLogo} class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/App.svelte</code> and save to test <code>HMR</code></p>
-  </div>
-  <Counter />
-</section>
+<div>
+  <section id="center">
+    <div class="hero">
+      <img src={heroImg} class="base" width="170" height="179" alt="" />
+      <img src={svelteLogo} class="framework" alt="Svelte logo" />
+      <img src={viteLogo} class="vite" alt="Vite logo" />
+    </div>
+    <div>
+      <h1>Test Uni-Uno</h1>
+      <p>
+        Edit <code>src/App.svelte</code> and save to test <code>HMR</code>
+      </p>
+      <br />
+    </div>
+  </section>
 
-<div class="ticks"></div>
+  <div class="ticks"></div>
 
-<section id="next-steps">
-  <div>
-    <h2>E' un test <br /> non si vede?</h2>
-  </div>
-  <div>
-    <h1>Form per il join</h1>
-    <form on:submit|preventDefault={handleSubmit}>
-      <label>
-        Nome Topic:
-        <input class="counter" name="topic" id="topic" />
-      </label>
-      <button class="counter" type="submit">Join</button>
-    </form>
-  </div>
-</section>
+  {#if currentScreen === "index"}
+    <section id="next-steps">
+      <div id="docs">
+        <h1>E' un test</h1>
+        <h2>non si vede?</h2>
+      </div>
+      <div>
+        <h1>Form per Accedere</h1>
+        <form on:submit|preventDefault={handleSubmit}>
+          <label>
+            Nome Stanza:
+            <input class="counter" name="topic" id="topic" />
+          </label>
+          <button class="counter" type="submit">Accedi!</button>
+        </form>
+      </div>
+    </section>
+    <div class="ticks"></div>
+  {:else if currentScreen === "buttonTest"}
+    <section id="next-steps">
+      <div id="docs">
+        <h1>{SocketManager.getInstance().syncedSocketData.room}</h1>
+        <h2>E' la stanza corrente.</h2>
+      </div>
+      <div>
+        <h1>Clicca!</h1>
+        <h2>Aumenterà a tutti 😉</h2>
+        <Counter></Counter>
+      </div>
+    </section>
+    <div class="ticks"></div>
+  {/if}
 
-<div class="ticks"></div>
-
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true">
-      <use href="/icons.svg#documentation-icon"></use>
-    </svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank" rel="noreferrer">
-          <img class="logo" src={viteLogo} alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://svelte.dev/" target="_blank" rel="noreferrer">
-          <img class="button-icon" src={svelteLogo} alt="" />
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true">
-      <use href="/icons.svg#social-icon"></use>
-    </svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li>
-        <a
-          href="https://github.com/vitejs/vite"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <svg class="button-icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#github-icon"></use>
-          </svg>
-          GitHub
-        </a>
-      </li>
-      <li>
-        <a href="https://chat.vite.dev/" target="_blank" rel="noreferrer">
-          <svg class="button-icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#discord-icon"></use>
-          </svg>
-          Discord
-        </a>
-      </li>
-      <li>
-        <a href="https://x.com/vite_js" target="_blank" rel="noreferrer">
-          <svg class="button-icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#x-icon"></use>
-          </svg>
-          X.com
-        </a>
-      </li>
-      <li>
-        <a
-          href="https://bsky.app/profile/vite.dev"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <svg class="button-icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#bluesky-icon"></use>
-          </svg>
-          Bluesky
-        </a>
-      </li>
-    </ul>
-  </div>
-</section>
-
-<div class="ticks"></div>
-<section id="spacer"></section>
+  <div class="ticks"></div>
+  <section id="spacer"></section>
+</div>
