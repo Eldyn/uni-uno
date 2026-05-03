@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import SocketManager from "./SocketManager.svelte";
 
   let counter = $state(0);

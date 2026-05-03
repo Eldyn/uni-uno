@@ -13,11 +13,14 @@
     const formData = new FormData(event.target as HTMLFormElement);
 
     try {
-      const response = await fetch("https://localhost:9999/room", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: formData.get("topic") }),
-      });
+      const response = await fetch(
+        `${window.location.protocol}//${window.location.host}/room`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic: formData.get("topic") }),
+        },
+      );
 
       const result = await response.json();
 

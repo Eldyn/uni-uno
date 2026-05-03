@@ -112,7 +112,7 @@ int main() {
         PerSocketData* socketData = ws->getUserData();
   
         socketData->username = "giovannino_" + to_string(rand() % 100);
-        cout << "[SOCKET]: " << socketData->username << " 101 Connection Upgraded."<< endl;
+        cout << "[SOCKET]: " << socketData->username << " 101 Connection Upgraded"<< endl;
       },
       .message = [&app, &clickCounter](AppWebSocket *ws, string_view message, uWS::OpCode opCode) {
         try {
@@ -128,14 +128,14 @@ int main() {
             string topic = message_json["topic"];
             
             if (!socketData->room.empty()) {
-              cout << "[SOCKET]: " << socketData->username << " attempted to join a room whilst being in one." << endl;
+              cout << "[SOCKET]: " << socketData->username << " attempted to join a room whilst being in one" << endl;
               return;
             }
             
             socketData->room = topic;
             ws->subscribe(topic);
 
-            cout << "[SOCKET]: " << socketData->username << " iscritto alla topic: " << topic << endl;
+            cout << "[SOCKET]: " << socketData->username << " subscribed to: " << topic << endl;
 
             clickCounter.insert({topic, 0});
             ws->send(json({
@@ -145,11 +145,8 @@ int main() {
             }).dump(), uWS::OpCode::TEXT);
           } 
           else if (action == "click") {
-            cout << socketData->room << " pre: " << clickCounter.at(socketData->room) << endl;
             clickCounter.at(socketData->room) = clickCounter.at(socketData->room) + 1;
-            cout << socketData->room << " post: " << clickCounter.at(socketData->room) << endl;
 
-            // Invia a tutti gli iscritti a quel topic
             app.publish(
               socketData->room,
               json({{"action", "sync_count"},
