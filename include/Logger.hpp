@@ -14,7 +14,11 @@ private:
 
         time_t t = std::chrono::system_clock::to_time_t(now);
         tm tm_buf;
-        localtime_r(&t, &tm_buf);
+        #ifdef _WIN32
+            localtime_s(&tm_buf, &t);   // In windows gli argomenti sono swappati
+        #else
+            localtime_r(&t, &tm_buf);   // POSIX
+        #endif
 
         char buf[20];
         strftime(buf, sizeof(buf), "%H:%M:%S", &tm_buf);

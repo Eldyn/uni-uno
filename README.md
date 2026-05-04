@@ -17,7 +17,7 @@ Assicurati di avere installato il gruppo di sviluppo C++ e le librerie SSL:
 
 1. **Compilatore**: [Visual Studio 2022](https://visualstudio.microsoft.com/) (con l'estensione "Sviluppo di applicazioni desktop con C++") oppure **MinGW-w64**.
 2. **CMake**: Scaricabile dal [sito ufficiale](https://cmake.org/download/).
-3. **OpenSSL**: Consigliato l'uso di [vcpkg](https://github.com/microsoft/vcpkg) (`vcpkg install openssl:x64-windows`) o gli installer binari.
+3. [vcpkg](https://github.com/microsoft/vcpkg) (`vcpkg install sqlite3 openssl zlib`) o gli installer binari.
 4. **Git Bash**: Consigliato per eseguire i comandi di generazione certificati.
 
 ---
@@ -40,6 +40,7 @@ openssl req -newkey rsa:2048 -new -nodes -x509 -days 365 -keyout key.pem -out ce
 Compila (e genera il `compile_commands.json` per clangd)
 
 ```bash
+./deploy_frontend.sh
 mkdir build
 cd build
 cmake ..
@@ -47,8 +48,4 @@ ln -s ./compile_commands.json .. # collega compile_commands.json alla root del p
 cmake --build .
 ```
 
-Attenzione ad eseguire il server nella cartella dove sono presenti i certificati e il database, e non nella cartella build.
-
-## Frontend
-
-WIP
+Attenzione ad eseguire il server nella cartella dove sono presenti i certificati, il frontend, e il database, e non nella cartella build.
