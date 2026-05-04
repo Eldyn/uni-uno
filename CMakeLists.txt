@@ -20,6 +20,7 @@ target_compile_definitions(uSockets PUBLIC LIBUS_USE_OPENSSL)
 
 set(SOURCES 
     src/main.cpp 
+    src/WebServer.cpp
 )
 
 add_executable(uno_server ${SOURCES})
