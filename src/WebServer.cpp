@@ -34,8 +34,8 @@ void WebServer::run() {
         } else {
         Logger::error("Failed to bind to port " + to_string(port_));
         }
-    });
-    app_.run();
+  });
+  app_.run();
 }
 
 bool WebServer::initDB() {

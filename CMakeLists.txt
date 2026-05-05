@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(ProgettoUno VERSION 1.0 LANGUAGES C CXX)
+project(UniUno VERSION 1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,6 +18,22 @@ set_target_properties(uSockets PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(uSockets PUBLIC ${USOCKETS_DIR})
 target_compile_definitions(uSockets PUBLIC LIBUS_USE_OPENSSL)
 
+# SQLite amalgamation
+add_library(sqlite3 STATIC
+    external/sqlite3/sqlite3.c
+)
+target_include_directories(sqlite3 PUBLIC
+    external/sqlite3
+)
+target_compile_options(sqlite3 PRIVATE
+    $<$<C_COMPILER_ID:MSVC>:/w>
+    $<$<NOT:$<C_COMPILER_ID:MSVC>>:-w>
+)
+target_compile_definitions(sqlite3 PUBLIC
+    SQLITE_OMIT_LOAD_EXTENSION
+    SQLITE_THREADSAFE=1
+)
+
 set(SOURCES 
     src/main.cpp 
     src/WebServer.cpp
@@ -32,20 +48,19 @@ target_include_directories(uno_server PRIVATE
 )
 
 # Linking
-find_package(SQLite3 REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 if(WIN32)
     target_link_libraries(uno_server PRIVATE 
         uSockets 
-        SQLite::SQLite3
+        sqlite3
         OpenSSL::SSL OpenSSL::Crypto
         iphlpapi psapi user32 crypt32 ws2_32
     )
 else()
     target_link_libraries(uno_server PRIVATE 
         uSockets 
-        SQLite::SQLite3
+        sqlite3
         OpenSSL::SSL
         OpenSSL::Crypto
         pthread 
