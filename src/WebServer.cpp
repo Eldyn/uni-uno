@@ -34,8 +34,8 @@ void WebServer::run() {
         } else {
         Logger::error("Failed to bind to port " + to_string(port_));
         }
-  });
-  app_.run();
+    });
+    app_.run();
 }
 
 bool WebServer::initDB() {
@@ -47,9 +47,10 @@ bool WebServer::initDB() {
     }
     const char *schema = R"(
         CREATE TABLE IF NOT EXISTS rooms (
-            topic      TEXT     PRIMARY KEY,
-            clicks     INTEGER  NOT NULL DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            topic        TEXT     PRIMARY KEY,
+            clicks       INTEGER  NOT NULL DEFAULT 0,
+            last_clicker TEXT,
+            created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     )";
 
@@ -144,7 +145,7 @@ void WebServer::handleSocketOpen(AppWebSocket *ws) {
 }
 
 void WebServer::handleSocketMessage(AppWebSocket *ws, string_view message, uWS::OpCode opCode) {
-    PerSocketData *sd = ws->getUserData();
+    PerSocketData *socketData = ws->getUserData();
     
     try {
         json message_json = json::parse(message);
@@ -156,14 +157,20 @@ void WebServer::handleSocketMessage(AppWebSocket *ws, string_view message, uWS::
     
         string action = message_json["action"];
     
-        // INFO: currently does not work since it requires the last_clicker to be in the DB
-        //
-        // if (action == "query") {
-        //   if (!message_json.contains("topic"))
-        //     return;
-        //   string topic = message_json["topic"];
-        //   ws->send(to_string(getClicks(topic)), opCode);
-        // }
+        if (action == "query") {
+            if (socketData->room.empty()) {
+                Logger::warn("User tried do query a room while not being in one!");
+                return;
+            };
+
+            ws->send(json({
+                            {"action", "queried"},
+                            {"clicks", to_string(getClicks(socketData->room))},
+                            {"lastClicker", getLastClicker(socketData->room)}
+                          }
+                         ).dump(),
+                    opCode);
+        }
     
         // ── join ───────────────────────────────────────────
         if (action == "join") {
@@ -171,38 +178,48 @@ void WebServer::handleSocketMessage(AppWebSocket *ws, string_view message, uWS::
             return;
         string topic = message_json["topic"];
     
-        if (!sd->room.empty()) {
-            Logger::warn("[WS] " + sd->username + " tried to join whilst already in a room");
+        if (!socketData->room.empty()) {
+            Logger::warn("[WS] " + socketData->username + " tried to join whilst already in a room");
             return;
         }
     
-        sd->room = topic;
+        socketData->room = topic;
         ws->subscribe(topic);
         ensureRoom(topic);
     
-        Logger::log("[WS] ", sd->username, " joined room: ", topic);
+        Logger::log("[WS] ", socketData->username, " joined room: ", topic);
     
         ws->send(json({{"action", "sync_data"},
-                        {"username", sd->username},
-                        {"room", sd->room}})
+                        {"username", socketData->username},
+                        {"room", socketData->room}})
                     .dump(),
                 uWS::OpCode::TEXT);
         }
     
         else if (action == "click") {
-        if (sd->room.empty()) {
-            Logger::warn("[WS] Click from " + sd->username + " who is not in a room");
+        if (socketData->room.empty()) {
+            Logger::warn("[WS] Click from " + socketData->username + " who is not in a room");
             return;
         }
     
-        incrementClicks(sd->room);
-        int total = getClicks(sd->room);
+        incrementClicks(socketData->room);
+        // TODO: make a separate method for this, called updateLastClicker:
+        sqlite3_stmt *stmt = nullptr;
+
+        sqlite3_prepare_v2(db_, "UPDATE rooms SET last_clicker = ? WHERE topic = ?;", -1, &stmt, nullptr);
+        sqlite3_bind_text(stmt, 1, socketData->username.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, socketData->room.c_str(), -1, SQLITE_STATIC);
+        sqlite3_step(stmt);
+        sqlite3_finalize(stmt);
+
+        int total = getClicks(socketData->room);
     
-        app_.publish(sd->room,
+        app_.publish(socketData->room,
                     json({{"action", "sync_count"},
                             {"count", total},
-                            {"last_clicker", sd->username}})
-                        .dump(),
+                            {"last_clicker", getLastClicker(socketData->room)}
+                         }
+                        ).dump(),
                     opCode, true);
         }
 
@@ -242,6 +259,20 @@ int WebServer::getClicks(const string &topic) {
     clicks = sqlite3_column_int(stmt, 0);
   sqlite3_finalize(stmt);
   return clicks;
+}
+
+string WebServer::getLastClicker(const string &topic) {
+    sqlite3_stmt *stmt = nullptr;
+    string last_clicker;
+
+    sqlite3_prepare_v2(db_, "SELECT last_clicker FROM rooms WHERE topic = ?;", -1, &stmt, nullptr);
+    sqlite3_bind_text(stmt, 1, topic.c_str(), -1, SQLITE_STATIC);
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char* raw = sqlite3_column_text(stmt, 0);
+        last_clicker = raw ? reinterpret_cast<const char*>(raw) : "nessuno";
+    }
+    sqlite3_finalize(stmt);
+    return last_clicker;
 }
 
 string WebServer::readFile(string_view path) {

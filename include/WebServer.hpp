@@ -49,11 +49,13 @@ private:
     void handleSocketOpen   (AppWebSocket*);
     void handleSocketMessage(AppWebSocket*, string_view, uWS::OpCode);
 
-    void ensureRoom (const string& topic);
-    void incrementClicks(const string& topic);
-    int  getClicks  (const string& topic);
+    void   ensureRoom     (const string& topic);
+    void   incrementClicks(const string& topic);
+    int    getClicks      (const string& topic);
+    string getLastClicker (const string& topic);
 
-    static string     readFile   (string_view path);
-    static string     getMimeType(const string& path);
+
+    static string     readFile    (string_view path);
+    static string     getMimeType (const string& path);
     static string     makeUsername();
 };

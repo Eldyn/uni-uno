@@ -1,13 +1,12 @@
 <script lang="ts">
-    import SocketManager, {
-        type AppSocketData,
-    } from "./lib/SocketManager.svelte";
+    import SocketManager from "./lib/SocketManager.svelte";
     import svelteLogo from "./assets/svelte.svg";
     import viteLogo from "./assets/vite.svg";
     import heroImg from "./assets/hero.png";
     import Counter from "./lib/Counter.svelte";
 
     let currentScreen: "index" | "buttonTest" = "index";
+    let syncedData: { clicks: number; lastClicker: string };
 
     async function handleSubmit(event: SubmitEvent) {
         const formData = new FormData(event.target as HTMLFormElement);
@@ -27,13 +26,30 @@
             if (result.status === "OK") {
                 let socketManager = SocketManager.getInstance();
                 await socketManager.connect();
-                await socketManager.emitAndWait(
+                const myData: {
+                    action: "sync_data";
+                    room: string;
+                    username: string;
+                } = await socketManager.emitAndWait(
                     "join",
                     { topic: result.topic },
                     "sync_data",
                 );
 
-                currentScreen = "buttonTest";
+                if (myData.room) {
+                    const queriedData = await socketManager.emitAndWait(
+                        "query",
+                        {},
+                        "queried",
+                    );
+
+                    syncedData = {
+                        clicks: queriedData.clicks,
+                        lastClicker: queriedData.lastClicker,
+                    };
+
+                    currentScreen = "buttonTest";
+                }
             }
         } catch (error) {
             console.error("Errore durante il fetch:", error);
@@ -87,7 +103,7 @@
             <div>
                 <h1>Clicca!</h1>
                 <h2>Aumenterà a tutti 😉</h2>
-                <Counter></Counter>
+                <Counter data={syncedData}></Counter>
             </div>
         </section>
         <div class="ticks"></div>
