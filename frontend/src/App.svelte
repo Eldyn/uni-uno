@@ -21,6 +21,11 @@
                 },
             );
 
+            if (response.status === 422)
+                throw new Error(
+                    "Input used illegal characters (or was too long)",
+                );
+
             const result = await response.json();
 
             if (result.status === "OK") {
@@ -52,7 +57,7 @@
                 }
             }
         } catch (error) {
-            console.error("Errore durante il fetch:", error);
+            console.error("Fetch error:", error);
         }
     }
 </script>

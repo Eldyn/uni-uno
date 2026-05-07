@@ -1,5 +1,6 @@
 #include <../include/Logger.hpp>
 #include <../include/WebServer.hpp>
+#include <algorithm>
 #include <cstdlib>
 #include <nlohmann/json.hpp>
 #include <sqlite3.h>
@@ -79,6 +80,7 @@ void WebServer::registerRoutes() {
     app_.ws<PerSocketData>("/*", {
         .open = [this](AppWebSocket *ws) { handleSocketOpen(ws); },
         .message = [this](AppWebSocket *ws, string_view msg, uWS::OpCode op) { handleSocketMessage(ws, msg, op); },
+        .close = [this](AppWebSocket *ws, int code, string_view message) { handleSocketClosed(ws); }
     });
 }
 
@@ -100,10 +102,20 @@ void WebServer::handlePost(AppResponse *res, AppRequest *req) {
             try {
                 auto data = json::parse(buffer);
                 string topic = data.value("topic", "default");
+                if (topic.empty() || topic.size() > 64) {    
+                    res->writeStatus("422 Unprocessable Entity")->end("Room field is empty or too long.");
+                }
+                
+                if (!std::all_of(topic.begin(), topic.end(), [](char c) {
+                    return std::isalnum(c) || c == '-' || c == '_';
+                })) {
+                    res->writeStatus("422 Unprocessable Entity")->end("Room field includes illegal characters.");
+                };
+
                 Logger::log("[POST] /room topic: ", topic);
         
                 res->writeHeader("Content-Type", "application/json")
-                    ->end("{\"status\":\"OK\",\"topic\":\"" + topic + "\"}");
+                   ->end(json({ {"status", "OK"}, {"topic", topic} }).dump());
         
             } catch (const exception &e) {
                 Logger::warn(string("[POST] JSON parse error: ") + e.what());
@@ -138,10 +150,19 @@ void WebServer::handleGet(AppResponse *res, AppRequest *req) {
 //  WebSocket – open
 // ────────────────────────────────────────────────────────────────
 
-void WebServer::handleSocketOpen(AppWebSocket *ws) {
+void WebServer::handleSocketOpen(AppWebSocket* ws) {
     PerSocketData *sd = ws->getUserData();
     sd->username = makeUsername();
+
+    connections_[sd->username] = ws;
     Logger::log("[WS] Connection upgraded: ", sd->username);
+}
+
+void WebServer::handleSocketClosed(AppWebSocket* ws) {
+    PerSocketData *sd = ws->getUserData();
+    connections_.erase(sd->username);
+
+    Logger::log("[WS] Connection closed: ", sd->username);
 }
 
 void WebServer::handleSocketMessage(AppWebSocket *ws, string_view message, uWS::OpCode opCode) {
@@ -203,15 +224,7 @@ void WebServer::handleSocketMessage(AppWebSocket *ws, string_view message, uWS::
         }
     
         incrementClicks(socketData->room);
-        // TODO: make a separate method for this, called updateLastClicker:
-        sqlite3_stmt *stmt = nullptr;
-
-        sqlite3_prepare_v2(db_, "UPDATE rooms SET last_clicker = ? WHERE topic = ?;", -1, &stmt, nullptr);
-        sqlite3_bind_text(stmt, 1, socketData->username.c_str(), -1, SQLITE_STATIC);
-        sqlite3_bind_text(stmt, 2, socketData->room.c_str(), -1, SQLITE_STATIC);
-        sqlite3_step(stmt);
-        sqlite3_finalize(stmt);
-
+        setLastClicker(socketData->room, socketData->username);
         int total = getClicks(socketData->room);
     
         app_.publish(socketData->room,
@@ -247,6 +260,16 @@ void WebServer::incrementClicks(const string &topic) {
   sqlite3_bind_text(stmt, 1, topic.c_str(), -1, SQLITE_STATIC);
   sqlite3_step(stmt);
   sqlite3_finalize(stmt);
+}
+
+void WebServer::setLastClicker(const string &topic, const string &username) {
+    sqlite3_stmt *stmt = nullptr;
+
+    sqlite3_prepare_v2(db_, "UPDATE rooms SET last_clicker = ? WHERE topic = ?;", -1, &stmt, nullptr);
+    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, topic.c_str(), -1, SQLITE_STATIC);
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
 }
 
 int WebServer::getClicks(const string &topic) {

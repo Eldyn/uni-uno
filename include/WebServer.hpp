@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 #include <string>
 #include <string_view>
 #include <fstream>
@@ -6,9 +7,10 @@
 #include <sqlite3.h>
 #include <nlohmann/json.hpp>
 #include <uWebSockets/src/App.h>
+#include <unordered_map>
 
 using json = nlohmann::json;
-using std::string, std::string_view, std::ifstream, std::stringstream;
+using std::unordered_map, std::map, std::string, std::string_view, std::ifstream, std::stringstream;
 
 struct PerSocketData {
     string username;
@@ -38,6 +40,7 @@ private:
     string dbFile_;
 
     uWS::SSLApp app_;
+    std::map<string, AppWebSocket*> connections_;
 
     sqlite3* db_ = nullptr;
 
@@ -46,13 +49,18 @@ private:
 
     void handlePost(AppResponse*, AppRequest*);
     void handleGet (AppResponse*, AppRequest*);
+
     void handleSocketOpen   (AppWebSocket*);
     void handleSocketMessage(AppWebSocket*, string_view, uWS::OpCode);
+    void handleSocketClosed (AppWebSocket*);
 
-    void   ensureRoom     (const string& topic);
+    void   ensureRoom(const string& topic);
+
     void   incrementClicks(const string& topic);
     int    getClicks      (const string& topic);
+
     string getLastClicker (const string& topic);
+    void   setLastClicker (const string& topic, const string& username);
 
 
     static string     readFile    (string_view path);
