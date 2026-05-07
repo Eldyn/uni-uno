@@ -1,34 +1,25 @@
 <script lang="ts">
-    import SocketManager from "./SocketManager.svelte";
-    //@ts-ignore
-    let { data }: { clicks: number; lastClicks: string } = $props();
+    import { on, emit } from "./socket.svelte";
+    import { onDestroy } from "svelte";
 
-    let counter = $state(data.clicks);
-    let lastClicker = $state(data.lastClicker);
+    let {
+        initialCount,
+        initialLastClicker,
+    }: { initialCount: number; initialLastClicker: string } = $props();
 
-    SocketManager.getInstance().socket.addEventListener("message", (event) => {
-        if (event.data.startsWith("{")) {
-            const data = JSON.parse(event.data);
-            if (data.action === "sync_count") {
-                counter = data.count;
-                lastClicker = data.last_clicker;
-            }
-        }
+    let count = $state(initialCount);
+    let lastClicker = $state(initialLastClicker);
+
+    // on() returns its own cleanup — pass directly to onDestroy
+    const cleanup = on("sync_count", (data) => {
+        count = data.count as number;
+        lastClicker = data.last_clicker as string;
     });
 
-    async function buttonClick() {
-        let data = await SocketManager.getInstance().emitAndWait(
-            "click",
-            {},
-            "sync_count",
-        );
-
-        counter = Number(data.count);
-        lastClicker = String(data.last_clicker);
-    }
+    onDestroy(cleanup);
 </script>
 
-<button type="button" class="counter" onclick={buttonClick}
-    >Count is {counter}</button
->
-<p>L'ultimo a cliccare è stato: {lastClicker}</p>
+<button class="counter" onclick={() => emit("click")}>
+    Count: {count}
+</button>
+<p>Ultimo click: {lastClicker}</p>

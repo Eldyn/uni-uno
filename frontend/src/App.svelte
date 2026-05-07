@@ -1,9 +1,10 @@
 <script lang="ts">
-    import SocketManager from "./lib/SocketManager.svelte";
+    import { connect, emitAndWait, socketState } from "./lib/socket.svelte";
+    import Counter from "./lib/Counter.svelte";
+
     import svelteLogo from "./assets/svelte.svg";
     import viteLogo from "./assets/vite.svg";
     import heroImg from "./assets/hero.png";
-    import Counter from "./lib/Counter.svelte";
 
     let currentScreen: "index" | "buttonTest" = "index";
     let syncedData: { clicks: number; lastClicker: string };
@@ -29,28 +30,23 @@
             const result = await response.json();
 
             if (result.status === "OK") {
-                let socketManager = SocketManager.getInstance();
-                await socketManager.connect();
-                const myData: {
-                    action: "sync_data";
-                    room: string;
-                    username: string;
-                } = await socketManager.emitAndWait(
+                await connect("TODO_JWT_token");
+                const myData = await emitAndWait(
                     "join",
                     { topic: result.topic },
                     "sync_data",
                 );
 
                 if (myData.room) {
-                    const queriedData = await socketManager.emitAndWait(
+                    const queriedData = await emitAndWait(
                         "query",
                         {},
                         "queried",
                     );
 
                     syncedData = {
-                        clicks: queriedData.clicks,
-                        lastClicker: queriedData.lastClicker,
+                        clicks: queriedData.clicks as number,
+                        lastClicker: queriedData.lastClicker as string,
                     };
 
                     currentScreen = "buttonTest";
@@ -102,13 +98,16 @@
     {:else if currentScreen === "buttonTest"}
         <section id="next-steps">
             <div id="docs">
-                <h1>{SocketManager.getInstance().syncedSocketData.room}</h1>
+                <h1>{socketState.room}</h1>
                 <h2>E' la stanza corrente.</h2>
             </div>
             <div>
                 <h1>Clicca!</h1>
                 <h2>Aumenterà a tutti 😉</h2>
-                <Counter data={syncedData}></Counter>
+                <Counter
+                    initialCount={syncedData.clicks}
+                    initialLastClicker={syncedData.lastClicker}
+                />
             </div>
         </section>
         <div class="ticks"></div>
