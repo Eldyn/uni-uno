@@ -5,12 +5,8 @@ bin/
 *.a
 *.exe
 compile_commands.json
+CMakeUserPresets.json
 
 # server files
 *.db
-cert.pem
-key.pem
-*.key
-*.crt
-
 public/*

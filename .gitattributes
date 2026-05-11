@@ -4,3 +4,4 @@
 # Encrypt SSL certificates and private keys
 *.pem filter=git-crypt diff=git-crypt
 *.key filter=git-crypt diff=git-crypt
+*.crt filter=git-crypt diff=git-crypt
