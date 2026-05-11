@@ -3,11 +3,15 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [svelte()],
-  base: "./",
-  build: {
-    outDir: "../public",
-    emptyOutDir: true,
-    watch: {},
-  },
+    plugins: [svelte()],
+    base: "./",
+    build: {
+        outDir: "../public",
+        emptyOutDir: true,
+    },
+    dev: {
+        outDir: "../public",
+        emptyOutDir: true,
+        watch: {},
+    },
 });
