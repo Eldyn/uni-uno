@@ -4,48 +4,69 @@ Un'implementazione sicura (HTTPS/WSS) del gioco UNO, con backend in C++, databas
 
 ---
 
-## Dipendenze del Sistema
+## 🛠️ Prerequisiti di Sistema
+
+Scarica i tool:
 
 ### 🐧 Linux (Fedora/Ubuntu)
+- Compilatore C++ (GCC o Clang)
+- **Python 3** (con `pip`)
+- **CMake**
 
-Assicurati di avere installato il gruppo di sviluppo C++ e le librerie SSL:
-
-- **Fedora**: `sudo dnf install cmake openssl-devel sqlite-devel zlib-devel g++`
-- **Ubuntu/Debian**: `sudo apt install cmake libssl-dev libsqlite3-dev zlib1g-dev g++`
+*Per installarli:* 
+- **Fedora/RHEL**: `sudo dnf install gcc-c++ python3 pip cmake`
+- **Ubuntu/Debian**: `sudo apt install g++ python3 python3-pip cmake`
 
 ### 🪟 Windows
-
-1. **Compilatore**: [Visual Studio 2022](https://visualstudio.microsoft.com/) (con l'estensione "Sviluppo di applicazioni desktop con C++") oppure **MinGW-w64**.
-2. **CMake**: Scaricabile dal [sito ufficiale](https://cmake.org/download/).
-3. [vcpkg](https://github.com/microsoft/vcpkg) (`vcpkg install sqlite3 openssl zlib`) o gli installer binari.
-4. **Git Bash**: Consigliato per eseguire i comandi di generazione certificati.
+1. **Compilatore**: [Visual Studio 2022](https://visualstudio.microsoft.com/) (assicurati di aver installato il carico di lavoro "Sviluppo di applicazioni desktop con C++").
+2. **Python**: Scaricabile da [python.org](https://www.python.org/downloads/) o dal Microsoft Store.
+3. **CMake**: Scaricabile dal [sito ufficiale](https://cmake.org/download/).
 
 ---
 
-## 🚀 Setup e Build (Backend)
+## 🚀 Setup e Build
 
-Clona la repo e le dipendenze:
-
+**1. Clona il repository**
 ```bash
-git clone --recursive https://github.com/Eldyn/uni-uno.git
+git clone [https://github.com/Eldyn/uni-uno.git](https://github.com/Eldyn/uni-uno.git)
 cd uni-uno
 ```
 
-Genera i certificati SSL:
-
+**2. Genera i certificati SSL**
+Usa OpenSSL (su Windows puoi usare Git Bash o installarlo a parte) per generare i certificati necessari al server HTTPS/WSS.
+Esegui questo comando nella root del progetto:
 ```bash
 openssl req -newkey rsa:2048 -new -nodes -x509 -days 365 -keyout key.pem -out cert.pem -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
 ```
 
-Compila (e genera il `compile_commands.json` per clangd)
+**3. Installazione Dipendenze (Automatico)**
+Esegui lo script di setup relativo al tuo sistema. Lo script verificherà la presenza di Python, installerà automaticamente Conan e Ninja, configurerà i profili di compilazione e scaricherà tutte le librerie necessarie.
 
 ```bash
-./deploy_frontend.sh
-mkdir build
-cd build
-cmake ..
-ln -s ./compile_commands.json .. # collega compile_commands.json alla root del progetto
-cmake --build .
+./setup.ps1 # Windows
+# Linux
+chmod +x setup.sh
+./setup.sh
 ```
 
-Attenzione ad eseguire il server nella cartella dove sono presenti i certificati, il frontend, e il database, e non nella cartella build.
+**4. Compilazione**
+Una volta completato il setup, usa i preset di CMake (generati automaticamente da Conan) per compilare il progetto. 
+
+```bash
+# Opzionale: se hai bisogno di preparare i file del frontend
+./deploy_frontend.sh 
+
+# Configura e compila il backend C++
+cmake --preset conan-default
+cmake --build --preset conan-default
+```
+
+Nota per gli sviluppatori (clangd / LSP): Conan genera automaticamente il file compile_commands.json all'interno della cartella build/Release/generators/. Se il tuo editor lo richiede nella root del progetto, puoi collegarlo così:
+Linux: `ln -s build/Release/generators/compile_commands.json`
+Windows: `New-Item -ItemType SymbolLink -Path "compile_commands.json" -Target "build\Release\generators\compile_commands.json"`
+
+## 🏃‍♂️ Esecuzione
+
+L'eseguibile compilato si troverà all'interno della cartella di build (es. build/Release/uno_server o build/Release/uno_server.exe).
+
+Importante: CMake si occuperà automaticamente di copiare i file cert.pem e key.pem nella cartella in cui risiede l'eseguibile. Assicurati che il file del database SQLite e la cartella del frontend siano accessibili dal percorso in cui avvii il server!
