@@ -4,7 +4,7 @@
 #include <string_view>
 #include <fstream>
 #include <sstream>
-#include <sqlite3.h>
+#include <database.hpp>
 #include <nlohmann/json.hpp>
 #include <App.h>
 #include <unordered_map>
@@ -42,8 +42,6 @@ private:
 
     uWS::SSLApp app_;
     std::map<string, AppWebSocket*> connections_;
-
-    sqlite3* db_ = nullptr;
 
     bool initDB();
     void registerRoutes();

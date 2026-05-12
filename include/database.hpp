@@ -1,10 +1,11 @@
 #pragma once
 #include <sqlite3.h>
+#include <stdexcept>
 #include <variant>
 #include <vector>
 #include <optional>
 #include <unordered_map>
-#include "result.hpp"
+#include <result.hpp>
 
 using DbValue = std::variant<int, double, std::string, std::nullptr_t>;
 
@@ -13,10 +14,20 @@ public:
     void Set(const std::string& col, DbValue val);
 
     template<typename T>
-    T Get(const std::string& col) const;         // throws std::runtime_error if missing
+    T Get(const std::string& col) const {
+        if (!Has(col)) {
+            throw std::runtime_error("Column not found: " + col);
+        }
+        return std::get<T>(data_.at(col));
+    };
 
     template<typename T>
-    T GetOr(const std::string& col, T fallback) const;  // returns fallback if NULL/missing
+    T GetOr(const std::string& col, T fallback) const {
+        if (!Has(col) || std::holds_alternative<std::nullptr_t>(data_.at(col))) {
+            return fallback;
+        }
+        return std::get<T>(data_.at(col));
+    };
 
     bool Has(const std::string& col) const;
 
