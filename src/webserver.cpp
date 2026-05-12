@@ -1,5 +1,7 @@
-#include <../include/logger.hpp>
-#include <../include/webserver.hpp>
+#include "../include/logger.hpp"
+#include "database.hpp"
+#include "result.hpp"
+#include "../include/webserver.hpp"
 #include <cstdlib>
 #include <nlohmann/json.hpp>
 #include <sqlite3.h>
@@ -14,12 +16,14 @@ WebServer::WebServer(int port, string_view keyFile, string_view certFile, string
         throw runtime_error("Failed to initialise database");
     }
     registerRoutes();
+    Logger::info("Key file: " + string(keyFile) + " exists=" + (fs::exists(keyFile) ? "yes" : "NO"));
+    Logger::info("Cert file: " + string(certFile) + " exists=" + (fs::exists(certFile) ? "yes" : "NO"));
     Logger::info("WebServer constructed");
 }
 
 WebServer::~WebServer() {
-    if (db_) {
-        sqlite3_close(db_);
+    if (Database::Get().IsOpen()) {
+        Database::Get().Close();
         Logger::info("Database closed");
     }
 }
@@ -36,12 +40,13 @@ void WebServer::run() {
 }
 
 bool WebServer::initDB() {
-    if (sqlite3_open(dbFile_.c_str(), &db_) != SQLITE_OK) {
-        Logger::error("Cannot open DB: " + string(sqlite3_errmsg(db_)));
-        sqlite3_close(db_);
-        db_ = nullptr;
+    VoidResult openResult = Database::Get().Open(dbFile_); 
+    
+    if (!openResult) {
+        Logger::error("Database opening failed: " + openResult.error().message);
         return false;
     }
+
     const char *schema = R"(
         CREATE TABLE IF NOT EXISTS rooms (
             topic        TEXT     PRIMARY KEY,
@@ -51,16 +56,13 @@ bool WebServer::initDB() {
         );
     )";
 
-    char *errMsg = nullptr;
-    if (sqlite3_exec(db_, schema, nullptr, nullptr, &errMsg) != SQLITE_OK) {
-        Logger::error("Schema error: " + string(errMsg));
-        sqlite3_free(errMsg);
-        sqlite3_close(db_);
-        db_ = nullptr;
+    VoidResult schemaResult = Database::Get().ApplySchema(schema);
+
+    if (!schemaResult) {
+        Logger::error("Schema failed: " + schemaResult.error().message);
         return false;
     }
 
-    Logger::info("Database ready (" + dbFile_ + ")");
     return true;
 }
 
@@ -241,57 +243,66 @@ void WebServer::handleSocketMessage(AppWebSocket *ws, string_view message, uWS::
 
 
 void WebServer::ensureRoom(const string &topic) {
-  sqlite3_stmt *stmt = nullptr;
-
-  sqlite3_prepare_v2( db_, "INSERT OR IGNORE INTO rooms (topic, clicks) VALUES (?, 0);", -1, &stmt, nullptr);
-  sqlite3_bind_text(stmt, 1, topic.c_str(), -1, SQLITE_STATIC);
-  sqlite3_step(stmt);
-  sqlite3_finalize(stmt);
+    VoidResult result = Database::Get().Exec("INSERT OR IGNORE INTO rooms (topic, clicks) VALUES (?, 0);", {topic});
+    if (!result) {
+        Error error = result.error();
+        Logger::error("DB error in ensureRoom: " + error.message);
+    }
 }
 
 void WebServer::incrementClicks(const string &topic) {
-  sqlite3_stmt *stmt = nullptr;
-
-  sqlite3_prepare_v2(db_, "UPDATE rooms SET clicks = clicks + 1 WHERE topic = ?;", -1, &stmt, nullptr);
-  sqlite3_bind_text(stmt, 1, topic.c_str(), -1, SQLITE_STATIC);
-  sqlite3_step(stmt);
-  sqlite3_finalize(stmt);
+    VoidResult result = Database::Get().Exec("UPDATE rooms SET clicks = clicks + 1 WHERE topic = ?;", {topic});
+    if (!result) {
+        Error error = result.error();
+        Logger::error("DB error in incrementClicks: " + error.message);
+    }
 }
 
 void WebServer::setLastClicker(const string &topic, const string &username) {
-    sqlite3_stmt *stmt = nullptr;
-
-    sqlite3_prepare_v2(db_, "UPDATE rooms SET last_clicker = ? WHERE topic = ?;", -1, &stmt, nullptr);
-    sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, topic.c_str(), -1, SQLITE_STATIC);
-    sqlite3_step(stmt);
-    sqlite3_finalize(stmt);
+    VoidResult result = Database::Get().Exec("UPDATE rooms SET last_clicker = ? WHERE topic = ?;", {username, topic});
+    if (!result) {
+        Error error = result.error();
+        Logger::error("DB error in setLastClicker: " + error.message);
+    }
 }
 
-int WebServer::getClicks(const string &topic) {
-  sqlite3_stmt *stmt = nullptr;
-  int clicks = 0;
+int WebServer::getClicks(const string& topic) {
+    auto result = Database::Get().QueryOne("SELECT clicks FROM rooms WHERE topic = ?;", {topic});
 
-  sqlite3_prepare_v2(db_, "SELECT clicks FROM rooms WHERE topic = ?;", -1, &stmt, nullptr);
-  sqlite3_bind_text(stmt, 1, topic.c_str(), -1, SQLITE_STATIC);
-  if (sqlite3_step(stmt) == SQLITE_ROW)
-    clicks = sqlite3_column_int(stmt, 0);
-  sqlite3_finalize(stmt);
-  return clicks;
+    // 1. Check if the Database operation itself failed
+    if (!result) {
+        Logger::error("DB error in getClicks: " + result.error().message);
+        return -1; // Fallback
+    }
+
+    // 2. Access the Optional (did the row actually exist?)
+    // 'result.value()' is the optional<DbRow>
+    auto& maybe_row = result.value(); 
+
+    if (!maybe_row.has_value()) {
+        Logger::warn("Room not found: " + topic);
+        return -1; // Fallback if room doesn't exist
+    }
+
+    // 3. Get the value safely using the template type
+    return maybe_row->GetOr<int>("clicks", 0);
 }
 
 string WebServer::getLastClicker(const string &topic) {
-    sqlite3_stmt *stmt = nullptr;
-    string last_clicker;
-
-    sqlite3_prepare_v2(db_, "SELECT last_clicker FROM rooms WHERE topic = ?;", -1, &stmt, nullptr);
-    sqlite3_bind_text(stmt, 1, topic.c_str(), -1, SQLITE_STATIC);
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        const unsigned char* raw = sqlite3_column_text(stmt, 0);
-        last_clicker = raw ? reinterpret_cast<const char*>(raw) : "nessuno";
+    auto result = Database::Get().QueryOne("SELECT last_clicker FROM rooms WHERE topic = ?;", {topic});
+    if (!result) {
+        Logger::error("DB error in getLastClicker: " + result.error().message);
+        return "unknown";
     }
-    sqlite3_finalize(stmt);
-    return last_clicker;
+
+    auto& maybe_row = result.value();
+
+    if (!maybe_row.has_value()) {
+        Logger::warn("Room not found: " + topic);
+        return "unknown";
+    }
+
+    return maybe_row->GetOr<string>("last_clicker", "unknown");
 }
 
 string WebServer::readFile(string_view path) {
