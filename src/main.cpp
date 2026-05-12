@@ -1,5 +1,5 @@
-#include "../include/WebServer.hpp"
-#include "../include/Logger.hpp"
+#include "../include/webserver.hpp"
+#include "../include/logger.hpp"
 
 int main() {
     try {
@@ -9,5 +9,6 @@ int main() {
         Logger::error(string("Fatal: ") + e.what());
         return 1;
     }
+
     return 0;
 }

@@ -15,16 +15,20 @@ find_package(jwt-cpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 # --- Main Executable ---
-set(SOURCES src/main.cpp src/WebServer.cpp)
+# We keep the updated source list (including Database), taking care of correct casing
+set(SOURCES 
+    src/main.cpp 
+    src/webserver.cpp 
+    src/database.cpp
+)
+
 add_executable(uno_server ${SOURCES})
 
 # Non serve più la cartella external. Conan instrada gli include in automatico.
-# Aggiungi solo 'src' o 'include' se hai tuoi file header locali.
 target_include_directories(uno_server PRIVATE src)
 
 # --- Linking ---
 # Usa esclusivamente i target esportati da Conan. 
-# Questi target portano con sé tutte le flag (pthread, ws2_32, crypt32, ecc.)
 target_link_libraries(uno_server PRIVATE 
     OpenSSL::SSL 
     OpenSSL::Crypto

@@ -9,8 +9,9 @@
 #include <App.h>
 #include <unordered_map>
 
+namespace fs = std::filesystem;
 using json = nlohmann::json;
-using std::unordered_map, std::map, std::string, std::string_view, std::ifstream, std::stringstream;
+using std::unordered_map, std::map, std::string, std::string_view, std::ifstream, std::stringstream, std::ios, std::exception, std::runtime_error, std::to_string, std::move, std::all_of, std::isalnum;
 
 struct PerSocketData {
     string username;
