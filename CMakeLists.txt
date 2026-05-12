@@ -24,8 +24,7 @@ set(SOURCES
 
 add_executable(uno_server ${SOURCES})
 
-# Non serve più la cartella external. Conan instrada gli include in automatico.
-target_include_directories(uno_server PRIVATE src)
+target_include_directories(uno_server PRIVATE include src)
 
 # --- Linking ---
 # Usa esclusivamente i target esportati da Conan. 
