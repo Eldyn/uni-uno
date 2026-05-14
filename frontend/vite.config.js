@@ -9,9 +9,8 @@ export default defineConfig({
         outDir: "../public",
         emptyOutDir: true,
     },
-    dev: {
+    "build-watch": {
         outDir: "../public",
         emptyOutDir: true,
-        watch: {},
     },
 });
