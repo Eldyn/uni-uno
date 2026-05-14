@@ -1,8 +1,12 @@
 {
     "compilerOptions": {
+        "target": "ES2015",
+        "module": "commonjs",
+        "strict": true,
+
         "types": [
             "svelte",
-            "vite/client"
+            "vite/client",
         ]
     }
 }
