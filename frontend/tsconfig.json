@@ -1,7 +1,8 @@
 {
     "compilerOptions": {
         "types": [
-            "svelte"
+            "svelte",
+            "vite/client"
         ]
     }
 }
