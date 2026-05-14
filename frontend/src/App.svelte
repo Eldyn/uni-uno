@@ -56,7 +56,7 @@
             console.error("Fetch error:", error);
         }
     }
-
+    
     async function handleRegister(event: SubmitEvent) {
         const formData = new FormData(event.target as HTMLFormElement);
 
