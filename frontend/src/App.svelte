@@ -7,7 +7,7 @@
     import heroImg from "./assets/hero.png";
 
     // Gestione delle pagine ! Temporaneo
-    let currentScreen: "auth" | "index" | "game" = "index";
+    let currentScreen: "auth" | "index" | "game" = "auth";
     let syncedData = { clicks: 0, lastClicker: "Nessuno" };
 
     // Stato del colore in game
@@ -291,4 +291,3 @@
     <section id="spacer"></section>
     <div class="ticks"></div>
 </div>
-
