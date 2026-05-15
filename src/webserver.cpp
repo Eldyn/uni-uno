@@ -1,4 +1,5 @@
 #include "action_router.hpp"
+#include "controllers/auth_controller.hpp"
 #include "http_router.hpp"
 #include "websocket_context.hpp"
 #include <cstdlib>
@@ -141,28 +142,25 @@ void WebServer::RegisterRoutes() {
     });
 
     app_.ws<PerSocketData>("/*", {
-        // .upgrade = [this](AppResponse* res,
-        //                   AppRequest*  req,
-        //                   us_socket_context_t* ctx) {
+        .upgrade = [this](AppResponse* res, AppRequest*  req, us_socket_context_t* ctx) {
+            string token = string(req->getQuery("token"));
+            auto payload = AuthController::VerifyToken(token);
 
-            // string token = string(req->getQuery("token"));
-            // auto payload = Auth::VerifyToken(token);
-            //
-            // if (!payload) {
-            //     Logger::Warn("[WS] Rejected upgrade — invalid token");
-            //     res->WriteStatus("401 Unauthorized")->End();
-            //     return;
-            // }
-            //
-            // PerSocketData sd;
-            // sd.username = payload->username;
-            //
-            // res->upgrade(std::move(sd),
-            //     req->getHeader("sec-websocket-key"),
-            //     req->getHeader("sec-websocket-protocol"),
-            //     req->getHeader("sec-websocket-extensions"),
-            //     ctx);
-        // },
+            if (!payload) {
+                Logger::Warn("[WS] Rejected upgrade — invalid token");
+                res->writeStatus("401 Unauthorized")->end();
+                return;
+            }
+
+            PerSocketData sd;
+            sd.username = payload->username;
+
+            res->upgrade(std::move(sd),
+                req->getHeader("sec-websocket-key"),
+                req->getHeader("sec-websocket-protocol"),
+                req->getHeader("sec-websocket-extensions"),
+                ctx);
+        },
         .open = [this](AppWebSocket *ws) {
             OnSocketOpen(ws);
         },
