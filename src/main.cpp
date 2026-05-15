@@ -1,9 +1,14 @@
-#include "../include/webserver.hpp"
-#include "../include/logger.hpp"
+#include <controllers/auth_controller.hpp>
+#include <env.hpp>
+#include <logger.hpp>
+#include <webserver.hpp>
 
 int main() {
     try {
+        Env::Load(".env");
         WebServer server(9999);
+
+        AuthController auth(server.GetHTTPRouter());
 
         server.GetHTTPRouter().OnAny([](AppResponse *response, AppRequest *request) {
             Logger::Log("[HTTP]: route received: ", std::string(request->getFullUrl()));
