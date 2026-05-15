@@ -9,24 +9,27 @@
     // Gestione delle pagine ! Temporaneo
     let currentScreen: "auth" | "index" | "game" = "index";
     let syncedData = { clicks: 0, lastClicker: "Nessuno" };
-    
+
     // Stato del colore in game
-    let gameColor = "blue"; 
+    let gameColor = "blue";
 
     // REGISTRAZIONE
     async function handleRegister(event: SubmitEvent) {
         const formData = new FormData(event.target as HTMLFormElement);
         try {
-            const response = await fetch(`${window.location.origin}/auth/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    username: formData.get("username"),
-                    email: formData.get("email"),
-                    password: formData.get("password"),
-                }),
-            });
-            
+            const response = await fetch(
+                `${window.location.origin}/auth/register`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: formData.get("username"),
+                        email: formData.get("email"),
+                        password: formData.get("password"),
+                    }),
+                },
+            );
+
             if (response.ok) {
                 alert("Registrazione completata! Ora effettua il login.");
             } else {
@@ -41,17 +44,20 @@
     async function handleLogin(event: SubmitEvent) {
         const formData = new FormData(event.target as HTMLFormElement);
         try {
-            const response = await fetch(`${window.location.origin}/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    email: formData.get("email"),
-                    password: formData.get("password"),
-                }),
-            });
+            const response = await fetch(
+                `${window.location.origin}/auth/login`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        email: formData.get("email"),
+                        password: formData.get("password"),
+                    }),
+                },
+            );
 
             if (response.ok) {
-                currentScreen = "index"; 
+                currentScreen = "index";
             } else {
                 alert("Credenziali errate");
             }
@@ -60,28 +66,27 @@
         }
     }
 
-    // ACCESSO ALLA STANZA 
+    // ACCESSO ALLA STANZA
     async function handleSubmit(event: SubmitEvent) {
         const formData = new FormData(event.target as HTMLFormElement);
         try {
-            const response = await fetch(
-                `${window.location.protocol}//${window.location.host}/room`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ topic: formData.get("topic") }),
-                },
-            );
+            const response = await fetch(`${window.location.origin}/room`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ topic: formData.get("topic") }),
+            });
 
             if (response.status === 422) {
-                throw new Error("Input used illegal characters (or was too long)");
+                throw new Error(
+                    "Input used illegal characters (or was too long)",
+                );
             }
 
             const result = await response.json();
 
             if (result.status === "OK") {
                 await connect("TODO_JWT_token");
-                
+
                 const myData = await emitAndWait(
                     "join",
                     { topic: result.topic },
@@ -89,7 +94,11 @@
                 );
 
                 if (myData.room) {
-                    const queriedData = await emitAndWait("query", {}, "queried");
+                    const queriedData = await emitAndWait(
+                        "query",
+                        {},
+                        "queried",
+                    );
 
                     syncedData = {
                         clicks: queriedData.clicks as number,
@@ -106,7 +115,7 @@
 </script>
 
 <!-- Div per non vedere l'errore in main.js -->
- <div id="app"></div>
+<div id="app"></div>
 
 <div>
     <section id="center">
@@ -131,12 +140,22 @@
                     <br />
                     <label>
                         email:
-                        <input class="counter" name="email" type="email" required />
+                        <input
+                            class="counter"
+                            name="email"
+                            type="email"
+                            required
+                        />
                     </label>
                     <br />
                     <label>
                         password:
-                        <input class="counter" name="password" type="password" required />
+                        <input
+                            class="counter"
+                            name="password"
+                            type="password"
+                            required
+                        />
                     </label>
                     <br />
                     <button class="counter" type="submit">Registrati!</button>
@@ -148,19 +167,28 @@
                 <form on:submit|preventDefault={handleLogin}>
                     <label>
                         email:
-                        <input class="counter" name="email" type="email" required />
+                        <input
+                            class="counter"
+                            name="email"
+                            type="email"
+                            required
+                        />
                     </label>
                     <br />
                     <label>
                         password:
-                        <input class="counter" name="password" type="password" required />
+                        <input
+                            class="counter"
+                            name="password"
+                            type="password"
+                            required
+                        />
                     </label>
                     <br />
                     <button class="counter" type="submit">Login!</button>
                 </form>
             </div>
         </section>
-
     {:else if currentScreen === "index"}
         <section id="next-steps">
             <div id="docs">
@@ -172,28 +200,37 @@
                 <form on:submit|preventDefault={handleSubmit}>
                     <label>
                         Nome Stanza:
-                        <input class="counter" name="topic" id="topic" required />
+                        <input
+                            class="counter"
+                            name="topic"
+                            id="topic"
+                            required
+                        />
                     </label>
-                    <button class="counter" type="submit">Accedi alla Stanza!</button>
+                    <button class="counter" type="submit"
+                        >Accedi alla Stanza!</button
+                    >
                 </form>
             </div>
         </section>
-
     {:else if currentScreen === "game"}
-    <section id="next-steps"></section>
+        <section id="next-steps"></section>
         <div class="game-field perspective {gameColor}">
-            
             <div id="player">
                 (You)
                 <div class="player_hand">
                     {#each Array(2) as _, r}
-                        <div class="card red" data-key={r}><div class="bckg"></div></div>
+                        <div class="card red" data-key={r}>
+                            <div class="bckg"></div>
+                        </div>
                     {/each}
-                    
+
                     {#each Array(2) as _, b}
-                        <div class="card blue" data-key={b}><div class="bckg"></div></div>
+                        <div class="card blue" data-key={b}>
+                            <div class="bckg"></div>
+                        </div>
                     {/each}
-                    
+
                     <div class="card yellow"><div class="bckg"></div></div>
                     <div class="card green"><div class="bckg"></div></div>
                     <div class="card black"><div class="bckg"></div></div>
@@ -204,7 +241,9 @@
                 Left Player
                 <div class="player_hand">
                     {#each Array(7) as _, n}
-                        <div class="card turned" data-index={n}><div class="bckg"></div></div>
+                        <div class="card turned" data-index={n}>
+                            <div class="bckg"></div>
+                        </div>
                     {/each}
                 </div>
             </div>
@@ -213,7 +252,9 @@
                 Top Player
                 <div class="player_hand">
                     {#each Array(7) as _, n}
-                        <div class="card turned" data-index={n}><div class="bckg"></div></div>
+                        <div class="card turned" data-index={n}>
+                            <div class="bckg"></div>
+                        </div>
                     {/each}
                 </div>
             </div>
@@ -222,22 +263,27 @@
                 Right Player
                 <div class="player_hand">
                     {#each Array(7) as _, n}
-                        <div class="card turned" data-index={n}><div class="bckg"></div></div>
+                        <div class="card turned" data-index={n}>
+                            <div class="bckg"></div>
+                        </div>
                     {/each}
                 </div>
             </div>
 
             <div id="piles_area">
                 <div id="draw_pile">
-                    <div class="card turned top-card"><div class="bckg"></div></div>
+                    <div class="card turned top-card">
+                        <div class="bckg"></div>
+                    </div>
                     <div class="card turned pile"><div class="bckg"></div></div>
                 </div>
                 <div id="discard_pile">
-                    <div class="card top-card {gameColor}"><div class="bckg"></div></div>
+                    <div class="card top-card {gameColor}">
+                        <div class="bckg"></div>
+                    </div>
                     <div class="card pile"><div class="bckg"></div></div>
                 </div>
             </div>
-
         </div>
     {/if}
 
@@ -245,3 +291,4 @@
     <section id="spacer"></section>
     <div class="ticks"></div>
 </div>
+
