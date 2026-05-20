@@ -10,6 +10,10 @@
     let data = { clicks: 0, lastClicker: "Nessuno" };
     let username: string | "login" = $state("login");
 
+    // INFO: Stato Input Password
+    let showPasswordRegister = $state(false);
+    let showPasswordLogin = $state(false);
+
     // INFO: Stato del colore in game
     let gameColor = "green";
 
@@ -194,10 +198,19 @@
                         password:
                         <input
                             class="counter"
-                            name="password"
-                            type="password"
+                            name="password" 
+                            type={showPasswordRegister ? "text" : "password"}
                             required
                         />
+                        <!-- Bottone per mostrare/nascondere la password (type="button" evita il submit del form) -->
+                        <button 
+                            type="button" 
+                            class="counter" 
+                            style="margin-left: 5px; padding: 2px 8px;"
+                            on:click={() => showPasswordRegister = !showPasswordRegister}
+                        >
+                            {showPasswordRegister ? "Nascondi" : "Mostra"}
+                        </button>
                     </label>
                     <br />
                     <button class="counter" type="submit">Registrati!</button>
@@ -222,9 +235,18 @@
                         <input
                             class="counter"
                             name="password"
-                            type="password"
+                            type={showPasswordLogin ? "text" : "password"}
                             required
                         />
+                        <!-- Bottone per mostrare/nascondere la password -->
+                        <button 
+                            type="button" 
+                            class="counter" 
+                            style="margin-left: 5px; padding: 2px 8px;"
+                            on:click={() => showPasswordLogin = !showPasswordLogin}
+                        >
+                            {showPasswordLogin ? "Nascondi" : "Mostra"}
+                        </button>
                     </label>
                     <br />
                     <button class="counter" type="submit">Login!</button>
