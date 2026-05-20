@@ -45,10 +45,10 @@ void WebServer::Run() {
 }
 
 bool WebServer::InitDB() {
-    VoidResult openResult = Database::Get().Open(db_file_); 
+    VoidResult open_result = Database::Get().Open(db_file_); 
     
-    if (!openResult) {
-        Logger::Error("Database opening failed: " + openResult.error().message);
+    if (!open_result) {
+        Logger::Error("Database opening failed: " + open_result.error().message);
         return false;
     }
 
@@ -69,10 +69,10 @@ bool WebServer::InitDB() {
         );
     )";
 
-    VoidResult schemaResult = Database::Get().ApplySchema(schema);
+    VoidResult schema_result = Database::Get().ApplySchema(schema);
 
-    if (!schemaResult) {
-        Logger::Error("Schema failed: " + schemaResult.error().message);
+    if (!schema_result) {
+        Logger::Error("Schema failed: " + schema_result.error().message);
         return false;
     }
 
