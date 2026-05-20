@@ -7,6 +7,7 @@
 struct PerSocketData {
     std::string username;   // set on upgrade after JWT verification
     std::string room;       // set on "join" action
+    std::string lobby_id;
 };
 
 using AppWebSocket = uWS::WebSocket<true, true, PerSocketData>;
