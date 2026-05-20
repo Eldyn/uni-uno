@@ -1,15 +1,15 @@
-#include <websocket_context.hpp>
+#include <controllers/auth_controller.hpp>
 #include <common/base64.hpp>
 #include <common/http.hpp>
-#include <controllers/auth_controller.hpp>
 #include <common/env.hpp>
-#include <logger.hpp>
-#include <protocol.hpp>
+#include <common/ws.hpp>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <jwt-cpp/jwt.h>
 #include <jwt-cpp/traits/nlohmann-json/traits.h>
 #include <nlohmann/json.hpp>
+#include <logger.hpp>
+#include <websocket_context.hpp>
 #include <chrono>
 #include <stdexcept>
 #include <vector>
@@ -202,9 +202,8 @@ void AuthController::HandleLogin(AppResponse* response, AppRequest* /*req*/) {
     });
 }
 
-//  Why PBKDF2?  It is battle-tested, available directly in OpenSSL (already
-//  linked), and acceptable for this project scale.  The main knob is
-//  kIterations: more iterations = more CPU per guess = slower brute force.
+//  PBKDF2 is battle-tested and acceptable for this project scale.
+//  The main knob is kIterations: more iterations = more CPU per guess = slower brute force.
 //
 //  The "pepper" is an application-level secret from the environment.
 //  Unlike a salt (stored in the DB, unique per user, public), a pepper is

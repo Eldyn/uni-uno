@@ -13,6 +13,8 @@
 #include <database.hpp>
 #include <logger.hpp>
 
+namespace fs = std::filesystem;
+
 WebServer::WebServer(int port, string_view key_file, string_view cert_file, string_view db_file)
     : port_(port), db_file_(db_file), app_(uWS::SSLApp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})) {
     if (!InitDB()) {

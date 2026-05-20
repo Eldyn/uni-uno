@@ -13,7 +13,6 @@
 #include <http_router.hpp>
 #include <websocket_context.hpp>
 
-namespace fs = std::filesystem;
 using json = nlohmann::json;
 using std::unordered_map, std::map, std::string, std::string_view, std::ifstream, std::stringstream, std::ios, std::exception, std::runtime_error, std::to_string, std::move, std::all_of, std::isalnum;
 
@@ -33,6 +32,7 @@ public:
 
     ActionRouter& GetActionRouter()   { return ws_router_;   }
     HttpRouter&   GetHTTPRouter()     { return http_router_; }
+    uWS::SSLApp&  GetApp()            { return app_;         }
 
 private:
     int    port_;
