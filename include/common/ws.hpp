@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <nlohmann/json.hpp>
+#include "logger.hpp"
 #include "websocket_context.hpp"
 
 namespace ws {
@@ -158,7 +159,11 @@ namespace ws {
     };
     
     inline nlohmann::json MakeResponse(ServerAction action) {
-        return nlohmann::json({ {"action", kServerActionStr.at(action)} });
+        auto json = nlohmann::json({ {"action", kServerActionStr.at(action)} });
+
+        Logger::Log("[WS] Made Respone: ", json.dump());
+
+        return json;
     }
 
     inline void SendError(AppWebSocket* ws, uWS::OpCode op, const std::string& reason) {
