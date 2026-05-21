@@ -21,7 +21,7 @@ export const ClientAction = {
     AckGameOver: "ack_game_over",
     StorePurchase: "store_purchase",
     InventoryRequest: "inventory_request",
-    ChatSend: "chat_send",
+    ChatSend: "chat_send"
 } as const;
 
 export const ServerAction = {
@@ -55,7 +55,7 @@ export const ServerAction = {
     InventorySync: "inventory_sync",
     PurchaseConfirmed: "purchase_confirmed",
     PurchaseFailed: "purchase_failed",
-    ChatMessage: "chat_message",
+    ChatMessage: "chat_message"
 } as const;
 
 export type ClientActionType = (typeof ClientAction)[keyof typeof ClientAction];
@@ -74,19 +74,45 @@ let ws = $state<WebSocket | null>(null);
 let connectionStatus = $state<ConnectionStatus>({
     status: "disconnected",
     username: "",
-    room: "",
+    room: ""
 });
+
+let _nextRequestId = 1;
+function nextRequestId(): string {
+    return String(_nextRequestId++);
+}
 
 // Maps actions to sets of unique callbacks to call when receiving said action
 const handlers = new Map<string, Set<MessageHandler>>();
 
+interface PendingRequests {
+    resolve: (data: Record<string, unknown>) => void;
+    reject: (err: Error) => void;
+    timer: ReturnType<typeof setTimeout>;
+}
+
+const pendingRequests = new Map<string, PendingRequests>();
+
 function dispatch(data: Record<string, unknown>) {
     const action = data.action as string;
+    const requestId = data.request_id as string;
 
-    // Call specific action handlers
-    handlers.get(action)?.forEach((h) => h(data));
-    // Call wildcard handlers
-    handlers.get("*")?.forEach((h) => h(data));
+    if (requestId && pendingRequests.has(requestId)) {
+        const pending = pendingRequests.get(requestId)!;
+        pendingRequests.delete(requestId);
+        clearTimeout(pending.timer);
+
+        if (action === "error") {
+            pending.reject(new Error(data.reason as string)) ?? "Server Error";
+        } else {
+            pending.resolve(data);
+        }
+    }
+
+    if (action) {
+        handlers.get(action)?.forEach((handler) => handler(data));
+        handlers.get("*")?.forEach((handler) => handler(data));
+    }
 }
 
 /**
@@ -100,90 +126,122 @@ export function on(action: ServerAction | "*", handler: MessageHandler) {
     return () => handlers.get(action)?.delete(handler);
 }
 
-/**
- * Connect to WebSocket server
- */
-export async function connect(): Promise<void> {
-    if (ws?.readyState === WebSocket.OPEN) return;
+let reconnectTimer: ReturnType<typeof setTimeout> | null;
+let reconnectDelayMs = 1000;
+let intentionalClose = false;
 
-    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${protocol}//${location.host}`;
+function scheduleReconect() {
+    if (intentionalClose) return;
+    if (reconnectTimer) clearTimeout(reconnectTimer);
 
-    ws = new WebSocket(url);
-    connectionStatus.status = "connecting";
+    reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        reconnectDelayMs = Math.min(reconnectDelayMs * 2, 16_000);
 
+        connectOnce().catch(() => {
+            scheduleReconect();
+        });
+    });
+}
+
+function connectOnce(): Promise<void> {
     return new Promise((resolve, reject) => {
-        ws!.onopen = () => {
+        const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+        const socket = new WebSocket(`${protocol}//${location.host}`);
+        connectionStatus.status = "connecting";
+
+        socket.onopen = () => {
+            ws = socket;
             connectionStatus.status = "connected";
+            reconnectDelayMs = 1000;
             resolve();
+
+            // Re-join lobby if we were in one before the disconnect.
+            const savedCode = sessionStorage.getItem("lobby_code");
+            if (savedCode) emit("lobby_rejoin", { code: savedCode });
         };
-        ws!.onerror = (event) => {
-            reject(new Error("WebSocket connection failed"));
+
+        socket.onerror = (e) => reject(e);
+
+        socket.onclose = () => {
+            if (ws === socket) {
+                ws = null;
+                connectionStatus.status = "disconnected";
+            }
+            scheduleReconect();
         };
-        ws!.onclose = () => {
-            connectionStatus.status = "disconnected";
-            ws = null;
-        };
-        ws!.onmessage = (e: MessageEvent) => {
+
+        socket.onmessage = (e: MessageEvent) => {
             try {
-                const data = JSON.parse(e.data);
-                if (data.action === "sync_data") {
-                    connectionStatus.username = data.username || "";
-                    connectionStatus.room = data.room || "";
-                }
+                const data = JSON.parse(e.data as string) as Record<string, unknown>;
+                if (data.action === "sync_data") connectionStatus.username = data.username as string;
                 dispatch(data);
             } catch {
-                // Ignore non-JSON messages
+                /* ignore non-JSON */
             }
         };
     });
 }
 
-/**
- * Disconnect from WebSocket server
- */
-export function disconnect(code: number, reason: string): void {
-    if (ws) {
-        ws.close(code, reason);
-        ws = null;
-        connectionStatus.status = "disconnected";
-    }
+// ── Public API ────────────────────────────────────────────────────────────────
+
+export async function connect(): Promise<void> {
+    if (ws?.readyState === WebSocket.OPEN) return;
+    intentionalClose = false;
+    await connectOnce();
 }
 
-/**
- * Emit a message to the server
- */
-export function emit(
-    action: string,
-    payload: Record<string, unknown> = {},
-): void {
-    if (ws?.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ action, ...payload }));
+export function disconnect(): void {
+    intentionalClose = true;
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
     }
+    ws?.close();
+    ws = null;
+    connectionStatus.status = "disconnected";
 }
 
-/**
- * Emit a message and wait for a specific response action
- */
-export async function emitAndWait(
+// emit — fire and forget, no response expected.
+// Does NOT attach a request_id so the server won't try to correlate it.
+export function emit(action: string, payload: object = {}): void {
+    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ action, ...payload }));
+}
+
+// emitAndWait — send a message and wait for the correlated response.
+//
+// Attaches a unique request_id.  The server must echo it back.
+// Rejects if:
+//   - The server sends an "error" response with the same request_id
+//   - No response arrives within timeoutMs
+//
+// The `expectedAction` parameter is now OPTIONAL documentation — it is no
+// longer used for matching.  Matching is done exclusively on request_id.
+// You can still pass it for clarity, but removing it won't break anything.
+export function emitAndWait(
     action: string,
-    payload: Record<string, unknown> = {},
-    expectedAction: string,
-    timeoutMs = 5000,
+    payload: object = {},
+    _expectedAction?: string, // kept for API compatibility, not used for matching
+    timeoutMs = 5000
 ): Promise<Record<string, unknown>> {
     return new Promise((resolve, reject) => {
+        const requestId = nextRequestId();
+
         const timer = setTimeout(() => {
-            cleanup();
-            reject(new Error(`Timeout waiting for ${expectedAction}`));
+            pendingRequests.delete(requestId);
+            reject(new Error(`Timeout: no response for "${action}" (request_id=${requestId})`));
         }, timeoutMs);
 
-        const cleanup = on(expectedAction, (data) => {
-            clearTimeout(timer);
-            cleanup();
-            resolve(data);
-        });
+        pendingRequests.set(requestId, { resolve, reject, timer });
 
-        emit(action, payload);
+        if (ws?.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ action, request_id: requestId, ...payload }));
+        } else {
+            // Socket not open — reject immediately rather than silently timing out.
+            pendingRequests.delete(requestId);
+            clearTimeout(timer);
+            reject(new Error("WebSocket not connected"));
+        }
     });
 }
 
