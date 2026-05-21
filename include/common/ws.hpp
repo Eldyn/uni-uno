@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <optional>
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include "logger.hpp"
@@ -158,16 +159,22 @@ namespace ws {
         { "chat_send",           ClientAction::kChatSend          },
     };
     
-    inline nlohmann::json MakeResponse(ServerAction action) {
-        auto json = nlohmann::json({ {"action", kServerActionStr.at(action)} });
 
-        Logger::Log("[WS] Made Respone: ", json.dump());
+    inline nlohmann::json MakeResponse(ServerAction action, std::optional<int> request_id = std::nullopt) {
+        nlohmann::json json = { 
+            {"action", kServerActionStr.at(action)} 
+        };
 
+        if (request_id.has_value()) {
+            json["request_id"] = request_id.value();
+        }
+
+        Logger::Log("[WS] Made Response: ", json.dump());
         return json;
     }
 
-    inline void SendError(AppWebSocket* ws, uWS::OpCode op, const std::string& reason) {
-        auto msg = MakeResponse(ServerAction::kError);
+    inline void SendError(AppWebSocket* ws, uWS::OpCode op, const std::string& reason, std::optional<int> request_id = std::nullopt) {
+        auto msg = MakeResponse(ServerAction::kError, request_id);
         msg["reason"] = reason;
         ws->send(msg.dump(), op);
     };

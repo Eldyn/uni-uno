@@ -175,7 +175,7 @@ void LobbyController::OnClose(AppWebSocket* ws, PerSocketData* sd) {
     }
 }
 
-void LobbyController::HandleCreate(WsContext ctx, const json&) {
+void LobbyController::HandleCreate(WsContext ctx, const json& message) {
     const std::string& username = ctx.socket_data->username;
 
     // Prevent creating a lobby while already in one.
@@ -212,15 +212,15 @@ void LobbyController::HandleCreate(WsContext ctx, const json&) {
                 " host=", username);
 
     // Respond with lobby_joined — carries enough info to render the lobby UI.
-    auto resp = MakeResponse(ws::ServerAction::kLobbyJoined);
+    auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, message["request_id"]);
     resp["lobby_id"]     = id;
     resp["invite_code"]  = code;
     resp["members"]      = MemberListJson(lobbies_.at(id));
     ctx.socket->send(resp.dump(), ctx.op_code);
 }
 
-void LobbyController::HandleJoin(WsContext ctx, const json& msg) {
-    if (!msg.contains("code") || !msg["code"].is_string()) {
+void LobbyController::HandleJoin(WsContext ctx, const json& message) {
+    if (!message.contains("code") || !message["code"].is_string()) {
         ws::SendError(ctx.socket, ctx.op_code, "Missing invite code");
         return;
     }
@@ -230,7 +230,7 @@ void LobbyController::HandleJoin(WsContext ctx, const json& msg) {
         return;
     }
 
-    std::string code = msg["code"];
+    std::string code = message["code"];
     // Normalise to uppercase so "xk4f9z" and "XK4F9Z" both work.
     std::transform(code.begin(), code.end(), code.begin(), ::toupper);
 
@@ -263,7 +263,7 @@ void LobbyController::HandleJoin(WsContext ctx, const json& msg) {
     Logger::Log("[Lobby] ", username, " joined lobby ", lobby.id);
 
     // Send lobby_joined privately to the new member.
-    auto resp = MakeResponse(ws::ServerAction::kLobbyJoined);
+    auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, message["request_id"]);
     resp["lobby_id"]    = lobby.id;
     resp["invite_code"] = code;
     resp["members"]     = MemberListJson(lobby);
@@ -283,19 +283,19 @@ void LobbyController::HandleJoin(WsContext ctx, const json& msg) {
 //  HandleRejoin is the explicit confirmation from the client that it wants
 //  to rejoin — it receives a fresh lobby_joined payload with the current
 //  member list so its UI is up to date.
-void LobbyController::HandleRejoin(WsContext ctx, const json& msg) {
-    if (!msg.contains("code") || !msg["code"].is_string()) {
+void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
+    if (!message.contains("code") || !message["code"].is_string()) {
         ws::SendError(ctx.socket, ctx.op_code, "Missing lobby code");
         return;
     }
 
-    std::string code = msg["code"];
+    std::string code = message["code"];
     std::transform(code.begin(), code.end(), code.begin(), ::toupper);
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
         // Lobby expired during the grace window — tell the client to go to lobby list.
-        auto resp = MakeResponse(ws::ServerAction::kLobbyLeft);
+        auto resp = MakeResponse(ws::ServerAction::kLobbyLeft, message["request_id"]);
         resp["reason"] = "Lobby expired";
         ctx.socket->send(resp.dump(), ctx.op_code);
         return;
@@ -308,7 +308,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& msg) {
         if (m.username == username) {
             // Member found — OnOpen already restored the socket pointer.
             // Just send the current state so the client can re-render.
-            auto resp = MakeResponse(ws::ServerAction::kLobbyJoined);
+            auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, message["request_id"]);
             resp["lobby_id"]    = lobby.id;
             resp["invite_code"] = code;
             resp["members"]     = MemberListJson(lobby);
@@ -321,7 +321,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& msg) {
     ws::SendError(ctx.socket, ctx.op_code, "No longer a member of this lobby");
 }
 
-void LobbyController::HandleLeave(WsContext ctx, const json&) {
+void LobbyController::HandleLeave(WsContext ctx, const json& message) {
     const std::string& username = ctx.socket_data->username;
     const std::string& code     = ctx.socket_data->lobby_id;
 
@@ -340,7 +340,7 @@ void LobbyController::HandleLeave(WsContext ctx, const json&) {
     if (is_host) {
         // Host left — destroy the lobby and notify everyone.
         // Send lobby_left to all connected members before erasing.
-        auto notif = MakeResponse(ws::ServerAction::kLobbyLeft);
+        auto notif = MakeResponse(ws::ServerAction::kLobbyLeft, message["request_id"]);
         notif["reason"] = "Host left";
 
         for (const auto& m : lobby.members) {
@@ -368,7 +368,7 @@ void LobbyController::HandleLeave(WsContext ctx, const json&) {
         MakeResponse(ws::ServerAction::kLobbyLeft).dump(), ctx.op_code);
 }
 
-void LobbyController::HandleList(WsContext ctx, const json&) {
+void LobbyController::HandleList(WsContext ctx, const json& message) {
     json list = json::array();
 
     for (const auto& [id, lobby] : lobbies_) {
@@ -397,7 +397,7 @@ void LobbyController::HandleList(WsContext ctx, const json&) {
         });
     }
 
-    auto resp = MakeResponse(ws::ServerAction::kLobbyList);
+    auto resp = MakeResponse(ws::ServerAction::kLobbyList, message["request_id"]);
     resp["lobbies"] = list;
     ctx.socket->send(resp.dump(), ctx.op_code);
 }
