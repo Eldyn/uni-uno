@@ -8,6 +8,9 @@
 
 namespace ws {
     enum class ServerAction {
+        kQueried,           // Send queried buttonTest information
+        kSyncCount,         // Sync buttonTest information
+                            
         // ── Connection ──────────────────────────────────────
         kSyncData,          // username + room assigned after join
         kError,             // generic error with code + reason
@@ -104,6 +107,8 @@ namespace ws {
     };
     
     inline const std::unordered_map<ServerAction, std::string> kServerActionStr {
+        { ServerAction::kQueried,           "queried"             },
+        { ServerAction::kSyncCount,         "sync_count"          },
         { ServerAction::kSyncData,          "sync_data"           },
         { ServerAction::kError,             "error"               },
         { ServerAction::kLobbyList,         "lobby_list"          },
@@ -159,21 +164,36 @@ namespace ws {
         { "chat_send",           ClientAction::kChatSend          },
     };
     
+    inline std::string ExtractRequestId(const nlohmann::json& msg) {
+        auto it = msg.find("request_id");
+        if (it != msg.end()) {
+            if (it->is_string()) {
+                return it->get<std::string>();
+            }
 
-    inline nlohmann::json MakeResponse(ServerAction action, std::optional<int> request_id = std::nullopt) {
-        nlohmann::json json = { 
-            {"action", kServerActionStr.at(action)} 
-        };
-
-        if (request_id.has_value()) {
-            json["request_id"] = request_id.value();
+            // NOTE: let's also handle integers, just in case.
+            if (it->is_number_integer()) {
+                return std::to_string(it->get<int>());
+            }
         }
+        return "";
+    }
 
+    inline nlohmann::json MakeResponse(ws::ServerAction action, const std::string& request_id = "") {
+        // Force nlohmann::json to treat this strictly as an object map
+        nlohmann::json json = nlohmann::json::object({
+            {"action", kServerActionStr.at(action)}
+        });
+    
+        if (!request_id.empty()) {
+            json["request_id"] = request_id;
+        }
+    
         Logger::Log("[WS] Made Response: ", json.dump());
         return json;
     }
 
-    inline void SendError(AppWebSocket* ws, uWS::OpCode op, const std::string& reason, std::optional<int> request_id = std::nullopt) {
+    inline void SendError(AppWebSocket* ws, uWS::OpCode op, const std::string& reason, const std::string& request_id) {
         auto msg = MakeResponse(ServerAction::kError, request_id);
         msg["reason"] = reason;
         ws->send(msg.dump(), op);

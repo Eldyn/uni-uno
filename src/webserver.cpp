@@ -1,8 +1,10 @@
 #include "action_router.hpp"
 #include "common/http.hpp"
+#include "common/ws.hpp"
 #include "controllers/auth_controller.hpp"
 #include "http_router.hpp"
 #include "websocket_context.hpp"
+#include <WebSocketProtocol.h>
 #include <cstdlib>
 #include <nlohmann/json.hpp>
 #include <sqlite3.h>
@@ -82,22 +84,25 @@ bool WebServer::InitDB() {
 }
 
 void WebServer::RegisterRoutes() {
-    ws_router_.On("query", [this](WsContext context, const json& msg) {
+    ws_router_.On("query", [this](WsContext context, const json& message) {
         if (context.socket_data->room.empty()) {
             Logger::Warn("User tried do query a room while not being in one!");
             return false;
         };
 
-        context.socket->send(json({
-            {"action", "queried"},
-            {"clicks", to_string(GetClicks(context.socket_data->room))},
-            {"lastClicker", GetLastClicker(context.socket_data->room)}
-        }).dump(), context.op_code);
+        const string request_id = ws::ExtractRequestId(message);
+
+        json response = ws::MakeResponse(ws::ServerAction::kQueried, request_id);
+
+        response["clicks"]      = to_string(GetClicks(context.socket_data->room));
+        response["lastCLicker"] = GetLastClicker(context.socket_data->room);
+
+        context.socket->send(response.dump(), context.op_code);
         return true;
     });
 
-    ws_router_.On("join", [this](WsContext context, const json& msg) {
-        if (!msg.contains("topic")) {
+    ws_router_.On("join", [this](WsContext context, const json& message) {
+        if (!message.contains("topic")) {
             return false;
         }
     
@@ -106,20 +111,22 @@ void WebServer::RegisterRoutes() {
             return false;
         }
     
-        string topic = msg["topic"];
+        const string topic = message["topic"];
         context.socket_data->room = topic;
         context.socket->subscribe(topic);
         EnsureRoom(topic);
 
-        context.socket->send(json({
-            {"action", "sync_data"},
-            {"username", context.socket_data->username},
-            {"room", context.socket_data->room}
-        }).dump(), uWS::OpCode::TEXT);
+        const string request_id = ws::ExtractRequestId(message);
+
+        json response = ws::MakeResponse(ws::ServerAction::kSyncData, request_id);
+        response["username"] = context.socket_data->username;
+        response["room"] = context.socket_data->room;
+
+        context.socket->send(response.dump(), uWS::OpCode::TEXT);
         return true;
     });
 
-    ws_router_.On("click", [this](WsContext context, const json& msg) {
+    ws_router_.On("click", [this](WsContext context, const json& message) {
         if (context.socket_data->room.empty()) {
             Logger::Warn("[WS] Click from " + context.socket_data->username + " who is not in a room");
             return false;
@@ -128,12 +135,12 @@ void WebServer::RegisterRoutes() {
         IncrementClicks(context.socket_data->room);
         SetLastClicker(context.socket_data->room, context.socket_data->username);
         int total = GetClicks(context.socket_data->room);
-    
-        app_.publish(context.socket_data->room, json({
-            {"action", "sync_count"},
-            {"count", total},
-            {"last_clicker", GetLastClicker(context.socket_data->room)}
-        }).dump(), context.op_code, true);
+
+        json response = ws::MakeResponse(ws::ServerAction::kSyncCount);
+        response["count"] = total;
+        response["last_clicker"] = GetLastClicker(context.socket_data->room);
+
+        app_.publish(context.socket_data->room, response.dump(), context.op_code, true);
         return true;
     });
 
@@ -170,8 +177,8 @@ void WebServer::RegisterRoutes() {
         .open = [this](AppWebSocket *ws) {
             OnSocketOpen(ws);
         },
-        .message = [this](AppWebSocket *ws, string_view msg, uWS::OpCode op) {
-            OnSocketMessage(ws, msg, op);
+        .message = [this](AppWebSocket *ws, string_view message, uWS::OpCode op) {
+            OnSocketMessage(ws, message, op);
         },
         .close = [this](AppWebSocket *ws, int code, string_view message) {
             OnSocketClosed(ws);
