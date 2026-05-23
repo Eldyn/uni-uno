@@ -1,23 +1,22 @@
 <script lang="ts">
-	import { validateRoomName } from "$utils/validation";
+	import { validateLobbyName } from "$utils/validation";
 	import { ws } from "$lib/ws.svelte";
 	import { ClientAction } from "$lib/ws.svelte";
 	import { gameStore } from "$stores/game.svelte";
 	import type { Lobby } from "$lib/stores/game.svelte";
-	import { toastStore } from "$lib/stores/ui.svelte";
+	import { navigationStore, toastStore } from "$lib/stores/ui.svelte";
 
-	let roomNameInput = $state("");
-	let roomNameError = $state("");
+	let lobbyNameInput = $state("");
+	let lobbyNameError = $state("");
 	let isLoading = $state(false);
-
-	let { onCreateSuccess }: { onCreateSuccess: (inviteCode: string) => void } = $props();
+	let isLobbyPublic = $state(false);
 
 	function validateForm(): boolean {
-		roomNameError = "";
+		lobbyNameError = "";
 
-		const roomValidation = validateRoomName(roomNameInput);
-		if (!roomValidation.valid) {
-			roomNameError = roomValidation.error || "";
+		const lobbyValidation = validateLobbyName(lobbyNameInput);
+		if (!lobbyValidation.valid) {
+			lobbyNameError = lobbyValidation.error || "";
 			return false;
 		}
 
@@ -33,45 +32,31 @@
 
 		isLoading = true;
 
-		try {
-			const response = await ws.emitAndWait(ClientAction.LobbyCreate);
+		const response = await ws.emitAndWait(ClientAction.LobbyCreate, { is_public: isLobbyPublic });
 
-			if (!response.ok) {
-				toastStore.showError(response.reason);
-				return;
-			}
-
-			const inviteCode = response.get<string>("invite_code");
-			const members = response.getOr<unknown[]>("members", []);
-
-			if (!inviteCode || !(members.length > 0)) {
-				toastStore.showError("Unknown Server Error");
-			}
-
-			const lobbyId = response.get<string>("lobby_id");
-
-			sessionStorage.setItem("lobby_code", inviteCode!);
-
-			// Update game store with current lobby
-			const lobby: Lobby = {
-				lobby_id: lobbyId!,
-				name: roomNameInput,
-				host: "",
-				players: members,
-				max_players: 4,
-				player_count: 1
-			};
-
-			gameStore.currentLobby = lobby;
-
-			toastStore.showSuccess("Lobby created successfully!");
-			onCreateSuccess(inviteCode!);
-			roomNameInput = "";
-		} catch (error) {
-			toastStore.showError("Failed to create lobby. Check your connection.");
-		} finally {
-			isLoading = false;
+		if (!response.ok) {
+			toastStore.showError(response.reason);
+			return;
 		}
+
+		const lobby = response.get<Lobby>("lobby");
+
+		if (!lobby) {
+			toastStore.showError("Unknown Server Error");
+			return;
+		}
+
+		// NOTE: sessionStorage is cleared after the page is killed, that's a no-no :)
+		localStorage.setItem("lobby_code", lobby.invite_code);
+
+		gameStore.currentLobby = lobby;
+		navigationStore.screen = "lobby";
+
+		toastStore.showSuccess("Lobby created successfully!");
+
+		lobbyNameInput = "";
+
+		isLoading = false;
 	}
 </script>
 
@@ -79,19 +64,22 @@
 	<h3>Create New Lobby</h3>
 
 	<div class="form-group">
-		<label for="room-name">Room Name:</label>
+		<label for="lobby-name">Room Name:</label>
 		<input
-			id="room-name"
+			id="lobby-name"
 			type="text"
-			bind:value={roomNameInput}
-			placeholder="Enter room name"
+			bind:value={lobbyNameInput}
+			placeholder="Enter Lobby name"
 			disabled={isLoading}
-			class:error={roomNameError}
+			class:error={lobbyNameError}
 		/>
-		{#if roomNameError}
-			<span class="error-text">{roomNameError}</span>
+		{#if lobbyNameError}
+			<span class="error-text">{lobbyNameError}</span>
 		{/if}
 	</div>
+
+	<label for="lobby-is-public">Is Public?</label>
+	<input id="lobby-is-public" type="checkbox" bind:checked={isLobbyPublic} />
 
 	<button type="submit" disabled={isLoading} class="submit-button">
 		{isLoading ? "Creating..." : "Create Lobby"}

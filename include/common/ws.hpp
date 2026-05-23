@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include <logger.hpp>
+#include <result.hpp>
 #include <websocket_context.hpp>
 
 namespace ws {
@@ -21,6 +22,7 @@ namespace ws {
         kLobbyJoined,       // you successfully joined a lobby
         kLobbyLeft,         // you or someone else left the lobby
         kInviteCreated,     // server generated an invite link token
+        kLobbyEvicted,      // server evicted the lobby (no players are connected/host left)
     
         // ── Pre-game ────────────────────────────────────────
         kPlayerJoined,      // another player entered the lobby
@@ -112,6 +114,7 @@ namespace ws {
         { ServerAction::kSyncData,          "sync_data"           },
         { ServerAction::kError,             "error"               },
         { ServerAction::kLobbyList,         "lobby_list"          },
+        { ServerAction::kLobbyEvicted,      "lobby_evicted"       },
         { ServerAction::kLobbyUpdated,      "lobby_updated"       },
         { ServerAction::kLobbyJoined,       "lobby_joined"        },
         { ServerAction::kLobbyLeft,         "lobby_left"          },
@@ -163,20 +166,67 @@ namespace ws {
         { "inventory_request",   ClientAction::kInventoryRequest  },
         { "chat_send",           ClientAction::kChatSend          },
     };
-    
-    inline std::string ExtractRequestId(const nlohmann::json& msg) {
-        auto it = msg.find("request_id");
-        if (it != msg.end()) {
-            if (it->is_string()) {
-                return it->get<std::string>();
-            }
 
-            // NOTE: let's also handle integers, just in case.
-            if (it->is_number_integer()) {
-                return std::to_string(it->get<int>());
+    /**
+     * @brief Extracts a mandatory field from JSON payload, returning a monadic Result.
+     * 
+     * Validates structural prerequisites. Maps any parsing deviations or structural 
+     * missing fields straight into an Error::InvalidInput type context[cite: 2].
+     * 
+     * @tparam T The targeted destination data type.
+     * @param json Inbound untrusted JSON payload from client channel.
+     * @param key Target string data label name.
+     * @return Result<T> Holding the type-verified object value or a valid error object state[cite: 1].
+     */
+    template <typename T>
+    inline Result<T> Get(const nlohmann::json& json, std::string_view key) {
+        auto it = json.find(key);
+        if (it == json.end()) {
+            return std::unexpected(Error::InvalidInput("Missing required field: '" + std::string(key) + "'"));
+        }
+        if (it->is_null()) {
+            return std::unexpected(Error::InvalidInput("Required field '" + std::string(key) + "' cannot be null"));
+        }
+
+        if constexpr (std::is_same_v<T, std::string>) {
+            if (it->is_string()) return it->get<std::string>();
+            if (it->is_number_integer()) return std::to_string(it->get<int64_t>());
+        }
+        else if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
+            if (it->is_number_integer()) return it->get<T>();
+            if (it->is_string()) {
+                try {
+                    if constexpr (std::is_signed_v<T>) return static_cast<T>(std::stoll(it->get<std::string>()));
+                    else return static_cast<T>(std::stoull(it->get<std::string>()));
+                } catch (...) {}
             }
         }
-        return "";
+        else if constexpr (std::is_same_v<T, bool>) {
+            if (it->is_boolean()) return it->get<bool>();
+        }
+        else if constexpr (std::is_floating_point_v<T>) {
+            if (it->is_number()) return it->get<T>();
+        }
+
+        return std::unexpected(Error::InvalidInput("Type mismatch for field: '" + std::string(key) + "'"));
+    }
+
+    /**
+     * @brief Extracts an optional field from JSON payload with a safe fallback default.
+     * 
+     * Runs key discovery. If it misses or contains an incompatible data structure, 
+     * execution skips error tracking paths entirely and safely steps back to default_value.
+     * 
+     * @tparam T Desired parameter data type (automatically inferred).
+     * @param json Inbound untrusted JSON payload from client channel.
+     * @param key Target string data label name.
+     * @param default_value The safe fallback variable state configuration value.
+     * @return T The extracted value on extraction validation success, or default_value on verification mismatch.
+     */
+    template <typename T>
+    inline T GetOr(const nlohmann::json& json, std::string_view key, const T& default_value) {
+        auto res = Get<T>(json, key);
+        return res ? *res : default_value;
     }
 
     inline nlohmann::json MakeResponse(ws::ServerAction action, const std::string& request_id = "") {

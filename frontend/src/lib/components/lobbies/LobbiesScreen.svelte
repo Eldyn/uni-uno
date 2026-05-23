@@ -12,6 +12,7 @@
 	const authState = getAuthState();
 
 	let showCreateForm = $state(false);
+	let canCreate = $derived<boolean>(!gameStore.state.currentLobby);
 	let refreshing = $state(false);
 
 	onMount(() => {
@@ -36,21 +37,7 @@
 			return;
 		}
 
-		let lobbies = response.getOr<Lobby[] | undefined>("lobbies", undefined);
-
-		if (!lobbies) {
-			toastStore.showError("Unknown Server Error");
-			return;
-		}
-
-		// INFO: Convert from backend format to game store format
-		gameStore.availableLobbies = lobbies.map((lobby: Lobby) => ({
-			lobby_id: String(lobby.lobby_id),
-			name: `${lobby.host}'s lobby`,
-			host: lobby.host,
-			player_count: lobby.player_count,
-			max_players: lobby.max_players
-		}));
+		gameStore.availableLobbies = response.getOr<Lobby[]>("lobbies", []);
 	}
 
 	async function handleRefresh() {
@@ -58,14 +45,6 @@
 		await loadLobbies();
 		refreshing = false;
 	}
-
-	function handleCreateSuccess() {
-		showCreateForm = false;
-		loadLobbies();
-	}
-
-	// Attempts to join a lobby.
-	function handleJoinLobby(lobby: Lobby) {}
 
 	async function handleLogout() {
 		try {
@@ -100,8 +79,9 @@
 			</button>
 			<button
 				type="button"
-				class="create-button"
+				class="refresh-button"
 				onclick={() => (showCreateForm = !showCreateForm)}
+				disabled={!canCreate}
 			>
 				{showCreateForm ? "✕ Cancel" : "+ Create Lobby"}
 			</button>
@@ -109,16 +89,12 @@
 
 		{#if showCreateForm}
 			<div class="create-form-container">
-				<CreateLobbyForm onCreateSuccess={handleCreateSuccess} />
+				<CreateLobbyForm />
 			</div>
 		{/if}
 
 		<div class="lobbies-container">
-			<LobbyList
-				lobbies={gameState.availableLobbies}
-				isLoading={gameState.isLoadingLobbies}
-				onJoin={handleJoinLobby}
-			/>
+			<LobbyList lobbies={gameState.availableLobbies} isLoading={gameState.isLoadingLobbies} />
 		</div>
 	</div>
 </div>

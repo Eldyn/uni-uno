@@ -50,6 +50,8 @@ private:
         std::string method;   // "GET" or "POST"
         std::string path;
         HttpHandler handler;
+
+        Route(std::string m, std::string p, HttpHandler h) : method(m), path(p), handler(h) {}
     };
 
     std::vector<Route>                                          routes_;

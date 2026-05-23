@@ -1,20 +1,37 @@
 <script lang="ts">
-	import type { Lobby } from "$stores/game.svelte";
+	import { navigationStore, toastStore } from "$lib/stores/ui.svelte";
+	import { ClientAction, ws } from "$lib/ws.svelte";
+	import { gameStore, type Lobby } from "$stores/game.svelte";
 
-	let { lobby, onJoin }: { lobby: Lobby; onJoin?: () => void } = $props();
+	let { lobby }: { lobby: Lobby } = $props();
 
-	const isFull = $derived(lobby.player_count >= lobby.max_players);
+	const isFull = $derived(lobby.member_count >= 4);
+	const canJoin = !!lobby.invite_code;
 
-	function handleJoin() {
-		if (!isFull) {
-			onJoin?.();
+	async function handleJoin() {
+		const response = await ws.emitAndWait(ClientAction.LobbyJoin, { code: lobby.invite_code });
+
+		if (!response.ok) {
+			toastStore.showError(response.reason);
+			return;
 		}
+
+		const lobbyToJoin = response.get<Lobby>("lobby");
+
+		if (!lobbyToJoin) {
+			toastStore.showError(response.reason);
+			return;
+		}
+
+		localStorage.setItem("lobby_code", lobby.invite_code);
+		navigationStore.screen = "lobby";
+		gameStore.currentLobby = lobby;
 	}
 </script>
 
 <div class="lobby-card" class:full={isFull}>
 	<div class="lobby-header">
-		<h3 class="lobby-id">{lobby.lobby_id + " " + lobby.name}</h3>
+		<h3 class="lobby-name">{lobby.name}</h3>
 	</div>
 
 	<div class="lobby-info">
@@ -24,14 +41,16 @@
 		</p>
 		<p class="info-item">
 			<span class="info-label">Players:</span>
-			<span class="info-value">{lobby.player_count}/{lobby.max_players}</span>
+			<span class="info-value">{lobby.member_count}/4</span>
 		</p>
 	</div>
 
-	{#if isFull}
-		<button type="button" class="join-button" disabled>Full</button>
-	{:else}
-		<button type="button" class="join-button" onclick={handleJoin}>Join</button>
+	{#if canJoin}
+		{#if isFull}
+			<button type="button" class="join-button" disabled>Full</button>
+		{:else}
+			<button type="button" class="join-button" onclick={handleJoin}>Join</button>
+		{/if}
 	{/if}
 </div>
 
@@ -63,7 +82,7 @@
 		gap: 12px;
 	}
 
-	.lobby-id {
+	.lobby-name {
 		margin: 0;
 		font-size: 16px;
 		color: var(--text-h);
