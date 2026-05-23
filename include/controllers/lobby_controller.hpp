@@ -6,8 +6,9 @@
 #include <unordered_map>
 #include <vector>
 #include <App.h>
-#include "action_router.hpp"
-#include "websocket_context.hpp"
+#include <action_router.hpp>
+#include <websocket_context.hpp>
+#include <webserver.hpp>
 
 //  Owns all in-memory lobby state. No database involved — lobbies are
 //  ephemeral session state that dies with the server process.
@@ -57,7 +58,7 @@ public:
     // Registers WebSocket action handlers on `router`.
     // Holds a reference to `app` for pub/sub broadcasts and the eviction timer.
     // Both must outlive this controller.
-    LobbyController(ActionRouter& router, uWS::SSLApp& app);
+    LobbyController(WebServer& webserver);
     ~LobbyController();
 
     // Called by WebServer::OnSocketOpen after JWT verification.
@@ -122,8 +123,6 @@ private:
 
     // ── State ────────────────────────────────────────────────────────────
     ActionRouter& action_router_;
-
-    uWS::SSLApp& app_;
 
     // Primary store: lobby_id → Lobby
     std::unordered_map<uint32_t, Lobby> lobbies_;

@@ -3,20 +3,18 @@
 #include <common/env.hpp>
 #include <logger.hpp>
 #include <nlohmann/json_fwd.hpp>
-#include <print>
 #include <webserver.hpp>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
 int main() {
-    std::cout << json({{"action", "something"}}).dump() << std::endl;
     try {
         Env::Load(".env");
         WebServer server(9999);
 
         AuthController auth(server.GetHTTPRouter());
-        LobbyController lobby(server.GetActionRouter(), server.GetApp());        
+        LobbyController lobby(server);        
 
         server.GetHTTPRouter().OnAny([](AppResponse *response, AppRequest *request) {
             Logger::Log("[HTTP]: route received: ", std::string(request->getFullUrl()));

@@ -255,19 +255,27 @@ void WebServer::HandleGet(AppResponse *res, AppRequest *req) {
 //  WebSocket – open
 // ────────────────────────────────────────────────────────────────
 
-void WebServer::OnSocketOpen(AppWebSocket* ws) {
-    PerSocketData *sd = ws->getUserData();
-    sd->username = sd->username.length() > 0 ? sd->username : MakeUsername();
+void WebServer::OnSocketOpen(AppWebSocket* socket) {
+    PerSocketData *socket_data = socket->getUserData();
+    connections_[socket_data->username] = socket;
 
-    connections_[sd->username] = ws;
-    Logger::Log("[WS] Connection upgraded: ", sd->username);
+    for (auto handler : on_open_hooks_) {
+        handler(socket, socket_data);
+    }
+
+    Logger::Log("[WS] Connection upgraded: ", socket_data->username);
 }
 
-void WebServer::OnSocketClosed(AppWebSocket* ws) {
-    PerSocketData *sd = ws->getUserData();
-    connections_.erase(sd->username);
+void WebServer::OnSocketClosed(AppWebSocket* socket) {
+    PerSocketData *socket_data = socket->getUserData();
 
-    Logger::Log("[WS] Connection closed: ", sd->username);
+    for (auto handler : on_close_hooks_) {
+        handler(socket, socket_data);
+    }
+
+    connections_.erase(socket_data->username);
+
+    Logger::Log("[WS] Connection closed: ", socket_data->username);
 }
 
 void WebServer::OnSocketMessage(AppWebSocket *socket, string_view message, uWS::OpCode op_code) {
@@ -369,6 +377,10 @@ string WebServer::GetMimeType(const string &path) {
     return "application/octet-stream";
 }
 
-string WebServer::MakeUsername() {
-    return "player_" + to_string(rand() % 100);
+void WebServer::OnConnectionOpen(ConnectionHandler handler) {
+    on_open_hooks_.push_back(std::move(handler));
+}
+
+void WebServer::OnConnectionClose(ConnectionHandler handler) {
+    on_close_hooks_.push_back(std::move(handler));
 }

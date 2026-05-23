@@ -34,6 +34,10 @@ public:
     HttpRouter&   GetHTTPRouter()     { return http_router_; }
     uWS::SSLApp&  GetApp()            { return app_;         }
 
+    using ConnectionHandler = std::function<void(AppWebSocket*, PerSocketData*)>;
+
+    void OnConnectionOpen(ConnectionHandler handler);
+    void OnConnectionClose(ConnectionHandler handler);
 private:
     int    port_;
     string db_file_;
@@ -65,5 +69,7 @@ private:
 
     static string     ReadFile    (string_view path);
     static string     GetMimeType (const string& path);
-    static string     MakeUsername();
+
+    std::vector<ConnectionHandler> on_open_hooks_;
+    std::vector<ConnectionHandler> on_close_hooks_;
 };

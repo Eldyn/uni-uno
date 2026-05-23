@@ -1,3 +1,4 @@
+#include "webserver.hpp"
 #include <controllers/lobby_controller.hpp>
 #include <common/ws.hpp>
 #include <logger.hpp>
@@ -19,7 +20,7 @@ static constexpr char kCodeAlphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 static constexpr int  kCodeLen        = 6;
 static constexpr int  kAlphabetLen    = 36;   // strlen(kCodeAlphabet)
 
-LobbyController::LobbyController(ActionRouter& router, uWS::SSLApp& app) : action_router_(router), app_(app) {
+LobbyController::LobbyController(WebServer& server) : action_router_(server.GetActionRouter()) {
 
     action_router_.On("lobby_create", [this](WsContext ctx, const json& msg) {
         HandleCreate(ctx, msg);
@@ -42,6 +43,13 @@ LobbyController::LobbyController(ActionRouter& router, uWS::SSLApp& app) : actio
         return true;
     });
 
+    server.OnConnectionOpen([this](AppWebSocket* ws, PerSocketData* sd) {
+        this->OnOpen(ws, sd);
+    });
+
+    server.OnConnectionClose([this](AppWebSocket* ws, PerSocketData* sd) {
+        this->OnClose(ws, sd);
+    });
     // uWS::Loop::get() returns the event loop for the current thread.
     // createTimer() allocates a libuv timer managed by uWS.
     // The lambda fires every 1000 ms and walks all lobbies looking for
