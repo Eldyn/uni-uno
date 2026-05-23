@@ -3,10 +3,14 @@
  * Manages connection, message handlers, and emit/wait patterns using Svelte 5 state.
  */
 
+import { gameStore, Lobby } from "./stores/game.svelte";
+import { navigationStore, toastStore } from "./stores/ui.svelte";
+
 export const ClientAction = {
     LobbyList: "lobby_list",
     LobbyCreate: "lobby_create",
     LobbyJoin: "lobby_join",
+    LobbyRejoin: "lobby_rejoin",
     LobbyLeave: "lobby_leave",
     LobbyInvite: "lobby_invite",
     LobbySetRuleset: "lobby_set_ruleset",
@@ -27,6 +31,7 @@ export const ClientAction = {
 export const ServerAction = {
     SyncData: "sync_data",
     Error: "error",
+    LobbyEvicted: "lobby_evicted",
     LobbyList: "lobby_list",
     LobbyUpdated: "lobby_updated",
     LobbyJoined: "lobby_joined",
@@ -71,6 +76,7 @@ export interface ConnectionStatus {
     status: "disconnected" | "connecting" | "connected";
     username: string;
     room: string;
+    lobby_code: string;
 }
 
 /**
@@ -141,7 +147,8 @@ export class WebSocketClient {
     connectionStatus = $state<ConnectionStatus>({
         status: "disconnected",
         username: "",
-        room: ""
+        room: "",
+        lobby_code: ""
     });
 
     private _nextRequestId = 1;
@@ -248,16 +255,53 @@ export class WebSocketClient {
     /**
      * Internal routine to establish the connection and bind events.
      */
-    private _connectOnce(): Promise<void> {
-        return new Promise((resolve, reject) => {
+    private async _connectOnce(): Promise<void> {
+        return new Promise(async (resolve, reject) => {
             const protocol = location.protocol === "https:" ? "wss:" : "ws:";
             const wsInstance = new WebSocket(`${protocol}//${location.host}`);
             this.connectionStatus.status = "connecting";
 
-            wsInstance.onopen = () => {
+            wsInstance.onopen = async () => {
                 this.socket = wsInstance;
                 this.connectionStatus.status = "connected";
                 this.reconnectDelayMs = 1000;
+
+                const lobbyCode = localStorage.getItem("lobby_code");
+
+                if (!lobbyCode) {
+                    resolve();
+                    return;
+                }
+
+                const response = await ws.emitAndWait(ClientAction.LobbyRejoin, { code: lobbyCode });
+
+                if (!response.ok) {
+                    toastStore.showError(`Could not rejoin lobby: ${response.reason}`);
+                    localStorage.removeItem("lobby_code");
+                    ws.emit(ClientAction.LobbyLeave);
+                    resolve();
+                    return;
+                }
+
+                if (response.action === ServerAction.LobbyEvicted) {
+                    // INFO: this is intended, so we don't necessarily need to send a toast
+                    // toastStore.showError(`Could not rejoin lobby: expired`);
+                    resolve();
+                    return;
+                }
+
+                const lobby = response.get<Lobby>("lobby");
+
+                if (!lobby) {
+                    toastStore.showError(`Could not rejoin lobby: Unknown Error`);
+                    localStorage.removeItem("lobby_code");
+                    ws.emit(ClientAction.LobbyLeave);
+                    resolve();
+                    return;
+                }
+
+                navigationStore.screen = "lobby";
+                gameStore.currentLobby = lobby;
 
                 resolve();
             };

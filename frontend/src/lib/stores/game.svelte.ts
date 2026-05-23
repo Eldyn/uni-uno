@@ -1,14 +1,19 @@
 /**
  * Game state management for lobbies, rooms, and game data
  */
+export interface LobbyMember {
+    username: string;
+    is_connected: boolean;
+    is_host: boolean;
+    // INFO: Other info about the members soon™
+}
 
 export interface Lobby {
-    lobby_id: string;
+    invite_code: string;
     host: string;
     name: string;
-    player_count: number;
-    players?: unknown[];
-    max_players: number;
+    member_count: number;
+    members: LobbyMember[];
 }
 
 export interface GameState {
@@ -23,7 +28,7 @@ let innerState = $state<GameState>({
     currentLobby: null,
     availableLobbies: [],
     isLoadingLobbies: false,
-    gameData: {},
+    gameData: {}
 });
 
 export const gameStore = {
@@ -66,18 +71,14 @@ export const gameStore = {
      * Remove lobby from available lobbies
      */
     removeLobby(lobbyId: string): void {
-        innerState.availableLobbies = innerState.availableLobbies.filter(
-            (l) => l.lobby_id !== lobbyId,
-        );
+        innerState.availableLobbies = innerState.availableLobbies.filter((l) => l.lobby_id !== lobbyId);
     },
 
     /**
      * Update a lobby in available lobbies
      */
     updateLobby(lobbyId: string, updates: Partial<Lobby>): void {
-        const lobby = innerState.availableLobbies.find(
-            (l) => l.lobby_id === lobbyId,
-        );
+        const lobby = innerState.availableLobbies.find((l) => l.lobby_id === lobbyId);
         if (lobby) {
             Object.assign(lobby, updates);
         }
@@ -95,5 +96,5 @@ export const gameStore = {
      */
     clearGameData(): void {
         innerState.gameData = {};
-    },
+    }
 };

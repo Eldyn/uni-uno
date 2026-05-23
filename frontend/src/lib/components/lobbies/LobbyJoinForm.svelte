@@ -8,8 +8,6 @@
 	let roomCodeError = $state("");
 	let isLoading = $state(false);
 
-	let { onJoinSuccess }: { onJoinSuccess: (inviteCode: string) => void } = $props();
-
 	function validateForm(): boolean {
 		roomCodeError = "";
 
@@ -45,37 +43,19 @@
 			return;
 		}
 
-		const inviteCode = response.get<string>("invite_code");
-		const members = response.get<unknown[]>("members");
-		const lobbyId = response.get<string>("lobby_id");
+		const lobby = response.get<Lobby>("lobby");
 
-		if (!inviteCode || !members || !lobbyId) {
+		if (!lobby) {
 			toastStore.showError("Unknown Server Error");
 			return;
 		}
 
-		// Handle successful lobby join
-		// Store invite code in sessionStorage for reconnection
-		sessionStorage.setItem("lobby_code", inviteCode);
-
-		// Update game store with current lobby
-		const lobby: Lobby = {
-			lobby_id: lobbyId,
-			name: `Joined lobby`,
-			// TODO: We'll get this from a subsequent request, since
-			//       the server initially only sends general lobby info.
-			//       Don't want to leak info to clients :P
-			host: "",
-			players: members,
-			player_count: 1,
-			max_players: 4
-		};
+		// INFO: store invite code in sessionStorage for reconnection
+		sessionStorage.setItem("lobby_code", lobby.invite_code);
 
 		gameStore.currentLobby = lobby;
 
 		toastStore.showSuccess("Joined lobby successfully!");
-
-		onJoinSuccess(inviteCode);
 
 		roomCodeInput = "";
 		isLoading = false;

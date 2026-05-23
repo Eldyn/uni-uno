@@ -31,26 +31,26 @@
 //    When a new socket opens for a username that is already present in a
 //    lobby, the socket pointer is swapped and the member is marked connected
 //    again.  The client must send lobby_rejoin with the stored lobby code
-//    (kept in sessionStorage) to restore their lobby_id in PerSocketData.
-//
-//  Thread safety:
-//    uWS is single-threaded.  All callbacks run on the same event loop
-//    thread, so no locking is needed.
-// ---------------------------------------------------------------------------
-
+//    (kept in localStorage) to restore their lobby_id in PerSocketData.
 struct LobbyMember {
-    std::string      username;
-    AppWebSocket*    socket;        // nullptr when disconnected
-    bool             connected;
-    // Populated when connected=false; zero-initialised otherwise.
-    std::chrono::steady_clock::time_point disconnected_at;
+    std::string     username;
+    AppWebSocket*   socket;        // nullptr when disconnected
+    bool            is_connected;
+    
+    std::chrono::steady_clock::time_point disconnected_at{};
+
+    LobbyMember(std::string u, AppWebSocket* s, bool c) 
+        : username(std::move(u)), socket(s), is_connected(c)  {}
 };
 
 struct Lobby {
-    uint32_t                  id;
-    std::string               invite_code;   // 6-char A-Z0-9, the join token
-    std::string               host;          // username of creator
-    std::vector<LobbyMember>  members;
+    uint32_t                 id;
+    bool                     is_public;
+    std::string              invite_code;   // 6-char A-Z0-9, the join token
+    std::string              host;          // username of creator
+    std::vector<LobbyMember> members;
+    std::string              name;
+    // TODO: Additionally, we will hold some other useful data, for example, creation_time.
 };
 
 class LobbyController {
@@ -72,7 +72,9 @@ public:
     void OnClose(AppWebSocket* ws, PerSocketData* sd);
 
     // Grace period before a disconnected member is evicted 3 minutes in milliseconds.
-    static constexpr int kReconnectGraceMs = 1'000 * 60 * 3;
+    // static constexpr int kReconnectGraceMs = 1'000 * 60 * 3;
+    // INFO: for debugging, so disgraceful!
+    static constexpr int kReconnectGraceMs = 10'000;
 
     // Maximum players per lobby.
     static constexpr int kMaxMembers = 4;

@@ -90,7 +90,7 @@ void WebServer::RegisterRoutes() {
             return false;
         };
 
-        const string request_id = ws::ExtractRequestId(message);
+        const string request_id = ws::GetOr<string>(message, "request_id", "");
 
         json response = ws::MakeResponse(ws::ServerAction::kQueried, request_id);
 
@@ -116,7 +116,7 @@ void WebServer::RegisterRoutes() {
         context.socket->subscribe(topic);
         EnsureRoom(topic);
 
-        const string request_id = ws::ExtractRequestId(message);
+        const string request_id = ws::GetOr<string>(message, "request_id", "");
 
         json response = ws::MakeResponse(ws::ServerAction::kSyncData, request_id);
         response["username"] = context.socket_data->username;

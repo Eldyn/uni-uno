@@ -72,7 +72,7 @@ export const toastStore = {
 
 // Scren State
 
-export type AppScreen = "auth" | "lobbies" | "lobby" | "game";
+export type AppScreen = "auth" | "lobbies" | "lobby" | "game" | "lobbyJoinForm";
 
 let currentScreen = $state<AppScreen>("auth");
 

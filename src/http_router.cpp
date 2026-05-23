@@ -2,17 +2,16 @@
 #include <logger.hpp>
 
 HttpRouter& HttpRouter::Get(const std::string& path, HttpHandler handler) {
-    routes_.push_back({"GET", path, std::move(handler)});
+    routes_.emplace_back("GET", path, std::move(handler));
     return *this;
 }
 
 HttpRouter& HttpRouter::Post(const std::string& path, HttpHandler handler) {
-    routes_.push_back({"POST", path, std::move(handler)});
+    routes_.emplace_back("POST", path, std::move(handler));
     return *this;
 }
 
-HttpRouter& HttpRouter::OnAny(
-        std::function<bool(AppResponse*, AppRequest*)> handler) {
+HttpRouter& HttpRouter::OnAny(std::function<bool(AppResponse*, AppRequest*)> handler) {
     wildcards_.push_back(std::move(handler));
     return *this;
 }

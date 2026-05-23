@@ -9,6 +9,7 @@
 	import { ws } from "$lib/ws.svelte";
 	import { getAuthState, setLoggedIn } from "./lib/stores/auth.svelte";
 	import { toastStore } from "./lib/stores/ui.svelte";
+	import LobbyJoinForm from "$lib/components/lobbies/LobbyJoinForm.svelte";
 
 	const authState = getAuthState();
 
@@ -26,21 +27,29 @@
 			if (response.ok) {
 				const data = await response.json();
 				setLoggedIn(data.username, data.email);
+
 				await ws.connect();
-				navigationStore.screen = "lobbies";
+
+				// NOTE: Hacky.. we guard agains't a rejoin
+				if (navigationStore.screen === "auth") {
+					navigationStore.screen = "lobbies";
+				}
 			}
 		} catch (error) {
 			// Not logged in, stay on auth screen
 		}
 	});
 
-	function handleAuthSuccess() {
-		navigationStore.screen = "lobbies";
-
-		console.warn(navigationStore.screen, "ciao");
-		ws.connect().catch((error) => {
+	// NOTE: async since we need to wait for the connection,
+	//       otherwise we could get in a race condition. Also,
+	//       we navigate only AFTER connecting, since onMount
+	//       tries emitting a websocket message.
+	async function handleAuthSuccess() {
+		await ws.connect().catch((error) => {
 			toastStore.showError(`Failed to connect to server. Please try again. (${error})`);
 		});
+
+		navigationStore.screen = "lobbies";
 	}
 
 	function handleBackToLobbies() {
@@ -57,6 +66,8 @@
 		<LobbiesScreen />
 	{:else if navigationStore.screen === "lobby"}
 		<LobbyScreen />
+	{:else if navigationStore.screen === "lobbyJoinForm"}
+		<LobbyJoinForm />
 	{:else if navigationStore.screen === "game"}
 		<GameScreen onBack={handleBackToLobbies} />
 	{/if}
