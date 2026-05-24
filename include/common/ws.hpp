@@ -239,7 +239,7 @@ namespace ws {
             json["request_id"] = request_id;
         }
     
-        Logger::Log("[WS] Made Response: ", json.dump());
+        Logger::Log("[WS] response sent: ", kServerActionStr.at(action), "(", request_id, ")");
         return json;
     }
 

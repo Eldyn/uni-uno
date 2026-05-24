@@ -2,6 +2,7 @@
 #include <controllers/auth_controller.hpp>
 #include <common/env.hpp>
 #include <logger.hpp>
+#include <common/ws.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <webserver.hpp>
 #include <nlohmann/json.hpp>
@@ -22,7 +23,11 @@ int main() {
         });
 
         server.GetActionRouter().OnAny([](WsContext ctx, const json& msg) -> bool {
-            Logger::Log("[WS] action received from: ", ctx.socket_data->username, " → action=", msg.value("action", "?"));
+            Logger::Log(
+                "[WS] request received: ", ctx.socket_data->username, ".",
+                ws::GetOr<string>(msg, "action", "?"),
+                "(", ws::GetOr<string>(msg,"request_id", "?"), ")"
+            );
             return true;
         });
  

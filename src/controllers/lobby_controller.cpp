@@ -1,4 +1,5 @@
 #include "webserver.hpp"
+#include <WebSocketProtocol.h>
 #include <controllers/lobby_controller.hpp>
 #include <common/ws.hpp>
 #include <logger.hpp>
@@ -365,15 +366,17 @@ void LobbyController::HandleLeave(WsContext ctx, const json& message) {
     uint32_t id  = lobby.id;
     bool is_host = (lobby.host == username);
 
+    Logger::Log(is_host);
+
     if (is_host) {
         // Host left — destroy the lobby and notify everyone.
         // Send lobby_left to all connected members before erasing.
-        auto notif = MakeResponse(ws::ServerAction::kLobbyLeft, request_id);
-        notif["reason"] = "Host left";
+        auto notify = MakeResponse(ws::ServerAction::kLobbyEvicted);
+        notify["reason"] = "Host left";
 
         for (const auto& m : lobby.members) {
             if (m.is_connected && m.socket && m.username != username) {
-                m.socket->send(notif.dump(), uWS::OpCode::TEXT);
+                m.socket->send(notify.dump(), uWS::OpCode::TEXT);
             }
             // Clear their lobby_id so OnClose doesn't try to operate on a
             // lobby that no longer exists.
@@ -393,8 +396,7 @@ void LobbyController::HandleLeave(WsContext ctx, const json& message) {
 
     ctx.socket_data->lobby_code.clear();
 
-    ctx.socket->send(
-        MakeResponse(ws::ServerAction::kLobbyLeft).dump(), ctx.op_code);
+    ctx.socket->send(MakeResponse(ws::ServerAction::kLobbyLeft, request_id).dump(), ctx.op_code);
 }
 
 void LobbyController::HandleList(WsContext ctx, const json& message) {
@@ -472,14 +474,18 @@ json LobbyController::MemberListJson(const Lobby& lobby) {
 //  Sends lobby_updated only to CONNECTED members.  Disconnected members
 //  will receive a fresh lobby_joined on reconnect instead.
 void LobbyController::BroadcastUpdate(const Lobby& lobby) const {
-    auto msg = MakeResponse(ws::ServerAction::kLobbyUpdated);
-    msg["lobby_id"] = lobby.id;
-    msg["members"]  = MemberListJson(lobby);
-    string payload = msg.dump();
+    auto notification = MakeResponse(ws::ServerAction::kLobbyUpdated);
+    notification["lobby"] = json{
+        {"is_public", lobby.is_public},
+        {"invite_code", lobby.invite_code},
+        {"host", lobby.host},
+        {"members", MemberListJson(lobby)},
+        {"name", lobby.name}
+    };
 
     for (const auto& m : lobby.members) {
         if (m.is_connected && m.socket) {
-            m.socket->send(payload, uWS::OpCode::TEXT);
+            m.socket->send(notification.dump(), uWS::OpCode::TEXT);
         }
     }
 }

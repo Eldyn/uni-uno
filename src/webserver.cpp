@@ -374,6 +374,8 @@ string WebServer::GetMimeType(const string &path) {
     if (path.ends_with(".css"))    return "text/css";
     if (path.ends_with(".svg"))    return "image/svg+xml";
     if (path.ends_with(".png"))    return "image/png";
+    if (path.ends_with(".woff2"))  return "font/woff2";
+    if (path.ends_with(".woff"))   return "font/woff";
     return "application/octet-stream";
 }
 
