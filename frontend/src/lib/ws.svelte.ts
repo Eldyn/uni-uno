@@ -285,7 +285,8 @@ export class WebSocketClient {
 
                 if (response.action === ServerAction.LobbyEvicted) {
                     // INFO: this is intended, so we don't necessarily need to send a toast
-                    // toastStore.showError(`Could not rejoin lobby: expired`);
+                    // toastStore.showInfo(`Could not rejoin lobby: expired`);
+                    localStorage.removeItem("lobby_code");
                     resolve();
                     return;
                 }
@@ -337,18 +338,18 @@ export class WebSocketClient {
         const action = data.action as string;
         const requestId = data.request_id as string;
 
-        // 1. Resolve pending request promises if a request_id matches
+        // INFO: Resolve pending request promises if a request_id matches
         if (requestId && this.pendingRequests.has(requestId)) {
             const pending = this.pendingRequests.get(requestId)!;
             this.pendingRequests.delete(requestId);
             clearTimeout(pending.timer);
 
-            // Wrap in our HTTP-like envelope and resolve
+            // INFO: Wrap in our HTTP-like envelope and resolve
             const response = new WsResponse(data);
             pending.resolve(response);
         }
 
-        // 2. Fire standard global listeners
+        // INFO: Fire standard global listeners
         if (action) {
             this.handlers.get(action)?.forEach((handler) => handler(data));
             this.handlers.get("*")?.forEach((handler) => handler(data));

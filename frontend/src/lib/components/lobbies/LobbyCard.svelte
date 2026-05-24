@@ -24,8 +24,8 @@
 		}
 
 		localStorage.setItem("lobby_code", lobby.invite_code);
-		navigationStore.screen = "lobby";
 		gameStore.currentLobby = lobby;
+		navigationStore.screen = "lobby";
 	}
 </script>
 
