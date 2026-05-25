@@ -18,11 +18,10 @@
 	onMount(() => {
 		loadLobbies();
 
-		const unsubscribe = ws.on(ServerAction.LobbyUpdated, (data) => {
-			loadLobbies();
-		});
-
-		return unsubscribe;
+		// INFO: currently not needed, but we'll repurpose to make it a dynamic refresh on lobby creation
+		// return ws.on(ServerAction.LobbyUpdated, (data) => {
+		// 	loadLobbies();
+		// });
 	});
 
 	async function loadLobbies() {
