@@ -32,7 +32,10 @@
 
 		isLoading = true;
 
-		const response = await ws.emitAndWait(ClientAction.LobbyCreate, { is_public: isLobbyPublic });
+		const response = await ws.emitAndWait(ClientAction.LobbyCreate, {
+			is_public: isLobbyPublic,
+			name: lobbyNameInput.trim()
+		});
 
 		if (!response.ok) {
 			toastStore.showError(response.reason);
