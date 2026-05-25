@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <chrono>
 #include <stdexcept>
+#include <string>
 
 using namespace std::chrono;
 using std::string, std::vector, std::runtime_error, std::erase_if, std::memory_order_relaxed, std::transform, std::to_string, std::move;
@@ -169,7 +170,7 @@ void LobbyController::OnClose(AppWebSocket* ws, PerSocketData* sd) {
     for (auto& member : lobby.members) {
         if (member.username == sd->username) {
             Logger::Log("[Lobby] Disconnect: ", sd->username, " in lobby ", lobby.id, " — grace window open");
-            member.is_connected       = false;
+            member.is_connected    = false;
             member.socket          = nullptr;
             member.disconnected_at = steady_clock::now();
             BroadcastUpdate(lobby);
@@ -207,25 +208,19 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
     lobby.invite_code = code;
     lobby.host        = username;
     lobby.name        = ws::GetOr<string>(message, "name", username+"'s lobby");
-    // NOTE: same thing here, emplace instead of push 
     lobby.members.emplace_back(username, ctx.socket, true);
 
     code_to_id_[code] = id;
-
-    // Write the lobby code into the socket's per-connection state so
-    // OnClose can find the right lobby when this socket eventually closes.
     ctx.socket_data->lobby_code = code;
 
-    Logger::Log("[Lobby] Created lobby ", id, " code=", code,
-                " host=", username);
+    Logger::Log("[Lobby] Created lobby ", id, " code=", code, " host=", username);
 
-    // Respond with lobby_joined — carries enough info to render the lobby UI.
     auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, request_id);
     resp["lobby"] = json{
         {"is_public", lobby.is_public},
         {"invite_code", code},
         {"host", lobby.host},
-        {"members", MemberListJson(lobbies_.at(id))},
+        {"members", MemberListJson(lobby)},
         {"name", lobby.name}
     };
     ctx.socket->send(resp.dump(), ctx.op_code);
@@ -233,10 +228,10 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
 
 void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     const string request_id = ws::GetOr<string>(message, "request_id", "");
+    auto tryCode = ws::Get<string>(message, "code");
 
-    if (!message.contains("code") || !message["code"].is_string()) {
-        ws::SendError(ctx.socket, ctx.op_code, "Missing invite code", request_id);
-        return;
+    if (!tryCode) {
+        ws::SendError(ctx.socket, ctx.op_code, "Malformed or missing join code", request_id);
     }
 
     if (!ctx.socket_data->lobby_code.empty()) {
@@ -244,9 +239,7 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
         return;
     }
 
-    // NOTE: we should sanitise this later on!
-    string code = message["code"];
-    // Normalise to uppercase so "xk4f9z" and "XK4F9Z" both work.
+    string code = tryCode.value();
     transform(code.begin(), code.end(), code.begin(), ::toupper);
 
     auto it = code_to_id_.find(code);
@@ -255,13 +248,15 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
         return;
     }
 
-    Lobby& lobby = lobbies_.at(it->second);
-
-    if (static_cast<int>(lobby.members.size()) >= kMaxMembers) {
-        ws::SendError(ctx.socket, ctx.op_code, "Lobby is full", request_id);
+    auto lobby_it = lobbies_.find(it->second);
+    if (lobby_it == lobbies_.end()) {
+        // INFO: Who knows how we got here, but a desync happened!
+        code_to_id_.erase(it); 
+        ws::SendError(ctx.socket, ctx.op_code, "Lobby not found", request_id);
         return;
     }
 
+    Lobby& lobby = lobby_it->second;
     const string& username = ctx.socket_data->username;
 
     // Guard against a username already in the lobby trying to join again.
@@ -291,8 +286,8 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     BroadcastUpdate(lobby);
 }
 
-//  This is the explicit reconnect action.  The client sends it after the
-//  WebSocket reconnects, supplying the lobby code it stored in sessionStorage.
+//  This is the explicit reconnect action. The client sends it after the
+//  WebSocket reconnects, supplying the lobby code it stored in localStorage.
 //
 //  Unlike HandleJoin, this succeeds only if the username is already a member
 //  (possibly in disconnected state).  It does NOT add a new member slot.
@@ -322,7 +317,18 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
         return;
     }
 
-    Lobby& lobby = lobbies_.at(it->second);
+    auto lobby_it = lobbies_.find(it->second);
+    if (lobby_it == lobbies_.end()) {
+        // INFO: Who knows how we got here, but a desync happened!
+        code_to_id_.erase(it); 
+        auto resp = MakeResponse(ws::ServerAction::kLobbyEvicted, request_id);
+        resp["reason"] = "Lobby expired or invalid";
+        ctx.socket->send(resp.dump(), ctx.op_code);
+        return;
+    }
+
+    // Extract the safe reference
+    Lobby& lobby = lobby_it->second;
     const string& username = ctx.socket_data->username;
 
     for (const auto& m : lobby.members) {
@@ -342,12 +348,13 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
         }
     }
 
-    // Username not in this lobby (e.g. evicted just before rejoin arrived).
+    // INFO: Username not in this lobby (e.g. evicted just before rejoin arrived).
     ws::SendError(ctx.socket, ctx.op_code, "No longer a member of this lobby", request_id);
 }
 
-// WARN:  this does not send the payload with a request_id,
-//        so it must be handled with on(action)
+// Handles leave requests from the client, the leaver receives back kLobbyLeft
+// with their request_id. Otherwise, for all other responses from this method,
+// a on() listener is required.
 void LobbyController::HandleLeave(WsContext ctx, const json& message) {
     const string& username   = ctx.socket_data->username;
     const string& code       = ctx.socket_data->lobby_code;
@@ -376,20 +383,24 @@ void LobbyController::HandleLeave(WsContext ctx, const json& message) {
             if (m.is_connected && m.socket && m.username != username) {
                 m.socket->send(notify.dump(), uWS::OpCode::TEXT);
             }
-            // Clear their lobby_id so OnClose doesn't try to operate on a
+            // Clear everyone's lobby_id so OnClose doesn't try to operate on a
             // lobby that no longer exists.
             if (m.socket) {
                 m.socket->getUserData()->lobby_code.clear();
             }
         }
 
-        code_to_id_.erase(code);
+        // NOTE: at this point, "code" is equal to "", so we'd end up
+        //       erasing "" instead of "XXXXXX", which leaks and also
+        //       crashes on rejoin (code exists lobby does not).
+        code_to_id_.erase(lobby.invite_code);
         lobbies_.erase(id);
 
         Logger::Log("[Lobby] Destroyed lobby ", id, " (host left)");
     } else {
-        RemoveMember(id, username);
-        BroadcastUpdate(lobbies_.at(id));
+        if (RemoveMember(id, username)) {
+            BroadcastUpdate(lobbies_.at(id));
+        }
     }
 
     ctx.socket_data->lobby_code.clear();
@@ -410,14 +421,8 @@ void LobbyController::HandleList(WsContext ctx, const json& message) {
 
         if (!any_connected) continue;
         if (static_cast<int>(lobby.members.size()) >= kMaxMembers) continue;
-
-        // NOTE: invite_code is intentionally NOT included in the list.
-        //       Players must receive a code directly to join — no lobby browser
-        //       should expose codes to unauthenticated enumerators.
         
-        // TODO: public lobbies will later also expose the code as a join button
-        
-        // TODO: should additionally limit the list to X amount of rooms
+        // TODO: should additionally limit the list to X amount of rooms 
         //       to avoid rendering lag spikes.
        
         if (lobby.is_public) {
@@ -488,6 +493,8 @@ void LobbyController::BroadcastUpdate(const Lobby& lobby) const {
     }
 }
 
+// REmoves a member from the lobby.
+// @return bool marking whether the lobby is still alive.
 bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username) {
     auto it = lobbies_.find(lobby_id);
     if (it == lobbies_.end()) return false;
@@ -498,6 +505,7 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username) {
     });
 
     if (lobby.members.empty()) {
+        // NOTE: no need to broadcast any data, the lobby has no users!
         code_to_id_.erase(lobby.invite_code);
         lobbies_.erase(it);
         return false;
