@@ -1,22 +1,24 @@
 {
-  "name": "uni-uno-frontend",
-  "private": true,
-  "version": "0.0.1",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build-watch": "vite build-watch",
-    "preview": "vite preview",
-    "lint": "prettier --check .",
-    "format": "prettier --write ."
-  },
-  "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^7.0.0",
-    "prettier": "^3.8.1",
-    "prettier-plugin-svelte": "^3.5.1",
-    "svelte": "^5.55.4",
-    "typescript-svelte-plugin": "^0.3.52",
-    "vite": "^8.0.10"
-  }
+    "name": "uni-uno-frontend",
+    "private": true,
+    "version": "0.0.1",
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "watch": "vite build --watch --mode development",
+        "preview": "vite preview",
+        "lint": "prettier --check .",
+        "format": "prettier --write ."
+    },
+    "devDependencies": {
+        "@sveltejs/vite-plugin-svelte": "^7.0.0",
+        "prettier": "^3.8.1",
+        "prettier-plugin-svelte": "^3.5.1",
+        "svelte": "^5.55.4",
+        "typescript-svelte-plugin": "^0.3.52",
+        "vite": "^8.0.10"
+    },
+    "dependencies": {
+        "esbuild": "^0.28.0"
+    }
 }
