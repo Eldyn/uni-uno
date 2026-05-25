@@ -1,15 +1,15 @@
 <script lang="ts">
 	import Toast from "$common/Toast.svelte";
 	import AuthScreen from "$lib/components/auth/AuthScreen.svelte";
-	import LobbiesScreen from "$lib/components/lobbies/LobbiesScreen.svelte";
-	import LobbyScreen from "$lib/components/lobbies/LobbyScreen.svelte";
 	import GameScreen from "$lib/components/game/GameScreen.svelte";
 	import { navigationStore } from "./lib/stores/ui.svelte";
 	import { onMount } from "svelte";
 	import { ws } from "$lib/ws.svelte";
 	import { getAuthState, setLoggedIn } from "./lib/stores/auth.svelte";
 	import { toastStore } from "./lib/stores/ui.svelte";
-	import LobbyJoinForm from "$lib/components/lobbies/LobbyJoinForm.svelte";
+	import LobbyJoinForm from "$lib/components/lobby/LobbyJoinForm.svelte";
+	import LobbyScreen from "$lib/components/lobby/LobbyScreen.svelte";
+	import LobbiesScreen from "$lib/components/lobby/LobbiesScreen.svelte";
 
 	const authState = getAuthState();
 
