@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { navigationStore, toastStore } from "$stores/ui.svelte";
 	import { getAuthState } from "$stores/auth.svelte";
-	import { ClientAction, ServerAction, ws } from "$lib/ws.svelte";
+	import { ClientAction, ws } from "$lib/ws.svelte";
 	import { gameStore } from "$lib/stores/game.svelte";
 	import type { Lobby } from "$lib/stores/game.svelte";
 	import { onMount } from "svelte";
 	import LobbyList from "./LobbyList.svelte";
-	import CreateLobbyForm from "./CreateLobbyForm.svelte";
+	import LobbyCreateForm from "./LobbyCreateForm.svelte";
 
 	const gameState = gameStore.state;
 	const authState = getAuthState();
@@ -88,7 +88,7 @@
 
 		{#if showCreateForm}
 			<div class="create-form-container">
-				<CreateLobbyForm />
+				<LobbyCreateForm />
 			</div>
 		{/if}
 

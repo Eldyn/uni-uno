@@ -366,8 +366,6 @@ void LobbyController::HandleLeave(WsContext ctx, const json& message) {
     uint32_t id  = lobby.id;
     bool is_host = (lobby.host == username);
 
-    Logger::Log(is_host);
-
     if (is_host) {
         // Host left — destroy the lobby and notify everyone.
         // Send lobby_left to all connected members before erasing.
