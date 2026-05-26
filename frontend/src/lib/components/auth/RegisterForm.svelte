@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { storeAuth } from "$lib/stores/auth.svelte";
-	import FormInput from "$lib/components/common/FormInput.svelte"; // Adjust path if needed
+	import { storeAuth } from "../../stores/auth.svelte";
+	import FormInput from "../common/FormInput.svelte"; // Adjust path if needed
 
 	let { onRegisterSuccess }: { onRegisterSuccess?: () => void } = $props();
 

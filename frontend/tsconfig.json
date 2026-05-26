@@ -7,20 +7,7 @@
             "svelte",
             "vite/client"
         ],
+        "ignoreDeprecations": "6.0",
         "baseUrl": ".",
-        "paths": {
-            "$lib/*": [
-                "src/lib/*"
-            ],
-            "$stores/*": [
-                "src/lib/stores/*"
-            ],
-            "$utils/*": [
-                "src/lib/utils/*"
-            ],
-            "$common/*": [
-                "src/lib/components/common/*"
-            ]
-        }
     }
 }

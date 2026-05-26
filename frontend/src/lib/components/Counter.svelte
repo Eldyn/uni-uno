@@ -1,4 +1,4 @@
-<script lang="ts">
+<!-- <script lang="ts">
     import { on, emit } from "./ws";
     import { onDestroy } from "svelte";
 
@@ -22,4 +22,4 @@
 <button class="counter" onclick={() => emit("click")}>
     Count: {count}
 </button>
-<p>Ultimo click: {lastClicker}</p>
+<p>Ultimo click: {lastClicker}</p> -->
