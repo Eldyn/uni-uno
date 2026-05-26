@@ -81,8 +81,7 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
                     auto elapsed = duration_cast<milliseconds>(
                         now - m.disconnected_at).count();
                     if (elapsed > kReconnectGraceMs) {
-                        Logger::Log("[Lobby] Evicted ", m.username,
-                                    " from lobby ", id, " (grace expired)");
+                        Logger::Log("[Lobby] Evicted ", m.username, " from lobby ", id, " (grace expired)");
                         changed = true;
                         return true;
                     }
@@ -90,6 +89,8 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
                 return false;
             });
 
+            // NOTE: This does not handle the "host quit, so delete it".
+            //       Which will be a good thing once we handle host passing.
             if (changed) {
                 if (lobby.members.empty()) {
                     to_destroy.push_back(id);
@@ -508,6 +509,8 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username) {
         // NOTE: no need to broadcast any data, the lobby has no users!
         code_to_id_.erase(lobby.invite_code);
         lobbies_.erase(it);
+
+        Logger::Log("[Lobby] Destroyed lobby ", lobby_id, " (no more members)");
         return false;
     }
     return true;
