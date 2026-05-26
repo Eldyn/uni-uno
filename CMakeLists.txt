@@ -17,6 +17,11 @@ find_package(nlohmann_json REQUIRED)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 add_executable(uno_server ${SOURCES})
 
+# --- Fix per i conflitti di Winsock su Windows ---
+if(WIN32)
+    target_compile_definitions(uno_server PRIVATE WIN32_LEAN_AND_MEAN)
+endif()
+
 target_include_directories(uno_server PRIVATE include src)
 
 # --- Linking ---
