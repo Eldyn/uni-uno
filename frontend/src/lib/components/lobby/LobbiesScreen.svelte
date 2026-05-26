@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { navigationStore, toastStore } from "$stores/ui.svelte";
-	import { ClientAction, ws } from "$stores/ws.svelte";
-	import { gameStore } from "$lib/stores/game.svelte";
-	import type { Lobby } from "$lib/stores/game.svelte";
+	import { navigationStore, toastStore } from "../../stores/ui.svelte";
+	import { ClientAction, ws } from "../../stores/ws.svelte";
+	import { gameStore } from "../../stores/game.svelte";
+	import type { Lobby } from "../../stores/game.svelte";
 	import { onMount } from "svelte";
 	import LobbyList from "./LobbyList.svelte";
 	import LobbyCreateForm from "./LobbyCreateForm.svelte";
-	import { storeAuth } from "$lib/stores/auth.svelte";
+	import { storeAuth } from "../../stores/auth.svelte";
 
 	const gameState = gameStore.state;
 

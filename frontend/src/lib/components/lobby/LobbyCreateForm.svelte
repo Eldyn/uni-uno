@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { validateLobbyName } from "$utils/validation";
-	import { ws, ClientAction } from "$stores/ws.svelte";
-	import { gameStore } from "$stores/game.svelte";
-	import type { Lobby } from "$lib/stores/game.svelte";
-	import { navigationStore, toastStore } from "$lib/stores/ui.svelte";
+	import { validateLobbyName } from "../../utils/validation";
+	import { ws, ClientAction } from "../../stores/ws.svelte";
+	import { gameStore } from "../../stores/game.svelte";
+	import type { Lobby } from "../../stores/game.svelte";
+	import { navigationStore, toastStore } from "../../stores/ui.svelte";
 
 	let lobbyNameInput = $state("");
 	let lobbyNameError = $state("");

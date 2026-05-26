@@ -17,7 +17,7 @@ import {
     validatePassword,
     validateUsername,
     validatePasswordMatch
-} from "$lib/utils/validation";
+} from "../utils/validation";
 import { navigationStore, toastStore } from "./ui.svelte";
 
 export interface AuthFieldErrors {

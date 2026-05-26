@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { toastStore } from "$stores/ui.svelte";
+    import { toastStore } from "../../stores/ui.svelte";
 
     const uiState = toastStore.uiState;
 </script>
