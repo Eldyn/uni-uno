@@ -3,8 +3,9 @@
  * Manages connection, message handlers, and emit/wait patterns using Svelte 5 state.
  */
 
-import { gameStore, Lobby } from "./stores/game.svelte";
-import { navigationStore, toastStore } from "./stores/ui.svelte";
+import { gameStore } from "./game.svelte";
+import type { Lobby } from "./game.svelte";
+import { navigationStore, toastStore } from "./ui.svelte";
 
 export const ClientAction = {
     LobbyList: "lobby_list",
