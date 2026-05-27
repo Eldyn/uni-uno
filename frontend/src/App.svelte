@@ -5,9 +5,9 @@
 	import GameScreen from "./lib/components/game/GameScreen.svelte";
 	import LobbyScreen from "./lib/components/lobby/LobbyScreen.svelte";
 	import LobbiesScreen from "./lib/components/lobby/LobbiesScreen.svelte";
-	import { navigationStore } from "./lib/stores/ui.svelte";
+	import { storeNavigation } from "./lib/stores/navigation.svelte";
 	import { ws } from "./lib/stores/ws.svelte";
-	import { toastStore } from "./lib/stores/ui.svelte";
+	import { storeToast } from "./lib/stores/toast.svelte";
 	import { storeAuth } from "./lib/stores/auth.svelte";
 
 	onMount(async () => {
@@ -16,35 +16,35 @@
 		if (storeAuth.isLoggedIn) {
 			await ws.connect();
 
-			if (navigationStore.screen === "auth") {
-				navigationStore.screen = "lobbies";
+			if (storeNavigation.current === "auth") {
+				storeNavigation.goto("lobbies");
 			}
 		}
 	});
 
 	async function handleAuthSuccess() {
 		await ws.connect().catch((error) => {
-			toastStore.showError(`Failed to connect to server. Please try again. (${error})`);
+			storeToast.error(`Failed to connect to server. Please try again. (${error})`);
 		});
 
-		navigationStore.screen = "lobbies";
+		storeNavigation.goto("lobbies");
 	}
 
 	function handleBackToLobbies() {
-		navigationStore.screen = "lobbies";
+		storeNavigation.goto("lobbies");
 	}
 </script>
 
 <div id="app">
 	<Toast />
 
-	{#if navigationStore.screen === "auth"}
+	{#if storeNavigation.current === "auth"}
 		<AuthScreen onAuthSuccess={handleAuthSuccess} />
-	{:else if navigationStore.screen === "lobbies"}
+	{:else if storeNavigation.current === "lobbies"}
 		<LobbiesScreen />
-	{:else if navigationStore.screen === "lobby"}
+	{:else if storeNavigation.current === "lobby"}
 		<LobbyScreen />
-	{:else if navigationStore.screen === "game"}
+	{:else if storeNavigation.current === "game"}
 		<GameScreen onBack={handleBackToLobbies} />
 	{/if}
 </div>

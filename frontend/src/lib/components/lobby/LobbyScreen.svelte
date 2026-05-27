@@ -1,61 +1,18 @@
 <script lang="ts">
-	import { gameStore, Lobby } from "../../stores/game.svelte";
-	import { navigationStore, toastStore } from "../../stores/ui.svelte";
-	import { ClientAction, ServerAction, ws } from "../../stores/ws.svelte";
-	
-
-	console.log(gameStore.state.currentLobby);
-
-	async function leaveLobby() {
-		const response = await ws.emitAndWait(ClientAction.LobbyLeave);
-
-		if (!response.ok) {
-			toastStore.showError(response.reason);
-			return;
-		}
-
-		navigationStore.screen = "lobbies";
-		localStorage.removeItem("lobby_code");
-		gameStore.currentLobby = null;
-	}
-
-	ws.on("*", (data) => {
-		console.log(data.action);
-	});
-
-	const unsubscribe = ws.on(ServerAction.LobbyEvicted, () => {
-		navigationStore.screen = "lobbies";
-		localStorage.removeItem("lobby_code");
-		gameStore.currentLobby = null;
-		unsubscribe();
-	});
-
-	const unsubscribeUpdate = ws.on(ServerAction.LobbyUpdated, (data) => {
-		if (!data.lobby) return;
-
-		gameStore.currentLobby = data.lobby as Lobby;
-	});
-
-	// TODO: once implemented...
-	// const unsubLeft = ws.on(ServerAction.LobbyKicked, () => {
-	// 	navigationStore.screen = "lobbies";
-	// 	localStorage.removeItem("lobby_code");
-	// 	gameStore.currentLobby = null;
-	// 	unsubLeft();
-	// });
+	import { storeLobby } from "src/lib/stores/lobby.svelte";
 </script>
 
 <link rel="preload" href="fonts/JetBrainsMono.woff2" as="font" type="font/woff2" />
 
 <div>
-	<button class="join-button" onclick={leaveLobby}>Leave</button>
-	<h1>{gameStore.state.currentLobby?.name}</h1>
+	<button class="join-button" onclick={storeLobby.leave}>Leave</button>
+	<h1>{`${storeLobby.current!.name} | ${storeLobby.current!.invite_code}`}</h1>
 	<ul class="memberlist">
-		{#each gameStore.state.currentLobby?.members as member}
+		{#each storeLobby.current!.members as member}
 			<li class="member">
 				{member.username}
 				{#if member.is_host}
-					<span style="color: lightgoldenrodyellow">Host</span>
+					<span style="color: lightgoldenrodyellow"> 󱟜 </span>
 				{/if}
 				<span class:off={!member.is_connected} class:on={member.is_connected}>
 					{member.is_connected ? "\uf14a" : "\uf2d3"}

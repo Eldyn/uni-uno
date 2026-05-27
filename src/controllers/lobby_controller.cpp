@@ -258,6 +258,12 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     }
 
     Lobby& lobby = lobby_it->second;
+    
+    if (lobby.members.size() >= 4) {
+        ws::SendError(ctx.socket, ctx.op_code, "Lobby full", request_id);
+        return;
+    }
+
     const string& username = ctx.socket_data->username;
 
     // Guard against a username already in the lobby trying to join again.

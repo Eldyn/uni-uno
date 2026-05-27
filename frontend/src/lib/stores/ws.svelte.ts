@@ -3,10 +3,6 @@
  * Manages connection, message handlers, and emit/wait patterns using Svelte 5 state.
  */
 
-import { gameStore } from "./game.svelte";
-import type { Lobby } from "./game.svelte";
-import { navigationStore, toastStore } from "./ui.svelte";
-
 export const ClientAction = {
     LobbyList: "lobby_list",
     LobbyCreate: "lobby_create",
@@ -153,8 +149,11 @@ export class WebSocketClient {
     });
 
     private _nextRequestId = 1;
-    private handlers = new Map<string, Set<MessageHandler>>();
     private pendingRequests = new Map<string, PendingRequest>();
+
+    private onHandlers = new Map<string, Set<MessageHandler>>();
+    private openHandlers: Array<() => void | Promise<void>> = [];
+    private closeHandlers: Array<() => void | Promise<void>> = [];
 
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     private reconnectDelayMs = 1000;
@@ -191,6 +190,14 @@ export class WebSocketClient {
         this.socket?.close(code, reason);
         this.socket = null;
         this.connectionStatus.status = "disconnected";
+
+        for (const handler of this.closeHandlers) {
+            try {
+                handler();
+            } catch (error) {
+                console.error("onClose Handler failed:", error);
+            }
+        }
     }
 
     /**
@@ -247,10 +254,36 @@ export class WebSocketClient {
      * @returns A cleanup function to remove the listener.
      */
     on(action: ServerActionDef | "*", handler: MessageHandler): () => void {
-        if (!this.handlers.has(action)) this.handlers.set(action, new Set());
-        this.handlers.get(action)!.add(handler);
+        if (!this.onHandlers.has(action)) this.onHandlers.set(action, new Set());
+        this.onHandlers.get(action)!.add(handler);
 
-        return () => this.handlers.get(action)?.delete(handler);
+        return () => this.onHandlers.get(action)?.delete(handler);
+    }
+
+    /**
+     * Register a callback to fire immediately when the socket opens.
+     * @returns A cleanup function to remove the hook.
+     */
+    onOpen(handler: () => void | Promise<void>): () => void {
+        this.openHandlers.push(handler);
+
+        // Return the unsubscriber
+        return () => {
+            this.openHandlers = this.openHandlers.filter((h) => h !== handler);
+        };
+    }
+
+    /**
+     * Register a callback to fire immediately when the socket closes.
+     * @returns A cleanup function to remove the hook.
+     */
+    onClose(handler: () => void | Promise<void>): () => void {
+        this.closeHandlers.push(handler);
+
+        // Return the unsubscriber
+        return () => {
+            this.closeHandlers = this.closeHandlers.filter((h) => h !== handler);
+        };
     }
 
     /**
@@ -267,43 +300,13 @@ export class WebSocketClient {
                 this.connectionStatus.status = "connected";
                 this.reconnectDelayMs = 1000;
 
-                const lobbyCode = localStorage.getItem("lobby_code");
-
-                if (!lobbyCode) {
-                    resolve();
-                    return;
+                for (const handler of this.openHandlers) {
+                    try {
+                        handler();
+                    } catch (error) {
+                        console.error("onOpen Handler failed:", error);
+                    }
                 }
-
-                const response = await ws.emitAndWait(ClientAction.LobbyRejoin, { code: lobbyCode });
-
-                if (!response.ok) {
-                    toastStore.showError(`Could not rejoin lobby: ${response.reason}`);
-                    localStorage.removeItem("lobby_code");
-                    ws.emit(ClientAction.LobbyLeave);
-                    resolve();
-                    return;
-                }
-
-                if (response.action === ServerAction.LobbyEvicted) {
-                    // INFO: this is intended, so we don't necessarily need to send a toast
-                    // toastStore.showInfo(`Could not rejoin lobby: expired`);
-                    localStorage.removeItem("lobby_code");
-                    resolve();
-                    return;
-                }
-
-                const lobby = response.get<Lobby>("lobby");
-
-                if (!lobby) {
-                    toastStore.showError(`Could not rejoin lobby: Unknown Error`);
-                    localStorage.removeItem("lobby_code");
-                    ws.emit(ClientAction.LobbyLeave);
-                    resolve();
-                    return;
-                }
-
-                navigationStore.screen = "lobby";
-                gameStore.currentLobby = lobby;
 
                 resolve();
             };
@@ -352,8 +355,8 @@ export class WebSocketClient {
 
         // INFO: Fire standard global listeners
         if (action) {
-            this.handlers.get(action)?.forEach((handler) => handler(data));
-            this.handlers.get("*")?.forEach((handler) => handler(data));
+            this.onHandlers.get(action)?.forEach((handler) => handler(data));
+            this.onHandlers.get("*")?.forEach((handler) => handler(data));
         }
     }
 
