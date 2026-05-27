@@ -71,10 +71,18 @@ public:
     // Does NOT immediately remove — the grace timer handles eviction.
     void OnClose(AppWebSocket* ws, PerSocketData* sd);
 
+    // Allows other controllers to fetch a lobby by its invite code
+    Lobby* GetLobby(const std::string& code) {
+        auto it = code_to_id_.find(code);
+        if (it != code_to_id_.end()) {
+            return &lobbies_.at(it->second);
+        }
+        return nullptr;
+    }
+
     // Grace period before a disconnected member is evicted 3 minutes in milliseconds.
     // static constexpr int kReconnectGraceMs = 1'000 * 60 * 3;
-    // INFO: for debugging, so disgraceful!
-    static constexpr int kReconnectGraceMs = 10'000;
+    static constexpr int kReconnectGraceMs = 1'000 * 60 * 3;
 
     // Maximum players per lobby.
     static constexpr int kMaxMembers = 4;
