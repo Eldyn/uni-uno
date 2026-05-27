@@ -1,41 +1,63 @@
-/**
- * This store owns:
- *   - The current lobby the user is in
- *   - The public list of browseable lobbies
- *   - The reconnect-to-lobby flow that previously lived inside ws
- */
-
 import { storeNavigation } from "./navigation.svelte";
 import { storeToast } from "./toast.svelte";
 import { ClientAction, ServerAction, ws } from "./ws.svelte";
 
+/**
+ * Represents a single player inside a lobby.
+ */
 export interface LobbyMember {
+    /** The display name of the player. */
     username: string;
+    /** Whether the player is currently connected via WebSocket. */
     is_connected: boolean;
+    /** True if this player is the owner/host of the lobby. */
     is_host: boolean;
 }
 
+/**
+ * Represents a game lobby.
+ */
 export interface Lobby {
+    /** The unique 6-character code used to join the lobby. */
     invite_code: string;
+    /** The username of the lobby host. */
     host: string;
+    /** The display name of the lobby. */
     name: string;
+    /** The current number of players in the lobby (max 4). */
     member_count: number;
+    /** List of players currently in the lobby. */
     members: LobbyMember[];
 }
 
+/**
+ * Singleton store managing all Lobby-related state and WebSocket interactions.
+ */
 class StoreLobby {
-    // ── Reactive state ──────────────────────────────────────────────────────
+    /** The lobby the user is currently inside. Null if not in a lobby. */
     current = $state<Lobby | null>(null);
+
+    /** The list of public lobbies available to join. */
     available = $state<Lobby[]>([]);
+
+    /** True when fetching the public lobby list from the server. */
     isLoadingList = $state(false);
+
+    /** True when a create or join request is pending. */
     isLoadingJoin = $state(false);
 
+    /**
+     * Computed property to quickly check if the user is currently in a lobby.
+     * @returns True if the user is in a lobby, false otherwise.
+     */
     get isInLobby(): boolean {
         return this.current !== null;
     }
 
     /**
-     * Wire up all WS listeners and attempt to restore a previous lobby session.
+     * Initializes the store and binds core connection events.
+     * @remarks
+     * * **Code Number:** #LOBBY-000
      */
     constructor() {
         ws.onOpen(async () => {
@@ -44,20 +66,40 @@ class StoreLobby {
         });
     }
 
+    /**
+     * Creates a new game lobby on the server.
+     * @remarks
+     * **Context:** Triggered when the user submits the `LobbyCreateForm`.
+     * Automatically connects the WebSocket and emits the creation payload.
+     * **Code Number:** #LOBBY-001
+     * @param data - The configuration for the new lobby.
+     * @param data.is_public - Whether the lobby is visible in the public list.
+     * @param data.name - The custom name of the lobby.
+     * @returns A Promise resolving when the network request completes.
+     */
     async create(data: { is_public: boolean; name: string }): Promise<void> {
         this.isLoadingJoin = true;
 
-        await ws.connect();
+        try {
+            await ws.connect();
+            const response = await ws.emitAndWait(ClientAction.LobbyCreate, data);
 
-        const response = await ws.emitAndWait(ClientAction.LobbyCreate, { ...data });
-
-        if (!response.ok) {
-            storeToast.error(response.reason);
+            if (!response.ok) {
+                storeToast.error(response.reason);
+            }
+        } finally {
+            this.isLoadingJoin = false;
         }
-
-        this.isLoadingJoin = false;
     }
 
+    /**
+     * Joins an existing lobby using a 6-character invite code.
+     * @remarks
+     * **Context:** Triggered from `LobbyJoinForm` or by clicking a public lobby card.
+     * **Code Number:** #LOBBY-002
+     * @param code - The 6-character unique identifier for the lobby.
+     * @returns A Promise resolving when the join attempt completes.
+     */
     async join(code: string): Promise<void> {
         if (!code) {
             storeToast.error("Enter an invite code.");
@@ -66,105 +108,134 @@ class StoreLobby {
 
         this.isLoadingJoin = true;
 
-        await ws.connect();
+        try {
+            await ws.connect();
+            const response = await ws.emitAndWait(ClientAction.LobbyJoin, { code });
 
-        const response = await ws.emitAndWait(ClientAction.LobbyJoin, { code });
-
-        if (!response.ok) {
-            storeToast.error(response.reason);
+            if (!response.ok) {
+                storeToast.error(response.reason);
+            }
+        } finally {
+            this.isLoadingJoin = false;
         }
-
-        this.isLoadingJoin = false;
-    }
-
-    async fetchList(): Promise<void> {
-        this.isLoadingList = true;
-
-        await ws.connect();
-
-        const response = await ws.emitAndWait(ClientAction.LobbyList);
-
-        if (response.ok) {
-            this.available = response.get<Lobby[]>("lobbies") ?? [];
-        }
-
-        this.isLoadingList = false;
-    }
-
-    leave(): void {
-        ws.emit("lobby_leave");
     }
 
     /**
-     * Register all server-to-client event handlers for lobby events.
-     * These are permanent for the lifetime of the app — no cleanup needed.
+     * Fetches the latest list of public, available lobbies from the server.
+     * @remarks
+     * **Context:** Triggered when the user mounts the `LobbiesScreen` or clicks the refresh button.
+     * Updates the `available` state array.
+     * **Code Number:** #LOBBY-003
+     * @returns A Promise resolving when the list has been updated.
+     */
+    async fetchList(): Promise<void> {
+        this.isLoadingList = true;
+
+        try {
+            await ws.connect();
+            const response = await ws.emitAndWait(ClientAction.LobbyList);
+
+            if (response.ok) {
+                this.available = response.get<Lobby[]>("lobbies") ?? [];
+            }
+        } finally {
+            this.isLoadingList = false;
+        }
+    }
+
+    /**
+     * Emits a request to leave the current lobby.
+     * @remarks
+     * **Context:** Triggered when the user clicks "Leave" in the `LobbyScreen`.
+     * **Code Number:** #LOBBY-004
+     */
+    leave(): void {
+        ws.emit(ClientAction.LobbyLeave);
+    }
+
+    // ── Listeners & Private Methods ─────────────────────────────────────────
+
+    /**
+     * Subscribes to all server-pushed WebSocket events related to lobbies.
+     * @remarks
+     * **Context:** Called automatically upon WebSocket connection.
+     * Handles events like joining, receiving updates, or being kicked.
+     * **Code Number:** #LOBBY-005
      */
     #registerListeners(): void {
         ws.on(ServerAction.LobbyJoined, (data) => {
-            this.current = data.lobby as Lobby;
-            localStorage.setItem("lobby_code", (data.lobby as Lobby).invite_code);
+            const lobby = data.lobby as Lobby;
+            this.current = lobby;
+
+            localStorage.setItem("lobby_code", lobby.invite_code);
             storeNavigation.goto("lobby");
             storeToast.success("Joined lobby successfully!");
         });
 
         ws.on(ServerAction.LobbyUpdated, (data) => {
+            const updatedLobby = data.lobby as Lobby;
+            if (!updatedLobby) return;
+
+            // Update the current lobby if the user is inside it
             if (this.current) {
-                this.current = data.lobby as Lobby;
+                this.current = updatedLobby;
             }
-            // Also update the entry in the available list if it's there
-            const code = (data.lobby as Lobby)?.invite_code;
-            if (code) {
-                const idx = this.available.findIndex((l) => l.invite_code === code);
-                if (idx !== -1) this.available[idx] = data.lobby as Lobby;
+
+            // Sync the public browser list if the lobby is visible
+            const idx = this.available.findIndex((l) => l.invite_code === updatedLobby.invite_code);
+            if (idx !== -1) {
+                this.available[idx] = updatedLobby;
             }
         });
 
-        ws.on(ServerAction.LobbyLeft, () => {
+        const handleDisconnection = () => {
             this.#reset();
             storeNavigation.goto("lobbies");
-        });
+        };
 
-        ws.on(ServerAction.LobbyEvicted, () => {
-            this.#reset();
-            storeNavigation.goto("lobbies");
-        });
+        ws.on(ServerAction.LobbyLeft, handleDisconnection);
+        ws.on(ServerAction.LobbyEvicted, handleDisconnection);
     }
 
     /**
-     * On every connection (including reconnects), check localStorage for a
-     * saved lobby code and attempt to silently rejoin.
-     *
-     * Previously this lived in ws._connectOnce — it belongs here because
-     * it requires knowledge of lobby domain concepts.
+     * Silently attempts to rejoin a lobby using a stored session code.
+     * @remarks
+     * **Context:** Triggered automatically upon page reload or unexpected WebSocket disconnects.
+     * Reads `lobby_code` from localStorage.
+     * **Code Number:** #LOBBY-006
+     * @returns A Promise resolving when the rejoin flow completes.
      */
     async #tryRejoin(): Promise<void> {
         const code = localStorage.getItem("lobby_code");
         if (!code) return;
 
-        const response = await ws.emitAndWait(ClientAction.LobbyRejoin, { code }).catch(() => null);
+        try {
+            const response = await ws.emitAndWait(ClientAction.LobbyRejoin, { code });
 
-        if (!response || !response.ok) {
-            localStorage.removeItem("lobby_code");
-            if (response) storeToast.error(`Could not rejoin lobby: ${response.reason}`);
-            return;
+            if (!response.ok) {
+                this.#reset();
+                if (response.action !== ServerAction.LobbyEvicted) {
+                    storeToast.error(`Could not rejoin lobby: ${response.reason}`);
+                }
+                return;
+            }
+
+            const lobby = response.get<Lobby>("lobby");
+            if (!lobby) throw new Error("Invalid lobby data received.");
+
+            this.current = lobby;
+            storeNavigation.goto("lobby");
+        } catch (error) {
+            this.#reset();
         }
-
-        if (response.action === ServerAction.LobbyEvicted) {
-            localStorage.removeItem("lobby_code");
-            return;
-        }
-
-        const lobby = response.get<Lobby>("lobby");
-        if (!lobby) {
-            storeToast.error(`Could not rejoin lobby: Unknown Error`);
-            localStorage.removeItem("lobby_code");
-            return;
-        }
-
-        this.current = lobby;
-        storeNavigation.goto("lobby");
     }
 
+    /**
+     * Clears the active lobby state and local storage.
+     * @remarks
+     * **Context:** Helper function called during disconnects, evictions, or failed rejoins.
+     * **Code Number:** #LOBBY-007
+     */
     #reset(): void {
         this.current = null;
         localStorage.removeItem("lobby_code");
