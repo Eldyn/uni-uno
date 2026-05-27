@@ -1,4 +1,5 @@
 #pragma once
+#include "game/match_instance.hpp"
 #include <common/ws.hpp>
 #include <atomic>
 #include <chrono>
@@ -50,7 +51,9 @@ struct Lobby {
     std::string              host;          // username of creator
     std::vector<LobbyMember> members;
     std::string              name;
-    // TODO: Additionally, we will hold some other useful data, for example, creation_time.
+
+    // INFO: If null, we are in the lobby. If populated, a match is ongoing.
+    std::unique_ptr<game::MatchInstance> match;
 };
 
 class LobbyController {
