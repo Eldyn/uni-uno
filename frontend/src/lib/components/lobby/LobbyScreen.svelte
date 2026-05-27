@@ -1,11 +1,22 @@
 <script lang="ts">
 	import { storeLobby } from "../../stores/lobby.svelte";
+	import { storeAuth } from "../../stores/auth.svelte";
+
+	let isHost = $derived(storeAuth.username === storeLobby.current?.host);
 </script>
 
 <link rel="preload" href="fonts/JetBrainsMono.woff2" as="font" type="font/woff2" />
 
 <div>
 	<button class="join-button" onclick={storeLobby.leave}>Leave</button>
+
+	<button
+		class="join-button"
+		onclick={storeLobby.startGame}
+		disabled={!isHost || storeLobby.current!.members.length < 2}>
+		Start Game
+	</button>
+
 	<h1>{`${storeLobby.current!.name} | ${storeLobby.current!.invite_code}`}</h1>
 	<ul class="memberlist">
 		{#each storeLobby.current!.members as member}
@@ -40,7 +51,16 @@
 		font-size: 14px;
 		font-weight: 500;
 		cursor: pointer;
-		transition: opacity 0.2s;
+		transition:
+			background 0.2s,
+			opacity 0.2s;
+	}
+
+	.join-button:disabled {
+		background: #444444;
+		color: #888888;
+		cursor: not-allowed;
+		opacity: 0.6;
 	}
 
 	.memberlist {
