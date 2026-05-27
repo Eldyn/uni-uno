@@ -1,8 +1,5 @@
 <script lang="ts">
-	import { toastStore } from "../../stores/ui.svelte";
-	import { gameStore } from "../../stores/game.svelte";
-	import type { Lobby } from "../../stores/game.svelte";
-	import { ClientAction, ws } from "../../stores/ws.svelte";
+	import { storeLobby } from "../../stores/lobby.svelte";
 
 	let roomCodeInput = $state("");
 	let roomCodeError = $state("");
@@ -17,7 +14,7 @@
 			return false;
 		}
 
-		if (code.length !== 6 || !/^[A-Z0-9]+$/.test(code)) {
+		if (code.length !== 6 || !/^[a-zA-Z0-9]+$/.test(code)) {
 			roomCodeError = "Invite code must be 6 alphanumeric characters.";
 			return false;
 		}
@@ -32,33 +29,7 @@
 			return;
 		}
 
-		isLoading = true;
-
-		const response = await ws.emitAndWait(ClientAction.LobbyJoin, {
-			code: roomCodeInput.toUpperCase()
-		});
-
-		if (!response.ok) {
-			toastStore.showError(response.reason);
-			return;
-		}
-
-		const lobby = response.get<Lobby>("lobby");
-
-		if (!lobby) {
-			toastStore.showError("Unknown Server Error");
-			return;
-		}
-
-		// INFO: store invite code in sessionStorage for reconnection
-		sessionStorage.setItem("lobby_code", lobby.invite_code);
-
-		gameStore.currentLobby = lobby;
-
-		toastStore.showSuccess("Joined lobby successfully!");
-
-		roomCodeInput = "";
-		isLoading = false;
+		storeLobby.join(roomCodeInput);
 	}
 </script>
 

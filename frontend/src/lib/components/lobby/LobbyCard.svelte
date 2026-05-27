@@ -1,31 +1,16 @@
 <script lang="ts">
-	import { navigationStore, toastStore } from "../../stores/ui.svelte";
+	import { storeNavigation } from "../../stores/navigation.svelte";
+	import { storeToast } from "../../stores/toast.svelte";
 	import { ClientAction, ws } from "../../stores/ws.svelte";
-	import { gameStore, type Lobby } from "../../stores/game.svelte";
+	import { storeLobby, type Lobby } from "../../stores/lobby.svelte";
 
 	let { lobby }: { lobby: Lobby } = $props();
 
 	const isFull = $derived(lobby.member_count >= 4);
-	const canJoin = !!lobby.invite_code;
+	const canJoin = $derived(!!lobby.invite_code);
 
 	async function handleJoin() {
-		const response = await ws.emitAndWait(ClientAction.LobbyJoin, { code: lobby.invite_code });
-
-		if (!response.ok) {
-			toastStore.showError(response.reason);
-			return;
-		}
-
-		const lobbyToJoin = response.get<Lobby>("lobby");
-
-		if (!lobbyToJoin) {
-			toastStore.showError(response.reason);
-			return;
-		}
-
-		localStorage.setItem("lobby_code", lobby.invite_code);
-		gameStore.currentLobby = lobby;
-		navigationStore.screen = "lobby";
+		storeLobby.join(lobby.invite_code);
 	}
 </script>
 

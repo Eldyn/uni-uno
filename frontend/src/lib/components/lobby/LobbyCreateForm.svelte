@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { validateLobbyName } from "../../utils/validation";
-	import { ws, ClientAction } from "../../stores/ws.svelte";
-	import { gameStore } from "../../stores/game.svelte";
-	import type { Lobby } from "../../stores/game.svelte";
-	import { navigationStore, toastStore } from "../../stores/ui.svelte";
+	import { storeLobby } from "../../stores/lobby.svelte";
+	import { storeToast } from "../../stores/toast.svelte";
 
 	let lobbyNameInput = $state("");
 	let lobbyNameError = $state("");
@@ -29,36 +27,8 @@
 			return;
 		}
 
-		isLoading = true;
-
-		const response = await ws.emitAndWait(ClientAction.LobbyCreate, {
-			is_public: isLobbyPublic,
-			name: lobbyNameInput.trim()
-		});
-
-		if (!response.ok) {
-			toastStore.showError(response.reason);
-			return;
-		}
-
-		const lobby = response.get<Lobby>("lobby");
-
-		if (!lobby) {
-			toastStore.showError("Unknown Server Error");
-			return;
-		}
-
-		// NOTE: sessionStorage is cleared after the page is killed, that's a no-no :)
-		localStorage.setItem("lobby_code", lobby.invite_code);
-
-		gameStore.currentLobby = lobby;
-		navigationStore.screen = "lobby";
-
-		toastStore.showSuccess("Lobby created successfully!");
-
-		lobbyNameInput = "";
-
-		isLoading = false;
+		await storeLobby.create({ is_public: isLobbyPublic, name: lobbyNameInput.trim() });
+		storeToast.success("Lobby created successfully!");
 	}
 </script>
 

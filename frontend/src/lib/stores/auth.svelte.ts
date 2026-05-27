@@ -2,14 +2,6 @@
  * Owns all fetch calls to /auth/* and is the single source of truth for
  * the current session. Validation lives in validation.ts; this store
  * calls those helpers and converts server error codes to field messages.
- *
- * Design notes:
- *   - No `email` in state: the backend JWT only carries `username` as the
- *     subject, so email is never available after a session restore.
- *   - `fieldErrors` is a plain object — components can bind individual fields
- *     directly (e.g. errors.username, errors.password) without extra wiring.
- *   - Returning fieldErrors from login/register lets the calling component
- *     decide how to display them without the store needing to know about the DOM.
  */
 
 import {
@@ -18,7 +10,8 @@ import {
     validateUsername,
     validatePasswordMatch
 } from "../utils/validation";
-import { navigationStore, toastStore } from "./ui.svelte";
+import { storeNavigation } from "./navigation.svelte";
+import { storeToast } from "./toast.svelte";
 
 export interface AuthFieldErrors {
     username?: string;
@@ -33,7 +26,7 @@ class StoreAuth {
     isLoading = $state(false);
 
     /**
-     * Called once at app boot — restores an existing session from the
+     * Called once at app boot, restores an existing session from the
      * HttpOnly cookie. Navigates to "auth" or "lobbies" accordingly.
      * @returns whether or not we are logged in or not.
      */
@@ -53,7 +46,7 @@ class StoreAuth {
             return false;
         } catch {
             // INFO: Network failure on boot — land on auth, let the user try manually
-            navigationStore.screen = "auth";
+            storeNavigation.goto("auth");
             return false;
         }
     }
@@ -95,7 +88,7 @@ class StoreAuth {
             });
 
             if (res.ok) {
-                toastStore.showSuccess("Account created! You can now log in.");
+                storeToast.success("Account created! You can now log in.");
                 return {};
             }
 
@@ -107,10 +100,10 @@ class StoreAuth {
                 return { username: body.error ?? "Invalid input." };
             }
 
-            toastStore.showError("Registration failed — please try again.");
+            storeToast.error("Registration failed — please try again.");
             return {};
         } catch {
-            toastStore.showError("Network error — check your connection.");
+            storeToast.error("Network error — check your connection.");
             return {};
         } finally {
             this.isLoading = false;
@@ -151,10 +144,10 @@ class StoreAuth {
                 return { email: "Incorrect email or password." };
             }
 
-            toastStore.showError("Login failed — please try again.");
+            storeToast.error("Login failed — please try again.");
             return {};
         } catch {
-            toastStore.showError("Network error — check your connection.");
+            storeToast.error("Network error — check your connection.");
             return {};
         } finally {
             this.isLoading = false;
@@ -170,7 +163,7 @@ class StoreAuth {
             await fetch("/auth/logout", { method: "POST", credentials: "include" });
         } finally {
             this.#setLoggedOut();
-            navigationStore.screen = "auth";
+            storeNavigation.goto("auth");
         }
     }
 

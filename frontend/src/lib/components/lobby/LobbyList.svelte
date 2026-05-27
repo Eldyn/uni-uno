@@ -1,7 +1,7 @@
 <script lang="ts">
 	import LobbyCard from "./LobbyCard.svelte";
 	import LoadingSpinner from "../../components/common/LoadingSpinner.svelte";
-	import type { Lobby } from "../../stores/game.svelte";
+	import type { Lobby } from "../../stores/lobby.svelte";
 
 	let {
 		lobbies,

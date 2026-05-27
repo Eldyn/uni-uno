@@ -1,63 +1,23 @@
 <script lang="ts">
-	import { navigationStore, toastStore } from "../../stores/ui.svelte";
-	import { ClientAction, ws } from "../../stores/ws.svelte";
-	import { gameStore } from "../../stores/game.svelte";
-	import type { Lobby } from "../../stores/game.svelte";
-	import { onMount } from "svelte";
 	import LobbyList from "./LobbyList.svelte";
 	import LobbyCreateForm from "./LobbyCreateForm.svelte";
+	import { onMount } from "svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
-
-	const gameState = gameStore.state;
+	import { storeLobby } from "src/lib/stores/lobby.svelte";
+	import LobbyJoinForm from "./LobbyJoinForm.svelte";
 
 	let showCreateForm = $state(false);
-	let canCreate = $derived<boolean>(!gameStore.state.currentLobby);
+	let showJoinForm = $state(false);
 	let refreshing = $state(false);
 
 	onMount(() => {
-		loadLobbies();
-
-		// INFO: currently not needed, but we'll repurpose to make it a dynamic refresh on lobby creation
-		// return ws.on(ServerAction.LobbyUpdated, (data) => {
-		// 	loadLobbies();
-		// });
+		storeLobby.fetchList();
 	});
-
-	async function loadLobbies() {
-		gameStore.loadingLobbies = true;
-
-		const response = await ws.emitAndWait(ClientAction.LobbyList);
-
-		gameStore.loadingLobbies = false;
-
-		if (!response.ok) {
-			toastStore.showError(response.reason);
-			return;
-		}
-
-		gameStore.availableLobbies = response.getOr<Lobby[]>("lobbies", []);
-	}
 
 	async function handleRefresh() {
 		refreshing = true;
-		await loadLobbies();
+		await storeLobby.fetchList();
 		refreshing = false;
-	}
-
-	async function handleLogout() {
-		try {
-			let response = await fetch(`${window.location.origin}/auth/logout`, {
-				method: "POST",
-				credentials: "include"
-			});
-
-			if (response.ok) {
-				ws.disconnect(1000, "User Logout");
-				navigationStore.screen = "auth";
-			}
-		} catch (error) {
-			// Ignore logout errors
-		}
 	}
 </script>
 
@@ -67,7 +27,7 @@
 			<h1>Lobbies</h1>
 			<p class="user-info">Welcome, {storeAuth.username}</p>
 		</div>
-		<button type="button" class="logout-button" onclick={handleLogout}>Logout</button>
+		<button type="button" class="logout-button" onclick={storeAuth.logout}>Logout</button>
 	</div>
 
 	<div class="lobbies-content">
@@ -79,9 +39,17 @@
 				type="button"
 				class="refresh-button"
 				onclick={() => (showCreateForm = !showCreateForm)}
-				disabled={!canCreate}
+				disabled={storeLobby.isInLobby}
 			>
 				{showCreateForm ? "✕ Cancel" : "+ Create Lobby"}
+			</button>
+			<button
+				type="button"
+				class="refresh-button"
+				onclick={() => (showJoinForm = !showJoinForm)}
+				disabled={storeLobby.isInLobby}
+			>
+				{showJoinForm ? "✕ Cancel" : "+ Join Lobby"}
 			</button>
 		</div>
 
@@ -91,8 +59,14 @@
 			</div>
 		{/if}
 
+		{#if showJoinForm}
+			<div class="create-form-container">
+				<LobbyJoinForm />
+			</div>
+		{/if}
+
 		<div class="lobbies-container">
-			<LobbyList lobbies={gameState.availableLobbies} isLoading={gameState.isLoadingLobbies} />
+			<LobbyList lobbies={storeLobby.available} isLoading={storeLobby.isLoadingList} />
 		</div>
 	</div>
 </div>
