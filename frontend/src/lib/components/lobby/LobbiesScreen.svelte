@@ -3,7 +3,7 @@
 	import LobbyCreateForm from "./LobbyCreateForm.svelte";
 	import { onMount } from "svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
-	import { storeLobby } from "src/lib/stores/lobby.svelte";
+	import { storeLobby } from "../../stores/lobby.svelte";
 	import LobbyJoinForm from "./LobbyJoinForm.svelte";
 
 	let showCreateForm = $state(false);

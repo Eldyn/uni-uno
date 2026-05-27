@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { storeLobby } from "src/lib/stores/lobby.svelte";
+	import { storeLobby } from "../../stores/lobby.svelte";
 </script>
 
 <link rel="preload" href="fonts/JetBrainsMono.woff2" as="font" type="font/woff2" />
