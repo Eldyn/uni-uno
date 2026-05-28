@@ -7,7 +7,6 @@
 	}: { cards?: Card[]; position?: "bottom" | "top" | "left" | "right" } = $props();
 
 	function handleCardClick(card: Card) {
-		// Send the specific 32-bit integer ID to the C++ engine!
 		storeGame.playCard(card.id);
 	}
 </script>
@@ -22,14 +21,50 @@
 			onkeydown={(e) => e.key === "Enter" && handleCardClick(card)}
 		>
 			<div class="bckg"></div>
-			<div class="card-value" style="font-size: {card.value.length > 1 ? '1em' : '2em'};">
-				{card.value}
+			<div class="card-value">
+				{#if card.value === "Skip"}
+					<img src="/images/skip.png" alt="Skip" class="card-icon" />
+				{:else if card.value === "Rev"}
+					<img src="/images/reverse.png" alt="Reverse" class="card-icon" />
+				{:else if card.value === "Wild"}
+					<img src="/images/wild.png" alt="Wild" class="card-icon" />
+				{:else}
+					<span class="text-value" class:small-text={card.value.length > 1}>{card.value}</span>
+				{/if}
 			</div>
 		</div>
 	{/each}
 </div>
 
 <style>
+	.card-value {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		font-weight: bold;
+		pointer-events: none;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		width: 100%;
+		height: 100%;
+	}
+
+	.card-icon {
+		width: 50%;
+		height: 50%;
+		object-fit: contain;
+	}
+
+	.text-value {
+		font-size: 2em;
+	}
+
+	.text-value.small-text {
+		font-size: 1em;
+	}
+
 	.player_hand {
 		position: relative;
 		display: flex;
@@ -103,56 +138,16 @@
 		border-radius: 90% 40%;
 	}
 
-	.card-value {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		font-size: 1em;
-		font-weight: bold;
-		pointer-events: none;
-	}
-
-	.card.red {
-		color: #dc251c;
-	}
-	.card.red .bckg {
-		background-color: #dc251c;
-	}
-
-	.card.yellow {
-		color: #fcf604;
-	}
-	.card.yellow .bckg {
-		background-color: #fcf604;
-	}
-
-	.card.blue {
-		color: #0493de;
-	}
-	.card.blue .bckg {
-		background-color: #0493de;
-	}
-
-	.card.green {
-		color: #018d41;
-	}
-	.card.green .bckg {
-		background-color: #018d41;
-	}
-
-	.card.black {
-		color: #1f1b18;
-	}
-	.card.black .bckg {
-		background-color: #1f1b18;
-	}
-
-	.card.wild {
-		color: #888;
-		background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de);
-	}
-	.card.wild .bckg {
-		background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de);
-	}
+	.card.red { color: #dc251c; }
+	.card.red .bckg { background-color: #dc251c; }
+	.card.yellow { color: #fcf604; }
+	.card.yellow .bckg { background-color: #fcf604; }
+	.card.blue { color: #0493de; }
+	.card.blue .bckg { background-color: #0493de; }
+	.card.green { color: #018d41; }
+	.card.green .bckg { background-color: #018d41; }
+	.card.black { color: #1f1b18; }
+	.card.black .bckg { background-color: #1f1b18; }
+	.card.wild { color: #888; background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de); }
+	.card.wild .bckg { background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de); }
 </style>

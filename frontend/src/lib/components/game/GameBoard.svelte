@@ -35,14 +35,16 @@
 					onkeydown={(e) => e.key === "Enter" && handleCardClick(card.id)}
 				>
 					<div class="bckg"></div>
-					<div
-						class="card-value"
-						style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: {card
-							.value.length > 1
-							? '1em'
-							: '2em'}; pointer-events: none;"
-					>
-						{card.value}
+					<div class="card-value">
+						{#if card.value === "Skip"}
+							<img src="/images/skip.png" alt="Skip" class="card-icon" />
+						{:else if card.value === "Rev"}
+							<img src="/images/reverse.png" alt="Reverse" class="card-icon" />
+						{:else if card.value === "Wild"}
+							<img src="/images/wild.png" alt="Wild" class="card-icon" />
+						{:else}
+							<span class="text-value" class:small-text={card.value.length > 1}>{card.value}</span>
+						{/if}
 					</div>
 				</div>
 			{/each}
@@ -94,14 +96,18 @@
 			{#if storeGame.state?.top_card}
 				<div class="card top-card {storeGame.state.top_card.color}">
 					<div class="bckg"></div>
-					<div
-						class="card-value"
-						style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: {storeGame
-							.state.top_card.value.length > 1
-							? '1em'
-							: '2em'}; z-index: 10; pointer-events: none;"
-					>
-						{storeGame.state.top_card.value}
+					<div class="card-value" style="z-index: 10;">
+						{#if storeGame.state.top_card.value === "Skip"}
+							<img src="/images/skip.png" alt="Skip" class="card-icon" />
+						{:else if storeGame.state.top_card.value === "Rev"}
+							<img src="/images/reverse.png" alt="Reverse" class="card-icon" />
+						{:else if storeGame.state.top_card.value === "Wild"}
+							<img src="/images/wild.png" alt="Wild" class="card-icon" />
+						{:else}
+							<span class="text-value" class:small-text={storeGame.state.top_card.value.length > 1}>
+								{storeGame.state.top_card.value}
+							</span>
+						{/if}
 					</div>
 				</div>
 			{:else}
@@ -115,6 +121,34 @@
 </div>
 
 <style>
+	.card-value {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		font-weight: bold;
+		pointer-events: none;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		width: 100%;
+		height: 100%;
+	}
+
+	.card-icon {
+		width: 50%;
+		height: 50%;
+		object-fit: contain;
+	}
+
+	.text-value {
+		font-size: 2em;
+	}
+
+	.text-value.small-text {
+		font-size: 1em;
+	}
+
 	.game-field {
 		height: 100vh;
 		display: grid;
@@ -135,36 +169,17 @@
 		transition: 200ms;
 	}
 
-	.game-field.yellow #piles_area {
-		background-color: rgba(252, 246, 4, 0.4);
-	}
-	.game-field.blue #piles_area {
-		background-color: rgba(4, 147, 222, 0.4);
-	}
-	.game-field.red #piles_area {
-		background-color: rgba(220, 37, 28, 0.4);
-	}
-	.game-field.green #piles_area {
-		background-color: rgba(1, 141, 65, 0.4);
-	}
+	.game-field.yellow #piles_area { background-color: rgba(252, 246, 4, 0.4); }
+	.game-field.blue #piles_area { background-color: rgba(4, 147, 222, 0.4); }
+	.game-field.red #piles_area { background-color: rgba(220, 37, 28, 0.4); }
+	.game-field.green #piles_area { background-color: rgba(1, 141, 65, 0.4); }
 
-	#piles_area {
-		grid-area: 2 / 2;
-	}
-	#player {
-		grid-area: 3 / 2;
-	}
-	#player_left {
-		grid-area: 2 / 1;
-	}
-	#player_top {
-		grid-area: 1 / 2;
-	}
-	#player_right {
-		grid-area: 2 / 3;
-	}
+	#piles_area { grid-area: 2 / 2; }
+	#player { grid-area: 3 / 2; }
+	#player_left { grid-area: 2 / 1; }
+	#player_top { grid-area: 1 / 2; }
+	#player_right { grid-area: 2 / 3; }
 
-	/* DRAW PILE */
 	#draw_pile {
 		position: absolute;
 		left: 5em;
@@ -200,7 +215,6 @@
 		transform: translateY(1em);
 	}
 
-	/* DISCARD PILE */
 	#discard_pile {
 		position: absolute;
 		left: 12em;
@@ -232,51 +246,21 @@
 		position: absolute;
 	}
 
-	.player_hand .card:nth-child(1) {
-		left: calc(1 * 2.2em);
-	}
-	.player_hand .card:nth-child(2) {
-		left: calc(2 * 2.2em);
-	}
-	.player_hand .card:nth-child(3) {
-		left: calc(3 * 2.2em);
-	}
-	.player_hand .card:nth-child(4) {
-		left: calc(4 * 2.2em);
-	}
-	.player_hand .card:nth-child(5) {
-		left: calc(5 * 2.2em);
-	}
-	.player_hand .card:nth-child(6) {
-		left: calc(6 * 2.2em);
-	}
-	.player_hand .card:nth-child(7) {
-		left: calc(7 * 2.2em);
-	}
-	.player_hand .card:nth-child(8) {
-		left: calc(8 * 2.2em);
-	}
-	.player_hand .card:nth-child(9) {
-		left: calc(9 * 2.2em);
-	}
-	.player_hand .card:nth-child(10) {
-		left: calc(10 * 2.2em);
-	}
-	.player_hand .card:nth-child(11) {
-		left: calc(11 * 2.2em);
-	}
-	.player_hand .card:nth-child(12) {
-		left: calc(12 * 2.2em);
-	}
-	.player_hand .card:nth-child(13) {
-		left: calc(13 * 2.2em);
-	}
-	.player_hand .card:nth-child(14) {
-		left: calc(14 * 2.2em);
-	}
-	.player_hand .card:nth-child(15) {
-		left: calc(15 * 2.2em);
-	}
+	.player_hand .card:nth-child(1) { left: calc(1 * 2.2em); }
+	.player_hand .card:nth-child(2) { left: calc(2 * 2.2em); }
+	.player_hand .card:nth-child(3) { left: calc(3 * 2.2em); }
+	.player_hand .card:nth-child(4) { left: calc(4 * 2.2em); }
+	.player_hand .card:nth-child(5) { left: calc(5 * 2.2em); }
+	.player_hand .card:nth-child(6) { left: calc(6 * 2.2em); }
+	.player_hand .card:nth-child(7) { left: calc(7 * 2.2em); }
+	.player_hand .card:nth-child(8) { left: calc(8 * 2.2em); }
+	.player_hand .card:nth-child(9) { left: calc(9 * 2.2em); }
+	.player_hand .card:nth-child(10) { left: calc(10 * 2.2em); }
+	.player_hand .card:nth-child(11) { left: calc(11 * 2.2em); }
+	.player_hand .card:nth-child(12) { left: calc(12 * 2.2em); }
+	.player_hand .card:nth-child(13) { left: calc(13 * 2.2em); }
+	.player_hand .card:nth-child(14) { left: calc(14 * 2.2em); }
+	.player_hand .card:nth-child(15) { left: calc(15 * 2.2em); }
 
 	#player .player_hand .card {
 		cursor: pointer;

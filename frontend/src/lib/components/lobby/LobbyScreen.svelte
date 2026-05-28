@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { storeLobby } from "../../stores/lobby.svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
-	import { ws } from "src/lib/stores/ws.svelte";
+	import { ws } from "../../stores/ws.svelte";
 
 	let isHost = $derived(storeAuth.username === storeLobby.current?.host);
 
