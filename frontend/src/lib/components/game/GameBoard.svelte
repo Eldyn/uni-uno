@@ -1,33 +1,58 @@
 <script lang="ts">
-	let { gameColor = 'green' }: { gameColor?: string } = $props();
+	import { storeGame } from "../../stores/game.svelte";
+
+	let { gameColor = "green" }: { gameColor?: string } = $props();
+
+	function handleDrawClick() {
+		if (storeGame.state?.current_turn === storeGame.localPlayer?.username) {
+			storeGame.drawCard();
+		}
+	}
+
+	function handleCardClick(cardId: number) {
+		storeGame.playCard(cardId);
+	}
+
+	let opponents = $derived(
+		storeGame.state?.players.filter((p) => p.username !== storeGame.localPlayer?.username) ?? []
+	);
+
+	let leftPlayer = $derived(opponents[0]);
+	let topPlayer = $derived(opponents[1]);
+	let rightPlayer = $derived(opponents[2]);
 </script>
 
 <div class="game-field perspective {gameColor}">
 	<div id="player">
 		(You)
 		<div class="player_hand">
-			{#each Array(2) as _, r}
-				<div class="card red" data-key={r}>
+			{#each storeGame.localPlayer?.hand ?? [] as card, i (card.id)}
+				<div
+					class="card {card.color}"
+					role="button"
+					tabindex="0"
+					onclick={() => handleCardClick(card.id)}
+					onkeydown={(e) => e.key === "Enter" && handleCardClick(card.id)}
+				>
 					<div class="bckg"></div>
+					<div
+						class="card-value"
+						style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: {card
+							.value.length > 1
+							? '1em'
+							: '2em'}; pointer-events: none;"
+					>
+						{card.value}
+					</div>
 				</div>
 			{/each}
-
-			{#each Array(2) as _, b}
-				<div class="card blue" data-key={b}>
-					<div class="bckg"></div>
-				</div>
-			{/each}
-
-			<div class="card yellow"><div class="bckg"></div></div>
-			<div class="card green"><div class="bckg"></div></div>
-			<div class="card black"><div class="bckg"></div></div>
 		</div>
 	</div>
 
 	<div id="player_left">
-		Left Player
+		{leftPlayer ? leftPlayer.username : "Waiting..."}
 		<div class="player_hand">
-			{#each Array(7) as _, n}
+			{#each Array(leftPlayer?.card_count ?? 0) as _, n}
 				<div class="card turned" data-index={n}>
 					<div class="bckg"></div>
 				</div>
@@ -36,9 +61,9 @@
 	</div>
 
 	<div id="player_top">
-		Top Player
+		{topPlayer ? topPlayer.username : "Waiting..."}
 		<div class="player_hand">
-			{#each Array(7) as _, n}
+			{#each Array(topPlayer?.card_count ?? 0) as _, n}
 				<div class="card turned" data-index={n}>
 					<div class="bckg"></div>
 				</div>
@@ -47,9 +72,9 @@
 	</div>
 
 	<div id="player_right">
-		Right Player
+		{rightPlayer ? rightPlayer.username : "Waiting..."}
 		<div class="player_hand">
-			{#each Array(7) as _, n}
+			{#each Array(rightPlayer?.card_count ?? 0) as _, n}
 				<div class="card turned" data-index={n}>
 					<div class="bckg"></div>
 				</div>
@@ -58,16 +83,32 @@
 	</div>
 
 	<div id="piles_area">
-		<div id="draw_pile">
+		<div id="draw_pile" onclick={handleDrawClick} role="button" tabindex="0">
 			<div class="card turned top-card">
 				<div class="bckg"></div>
 			</div>
 			<div class="card turned pile"><div class="bckg"></div></div>
 		</div>
+
 		<div id="discard_pile">
-			<div class="card top-card {gameColor}">
-				<div class="bckg"></div>
-			</div>
+			{#if storeGame.state?.top_card}
+				<div class="card top-card {storeGame.state.top_card.color}">
+					<div class="bckg"></div>
+					<div
+						class="card-value"
+						style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: {storeGame
+							.state.top_card.value.length > 1
+							? '1em'
+							: '2em'}; z-index: 10; pointer-events: none;"
+					>
+						{storeGame.state.top_card.value}
+					</div>
+				</div>
+			{:else}
+				<div class="card top-card {gameColor}">
+					<div class="bckg"></div>
+				</div>
+			{/if}
 			<div class="card pile"><div class="bckg"></div></div>
 		</div>
 	</div>

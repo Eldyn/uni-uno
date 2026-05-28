@@ -1,9 +1,5 @@
 <script lang="ts">
-	export interface Card {
-		id: string;
-		color: "red" | "yellow" | "green" | "blue" | "black" | "wild";
-		value: string;
-	}
+	import { storeGame, type Card } from "../../stores/game.svelte";
 
 	let {
 		cards = [],
@@ -11,8 +7,8 @@
 	}: { cards?: Card[]; position?: "bottom" | "top" | "left" | "right" } = $props();
 
 	function handleCardClick(card: Card) {
-		// To be implemented with game logic
-		console.log("Card clicked:", card);
+		// Send the specific 32-bit integer ID to the C++ engine!
+		storeGame.playCard(card.id);
 	}
 </script>
 
@@ -26,7 +22,9 @@
 			onkeydown={(e) => e.key === "Enter" && handleCardClick(card)}
 		>
 			<div class="bckg"></div>
-			<div class="card-value">{card.value}</div>
+			<div class="card-value" style="font-size: {card.value.length > 1 ? '1em' : '2em'};">
+				{card.value}
+			</div>
 		</div>
 	{/each}
 </div>

@@ -8,7 +8,10 @@ namespace game {
     struct CardPlayedEvent {
         std::string player_username;
         CompactCard played_card;
+
         bool is_valid_play = true; 
+
+        bool is_handled = false;
     };
     
     class GameRule {

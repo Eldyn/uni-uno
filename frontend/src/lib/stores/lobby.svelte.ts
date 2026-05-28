@@ -66,6 +66,35 @@ class StoreLobby {
         });
     }
 
+    async promote(username: string): Promise<void> {
+        await ws.connect();
+        ws.emit(ClientAction.LobbyPromote, { username });
+
+        storeToast.success(`Promoted ${username}!`);
+    }
+
+    async kick(username: string): Promise<void> {
+        await ws.connect();
+        ws.emit(ClientAction.LobbyKick, { username });
+
+        storeToast.success(`Kicked ${username}!`);
+    }
+
+    /**
+     * Updates the lobby settings (name and visibility).
+     * @param settings - The settings fields to modify.
+     */
+    async updateSettings(settings: { name?: string; is_public?: boolean }): Promise<void> {
+        try {
+            await ws.connect();
+            // Using emit because the backend automatically replies with a
+            // ServerAction.LobbyUpdated broadcast which refreshes our state.
+            ws.emit(ClientAction.LobbyUpdateSettings, settings);
+        } catch (error) {
+            storeToast.error("Failed to update lobby settings.");
+        }
+    }
+
     /**
      * Creates a new game lobby on the server.
      * @remarks

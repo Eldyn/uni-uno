@@ -1,3 +1,4 @@
+#include "controllers/game_controller.hpp"
 #include "controllers/lobby_controller.hpp"
 #include <controllers/auth_controller.hpp>
 #include <common/env.hpp>
@@ -14,8 +15,9 @@ int main() {
         Env::Load(".env");
         WebServer server(9999);
 
-        AuthController auth(server.GetHTTPRouter());
+        AuthController  auth(server.GetHTTPRouter());
         LobbyController lobby(server);        
+        GameController  game(server, lobby);
 
         server.GetHTTPRouter().OnAny([](AppResponse *response, AppRequest *request) {
             Logger::Log("[HTTP] route received: ", std::string(request->getFullUrl()));

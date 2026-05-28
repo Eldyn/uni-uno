@@ -4,24 +4,19 @@
  */
 
 export const ClientAction = {
+    GamePlayCard: "game_play_card",
+    GameDrawCard: "game_draw_card",
+    GameSubmitInput: "game_submit_input",
+    GameCallUno: "game_call_uno",
     LobbyList: "lobby_list",
     LobbyCreate: "lobby_create",
     LobbyJoin: "lobby_join",
     LobbyRejoin: "lobby_rejoin",
     LobbyLeave: "lobby_leave",
     LobbyInvite: "lobby_invite",
-    LobbySetRuleset: "lobby_set_ruleset",
-    LobbySetSkin: "lobby_set_skin",
-    Ready: "ready",
-    PlayCard: "play_card",
-    DrawCard: "draw_card",
-    CallUno: "call_uno",
-    ChallengeUno: "challenge_uno",
-    ChallengePlusFour: "challenge_plus_four",
-    ChooseColor: "choose_color",
-    AckGameOver: "ack_game_over",
-    StorePurchase: "store_purchase",
-    InventoryRequest: "inventory_request",
+    LobbyPromote: "lobby_promote",
+    LobbyKick: "lobby_kick",
+    LobbyUpdateSettings: "lobby_update_settings",
     ChatSend: "chat_send"
 } as const;
 

@@ -1,34 +1,40 @@
 <script lang="ts">
 	import GameBoard from "./GameBoard.svelte";
-
-	let gameColor = $state("green");
+	import { storeGame } from "../../stores/game.svelte";
 
 	let { onBack }: { onBack?: () => void } = $props();
 
 	function changeColor(color: string) {
-		gameColor = color;
+		storeGame.submitInput(color);
 	}
 </script>
 
 <div class="game-screen">
 	<div class="game-controls">
 		<button type="button" class="back-button" onclick={onBack}>← Back to Lobbies</button>
-		<div class="color-buttons">
-			{#each ["red", "yellow", "green", "blue"] as color}
-				<button
-					type="button"
-					class="color-button color-{color}"
-					class:active={gameColor === color}
-					onclick={() => changeColor(color)}
-					aria-label="Change color to {color}"
-				>
-					{color.charAt(0).toUpperCase()}
-				</button>
-			{/each}
-		</div>
+
+		{#if storeGame.actionRequired === "choose_color"}
+			<div class="color-buttons">
+				<span style="color: white; font-weight: bold; margin-right: 10px;">Choose Color:</span>
+				{#each ["red", "yellow", "green", "blue"] as color}
+					<button
+						type="button"
+						class="color-button color-{color}"
+						onclick={() => changeColor(color)}
+						aria-label="Change color to {color}"
+					>
+						{color.charAt(0).toUpperCase()}
+					</button>
+				{/each}
+			</div>
+		{:else}
+			<div style="color: white; font-weight: bold; font-size: 1.2rem;">
+				Current Turn: {storeGame.state?.current_turn}
+			</div>
+		{/if}
 	</div>
 
-	<GameBoard {gameColor} />
+	<GameBoard gameColor={storeGame.state?.active_color ?? "green"} />
 </div>
 
 <style>

@@ -1,11 +1,10 @@
 #pragma once
-#include "game/match_instance.hpp"
+#include <game/match_instance.hpp>
+#include <common/lobby.hpp>
 #include <common/ws.hpp>
 #include <atomic>
-#include <chrono>
 #include <string>
 #include <unordered_map>
-#include <vector>
 #include <App.h>
 #include <action_router.hpp>
 #include <websocket_context.hpp>
@@ -33,29 +32,6 @@
 //    lobby, the socket pointer is swapped and the member is marked connected
 //    again.  The client must send lobby_rejoin with the stored lobby code
 //    (kept in localStorage) to restore their lobby_id in PerSocketData.
-struct LobbyMember {
-    std::string     username;
-    AppWebSocket*   socket;        // nullptr when disconnected
-    bool            is_connected;
-    
-    std::chrono::steady_clock::time_point disconnected_at{};
-
-    LobbyMember(std::string u, AppWebSocket* s, bool c) 
-        : username(std::move(u)), socket(s), is_connected(c)  {}
-};
-
-struct Lobby {
-    uint32_t                 id;
-    bool                     is_public;
-    std::string              invite_code;   // 6-char A-Z0-9, the join token
-    std::string              host;          // username of creator
-    std::vector<LobbyMember> members;
-    std::string              name;
-
-    // INFO: If null, we are in the lobby. If populated, a match is ongoing.
-    std::unique_ptr<game::MatchInstance> match;
-};
-
 class LobbyController {
 public:
     // Registers WebSocket action handlers on `router`.
@@ -75,10 +51,18 @@ public:
     void OnClose(AppWebSocket* ws, PerSocketData* sd);
 
     // Allows other controllers to fetch a lobby by its invite code
-    Lobby* GetLobby(const std::string& code) {
+    Lobby* GetLobbyByCode(const std::string& code) {
         auto it = code_to_id_.find(code);
         if (it != code_to_id_.end()) {
             return &lobbies_.at(it->second);
+        }
+        return nullptr;
+    }
+
+    Lobby* GetLobbyById(const uint32_t id) {
+        auto it = lobbies_.find(id);
+        if (it != lobbies_.end()) {
+            return &it->second;
         }
         return nullptr;
     }
@@ -116,6 +100,21 @@ private:
     //   member.  Useful for a "browse" screen.
     void HandleList(WsContext ctx, const json& msg);
 
+    // lobby_promote  { "username": string }
+    // Promotes a player to the "host" status, demoting the current host
+    void HandlePromote(WsContext ctx, const json& msg);
+
+    // lobby_kick  { "username": string }
+    // Removes a player from the lobby, only if they are not the host,
+    // or if the match has not already started.
+    void HandleKick(WsContext ctx, const json& msg);
+
+    // lobby_update_settings  { "settings": SettingsJson }
+    void HandleUpdateSettings(WsContext ctx, const json& msg);
+
+    // lobby_start_game {}
+    // starts the game by populating the match object and routing players
+    void HandleStartGame(WsContext context, const nlohmann::json& message);
     // Generate a 6-character uppercase alphanumeric code using RAND_bytes.
     static std::string GenerateInviteCode();
 
@@ -128,7 +127,7 @@ private:
 
     // Remove a member from a lobby by username.  Destroys the lobby if empty.
     // Returns true if the lobby still exists after removal.
-    bool RemoveMember(uint32_t lobby_id, const std::string& username);
+    bool RemoveMember(uint32_t lobby_id, const string& username, bool explicit_leave = true, const string& request_id = "");
 
     // Find the lobby a given username currently belongs to.
     // Returns nullptr if not found.
