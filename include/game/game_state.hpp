@@ -9,8 +9,6 @@
 
 namespace game {
     
-    class Effect; 
- 
     struct Player {
         std::string username;
         std::vector<CompactCard> hand;
@@ -39,8 +37,9 @@ namespace game {
         
         std::string pending_player;
         std::string pending_input_type;
+        std::string pending_input_context; // The JSON payload string
         std::string provided_input; 
     };
 
-    void ReshuffleDiscardIntoDraw(GameState* game_state);       
-}  
+    void ReshuffleDiscardIntoDraw(GameState* game_state);
+}

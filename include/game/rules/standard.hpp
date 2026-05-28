@@ -4,9 +4,11 @@
 
 namespace game {
    class StandardRule : public GameRule {
-       public:
+    public:
         ~StandardRule() override = default;
         void ValidatePlay(GameState* state, CardPlayedEvent& event) override;
         void OnCardPlayed(GameState* state, CardPlayedEvent& event) override;
+    private:
+        std::string GetNextPlayer(GameState* state);
    };
 }

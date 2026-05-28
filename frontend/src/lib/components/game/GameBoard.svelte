@@ -169,16 +169,34 @@
 		transition: 200ms;
 	}
 
-	.game-field.yellow #piles_area { background-color: rgba(252, 246, 4, 0.4); }
-	.game-field.blue #piles_area { background-color: rgba(4, 147, 222, 0.4); }
-	.game-field.red #piles_area { background-color: rgba(220, 37, 28, 0.4); }
-	.game-field.green #piles_area { background-color: rgba(1, 141, 65, 0.4); }
+	.game-field.yellow #piles_area {
+		background-color: rgba(252, 246, 4, 0.4);
+	}
+	.game-field.blue #piles_area {
+		background-color: rgba(4, 147, 222, 0.4);
+	}
+	.game-field.red #piles_area {
+		background-color: rgba(220, 37, 28, 0.4);
+	}
+	.game-field.green #piles_area {
+		background-color: rgba(1, 141, 65, 0.4);
+	}
 
-	#piles_area { grid-area: 2 / 2; }
-	#player { grid-area: 3 / 2; }
-	#player_left { grid-area: 2 / 1; }
-	#player_top { grid-area: 1 / 2; }
-	#player_right { grid-area: 2 / 3; }
+	#piles_area {
+		grid-area: 2 / 2;
+	}
+	#player {
+		grid-area: 3 / 2;
+	}
+	#player_left {
+		grid-area: 2 / 1;
+	}
+	#player_top {
+		grid-area: 1 / 2;
+	}
+	#player_right {
+		grid-area: 2 / 3;
+	}
 
 	#draw_pile {
 		position: absolute;
@@ -246,21 +264,51 @@
 		position: absolute;
 	}
 
-	.player_hand .card:nth-child(1) { left: calc(1 * 2.2em); }
-	.player_hand .card:nth-child(2) { left: calc(2 * 2.2em); }
-	.player_hand .card:nth-child(3) { left: calc(3 * 2.2em); }
-	.player_hand .card:nth-child(4) { left: calc(4 * 2.2em); }
-	.player_hand .card:nth-child(5) { left: calc(5 * 2.2em); }
-	.player_hand .card:nth-child(6) { left: calc(6 * 2.2em); }
-	.player_hand .card:nth-child(7) { left: calc(7 * 2.2em); }
-	.player_hand .card:nth-child(8) { left: calc(8 * 2.2em); }
-	.player_hand .card:nth-child(9) { left: calc(9 * 2.2em); }
-	.player_hand .card:nth-child(10) { left: calc(10 * 2.2em); }
-	.player_hand .card:nth-child(11) { left: calc(11 * 2.2em); }
-	.player_hand .card:nth-child(12) { left: calc(12 * 2.2em); }
-	.player_hand .card:nth-child(13) { left: calc(13 * 2.2em); }
-	.player_hand .card:nth-child(14) { left: calc(14 * 2.2em); }
-	.player_hand .card:nth-child(15) { left: calc(15 * 2.2em); }
+	.player_hand .card:nth-child(1) {
+		left: calc(1 * 2.2em);
+	}
+	.player_hand .card:nth-child(2) {
+		left: calc(2 * 2.2em);
+	}
+	.player_hand .card:nth-child(3) {
+		left: calc(3 * 2.2em);
+	}
+	.player_hand .card:nth-child(4) {
+		left: calc(4 * 2.2em);
+	}
+	.player_hand .card:nth-child(5) {
+		left: calc(5 * 2.2em);
+	}
+	.player_hand .card:nth-child(6) {
+		left: calc(6 * 2.2em);
+	}
+	.player_hand .card:nth-child(7) {
+		left: calc(7 * 2.2em);
+	}
+	.player_hand .card:nth-child(8) {
+		left: calc(8 * 2.2em);
+	}
+	.player_hand .card:nth-child(9) {
+		left: calc(9 * 2.2em);
+	}
+	.player_hand .card:nth-child(10) {
+		left: calc(10 * 2.2em);
+	}
+	.player_hand .card:nth-child(11) {
+		left: calc(11 * 2.2em);
+	}
+	.player_hand .card:nth-child(12) {
+		left: calc(12 * 2.2em);
+	}
+	.player_hand .card:nth-child(13) {
+		left: calc(13 * 2.2em);
+	}
+	.player_hand .card:nth-child(14) {
+		left: calc(14 * 2.2em);
+	}
+	.player_hand .card:nth-child(15) {
+		left: calc(15 * 2.2em);
+	}
 
 	#player .player_hand .card {
 		cursor: pointer;
@@ -287,3 +335,4 @@
 		transform: rotate(-90deg) translate(-24em, 1em);
 	}
 </style>
+

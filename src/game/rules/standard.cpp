@@ -1,4 +1,5 @@
 #include <game/rules/standard.hpp>
+#include "game/effects/standard.hpp"
 #include <common/game/effect.hpp>
 
 namespace game {
@@ -30,6 +31,50 @@ namespace game {
         event.is_valid_play = false;
     }
     
-    void StandardRule::OnCardPlayed(GameState* state, CardPlayedEvent& event) {}
+    void StandardRule::OnCardPlayed(GameState* state, CardPlayedEvent& event) {
+        Value card_value = GetValue(event.played_card);
+    
+        if (card_value == Value::kSkip) {
+            state->effect_queue.push_back(std::make_unique<SkipEffect>());
+        } 
+        else if (card_value == Value::kReverse) {
+            state->effect_queue.push_back(std::make_unique<ReverseEffect>());
+        } 
+        else if (card_value == Value::kDraw2) {
+            std::string next_player = GetNextPlayer(state);
+            state->effect_queue.push_back(std::make_unique<DrawEffect>(2, next_player));
+            state->effect_queue.push_back(std::make_unique<SkipEffect>());
+        } 
+        else if (card_value == Value::kWild) {
+            state->effect_queue.push_back(std::make_unique<ChooseColorEffect>(event.player_username));
+        } 
+        else if (card_value == Value::kWildDraw4) {
+            std::string next_player = GetNextPlayer(state);
+            state->effect_queue.push_back(std::make_unique<ChooseColorEffect>(event.player_username));
+            state->effect_queue.push_back(std::make_unique<DrawEffect>(4, next_player));
+            state->effect_queue.push_back(std::make_unique<SkipEffect>());
+        }
+    
+        // UNO Penalty
+        auto player_iterator = std::ranges::find(state->players, event.player_username, &Player::username);
+        if (player_iterator != state->players.end() && player_iterator->hand.size() == 1 && !player_iterator->has_called_uno) {
+            state->effect_queue.push_front(std::make_unique<DrawEffect>(2, event.player_username));
+        }
+    }
 
+    std::string StandardRule::GetNextPlayer(GameState* state) {
+        int next_index = state->current_player_index + state->play_direction;
+        int total_players = static_cast<int>(state->players.size());
+        
+        // Safely wrap around the array bounds
+        if (next_index >= total_players) {
+            next_index %= total_players;
+        } else {
+            while (next_index < 0) {
+                next_index += total_players;
+            }
+        }
+        
+        return state->players[next_index].username;
+    }
 }

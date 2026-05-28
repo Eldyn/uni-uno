@@ -47,18 +47,21 @@ class StoreGame {
     state = $state<GameState | null>(null);
     actionRequired = $state<string | null>(null);
 
-    // Derived helper to easily grab the local user's data from the player array
+    actionContext = $state<any>(null);
+
+    turnTimeRemaining = $state<number>(15);
+    #timerInterval: number | null = null;
+
     localPlayer = $derived(this.state?.players.find((p) => p.username === storeAuth.username));
 
     constructor() {
-        // We register listeners when the store initializes
         ws.onOpen(() => this.#registerListeners());
     }
 
     #registerListeners() {
         ws.on("game_state_updated", (data: any) => {
+            const previousTurn = this.state?.current_turn;
             const rawState = data.game_state;
-            console.log("received", rawState);
 
             this.state = {
                 active_color: COLOR_MAP[rawState.active_color] || "green",
@@ -72,17 +75,41 @@ class StoreGame {
             };
 
             this.actionRequired = data.action_required || null;
+            this.actionContext = data.action_context || null; // Capture the JSON context
 
-            // If we receive a game state but we are still on the lobby screen, transition automatically!
+            // Handle the Timer Syncing
+            if (previousTurn !== this.state?.current_turn) {
+                this.#resetTurnTimer();
+            }
+
             if (storeNavigation.current === "lobby") {
                 storeNavigation.goto("game");
             }
         });
 
-        // Listen for standard game errors (like playing out of turn)
-        ws.on("error", (data: any) => {
-            storeToast.error(data.reason || "Invalid move!");
-        });
+        // we don't really care about sending toasts since too many errors would be sent
+        // INFO: Listen for standard game errors (like playing out of turn)
+        // ws.on("error", (data: any) => {
+        //     storeToast.error(data.reason || "Invalid move!");
+        // });
+    }
+
+    #resetTurnTimer() {
+        // Clear any existing interval
+        if (this.#timerInterval) {
+            clearInterval(this.#timerInterval);
+        }
+
+        // Reset to your lobby's default time limit (e.g., 15 seconds)
+        this.turnTimeRemaining = 15;
+
+        // Start the local countdown
+        this.#timerInterval = window.setInterval(() => {
+            this.turnTimeRemaining -= 1;
+            if (this.turnTimeRemaining <= 0) {
+                clearInterval(this.#timerInterval!);
+            }
+        }, 1000);
     }
 
     #parseCard(rawCard: { id: number; color: number; value: number }): Card {

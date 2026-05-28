@@ -313,6 +313,10 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
     const string& username = ctx.socket_data->username;
 
     if (std::ranges::contains(lobby.members, username, &LobbyMember::username)) {
+        if (lobby.match) {
+            // TODO: Also handle Game rejoin
+        }
+
         auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, request_id);
         resp["lobby"] = json({
             {"invite_code", code},

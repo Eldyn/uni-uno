@@ -3,16 +3,31 @@
 	import { storeGame } from "../../stores/game.svelte";
 
 	let { onBack }: { onBack?: () => void } = $props();
-
-	function changeColor(color: string) {
-		storeGame.submitInput(color);
-	}
 </script>
 
 <div class="game-screen">
 	<div class="game-controls">
 		<button type="button" class="back-button" onclick={onBack}>← Back to Lobbies</button>
 
+		<!-- STANDARD TURN INFO & TIMER -->
+		{#if !storeGame.actionRequired}
+			<div
+				style="color: white; font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 15px;"
+			>
+				<span>Current Turn: {storeGame.state?.current_turn}</span>
+
+				<!-- Turn Timer Badge -->
+				<span
+					style="background: {storeGame.turnTimeRemaining <= 5
+						? '#dc251c'
+						: '#333'}; padding: 4px 10px; border-radius: 6px; font-family: monospace;"
+				>
+					00:{storeGame.turnTimeRemaining.toString().padStart(2, "0")}
+				</span>
+			</div>
+		{/if}
+
+		<!-- 1. CHOOSE COLOR PROMPT -->
 		{#if storeGame.actionRequired === "choose_color"}
 			<div class="color-buttons">
 				<span style="color: white; font-weight: bold; margin-right: 10px;">Choose Color:</span>
@@ -20,19 +35,69 @@
 					<button
 						type="button"
 						class="color-button color-{color}"
-						onclick={() => changeColor(color)}
-						aria-label="Change color to {color}"
+						onclick={() => storeGame.submitInput(color.toUpperCase())}
 					>
 						{color.charAt(0).toUpperCase()}
 					</button>
 				{/each}
 			</div>
-		{:else}
-			<div style="color: white; font-weight: bold; font-size: 1.2rem;">
-				Current Turn: {storeGame.state?.current_turn}
-			</div>
 		{/if}
 	</div>
+
+	<!-- GENERIC ACTION MODALS -->
+	{#if storeGame.actionRequired && storeGame.actionContext}
+		<div class="modal-overlay">
+			<div class="modal-content">
+				<!-- Use the dynamic message provided directly by the C++ Effect! -->
+				<h2>{storeGame.actionContext.message}</h2>
+
+				<!-- 2. PLAY DRAWN CARD MODAL -->
+				{#if storeGame.actionRequired === "play_drawn_card"}
+					{@const drawnCard = storeGame.localPlayer?.hand?.find(
+						(c) => c.id === storeGame.actionContext.card_id
+					)}
+
+					{#if drawnCard}
+						<div class="card {drawnCard.color}" style="transform: scale(1.5); margin: 30px auto;">
+							<div class="bckg"></div>
+							<div
+								class="card-value"
+								style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: {drawnCard
+									.value.length > 1
+									? '1em'
+									: '2em'}; pointer-events: none;"
+							>
+								{drawnCard.value}
+							</div>
+						</div>
+
+						<div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+							<button class="action-btn play-btn" onclick={() => storeGame.submitInput("PLAY")}
+								>Play It</button
+							>
+							<button class="action-btn keep-btn" onclick={() => storeGame.submitInput("KEEP")}
+								>Keep It</button
+							>
+						</div>
+					{/if}
+				{/if}
+
+				<!-- 3. FUTURE PROOFING: 0/7 SWAP MODAL -->
+				{#if storeGame.actionRequired === "choose_player"}
+					<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+						{#each storeGame.actionContext.options as opponentName}
+							<button
+								class="action-btn keep-btn"
+								onclick={() => storeGame.submitInput(opponentName)}
+							>
+								{opponentName}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
 
 	<GameBoard gameColor={storeGame.state?.active_color ?? "green"} />
 </div>
