@@ -4,6 +4,7 @@
  */
 
 export const ClientAction = {
+    GameOverAcknowledge: "game_over_acknowledge",
     GamePlayCard: "game_play_card",
     GameDrawCard: "game_draw_card",
     GameSubmitInput: "game_submit_input",
