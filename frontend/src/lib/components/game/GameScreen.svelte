@@ -18,7 +18,7 @@
 </script>
 
 <div class="game-screen">
-	{#if storeGame.state && storeGame.state.match_status === 2}
+	{#if storeGame.state.is_over && storeGame.state.winner}
 		<div class="modal-overlay victory-overlay">
 			<div class="modal-content victory-content">
 				<h1>🏆 Partita Terminata!</h1>

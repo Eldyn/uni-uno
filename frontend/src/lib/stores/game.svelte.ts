@@ -40,6 +40,8 @@ export interface GameState {
     play_direction: number;
     top_card?: Card;
     players: GamePlayer[];
+    is_over: boolean;
+    winner?: string;
 }
 
 class StoreGame {
@@ -58,6 +60,12 @@ class StoreGame {
     }
 
     #registerListeners() {
+        //  gameover -> matchstatus 2, winner = data.winner 
+        ws.on(ServerAction.GameOver, (data: any) => {
+            const winner = data.winner;
+            this.state.is_over = true;
+            this.state.winner = winner;
+        }); 
         ws.on(ServerAction.GameStateUpdated, (data: any) => {
             const previousTurn = this.state?.current_turn;
             const rawState = data.game_state;
