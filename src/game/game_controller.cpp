@@ -193,12 +193,14 @@ void GameController::SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::functi
     struct us_timer_t* timer = us_create_timer(loop, 0, sizeof(TurnTimerData));
 
     TurnTimerData* timer_data = (TurnTimerData*) us_timer_ext(timer);
-    new (timer_data) TurnTimerData{std::move(callback), lobby_id, this};
+    *(TurnTimerData**)us_timer_ext(timer) = timer_data;
 
-    us_timer_set(timer, [](struct us_timer_t* fired_timer) {
-        TurnTimerData* data = (TurnTimerData*) us_timer_ext(fired_timer);
-        if (data->callback) data->callback();
-        data->controller->ClearTurnTimer(data->lobby_id);
+    us_timer_set(timer, [](us_timer_t* t) {
+        auto* data = *(TurnTimerData**)us_timer_ext(t);
+        data->callback();
+    
+        delete data; 
+        us_timer_close(t);
     }, timeout_ms, 0);
 
     active_turn_timers_[lobby_id] = timer;

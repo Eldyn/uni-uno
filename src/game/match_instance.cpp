@@ -169,47 +169,55 @@ namespace game {
         }
     }
     
-    bool MatchInstance::TakeBotTurn() {
-        if (IsGameOver()) return false; 
+    void MatchInstance::TakeBotTurn() {
+        if (IsGameOver()) return;
 
-        if (IsWaitingForInput()) {
-            if (state_.pending_input_type == "play_drawn_card") {
-                ProvideInput(state_.pending_player, "PLAY");
-            } else {
-                ProvideInput(state_.pending_player, "RED");
-            }
-            
-            Tick();
-            
-            if (IsWaitingForInput()) TakeBotTurn(); 
-            return true;
-        }
-    
-        Player& current_player = state_.players[state_.current_player_index];
-    
-        // Try to play the first legal card
-        for (CompactCard card : current_player.hand) {
-            CardPlayedEvent event = { current_player.username, card, true, false };
-            
-            for (auto& rule : active_rules_) {
-                rule->ValidatePlay(&state_, event);
-                if (event.is_handled) break;
-            }
-    
-            if (event.is_valid_play) {
-                PlayCard(current_player.username, GetId(card));
-                
-                // If playing the card caused an async wait (e.g., Wild), resolve it immediately
-                if (IsWaitingForInput()) {
-                    TakeBotTurn(); 
+        constexpr int kMaxBotSteps = 10;
+        int steps = 0;
+        
+        while (IsWaitingForInput() && steps < kMaxBotSteps) {
+            if (IsWaitingForInput()) {
+                if (state_.pending_input_type == "play_drawn_card") {
+                    ProvideInput(state_.pending_player, "PLAY");
+                } else {
+                    ProvideInput(state_.pending_player, "RED");
                 }
-                return true;
+
+                Tick();
+
+                if (IsWaitingForInput()) TakeBotTurn(); 
+                return;
             }
+
+            Player& current_player = state_.players[state_.current_player_index];
+
+            // Try to play the first legal card
+            for (CompactCard card : current_player.hand) {
+                CardPlayedEvent event = { current_player.username, card, true, false };
+
+                for (auto& rule : active_rules_) {
+                    rule->ValidatePlay(&state_, event);
+                    if (event.is_handled) break;
+                }
+
+                if (event.is_valid_play) {
+                    PlayCard(current_player.username, GetId(card));
+
+                    // If playing the card caused an async wait (e.g., Wild), resolve it immediately
+                    if (IsWaitingForInput()) {
+                        TakeBotTurn(); 
+                    }
+                    return;
+                }
+            }
+            DrawCard(current_player.username);
+
+            steps++;
         }
-    
-        // No valid cards, must draw
-        DrawCard(current_player.username);
-        return true;
+
+        if (steps >= kMaxBotSteps) {
+            Logger::Error("[MATCH]", "Bot recursion limit exceeded!");
+        }
     }
     
     std::string MatchInstance::GetCurrentPlayerUsername() const {

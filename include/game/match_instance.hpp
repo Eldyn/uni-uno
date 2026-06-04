@@ -23,7 +23,7 @@ namespace game {
         void ProvideInput(const std::string& username, const std::string& input);
         void CallUno(const std::string& username);
     
-        bool TakeBotTurn();
+        void TakeBotTurn();
         std::string GetCurrentPlayerUsername() const;
     
         bool IsWaitingForInput() const { return !state_.pending_player.empty(); }

@@ -1,3 +1,4 @@
+#include "common/game/effect.hpp"
 #include "game/game_state.hpp"
 #include "game/match_instance.hpp"
 #include <game/effects/standard.hpp>

@@ -16,11 +16,15 @@ namespace game {
         std::string input_context = ""; // Generalized JSON payload for the frontend
     };
 
+    enum class EffectType {
+        kAdvanceTurn, kDraw, kSkip, kPlayCard, kDecideDrawnCard, kChooseColor, kReverse, kCustom
+    };
+
     class Effect {
     public:
         virtual ~Effect() = default;
         
-        // Effects now have full authority to command the MatchInstance
+        virtual EffectType GetType() const { return EffectType::kCustom; }
         virtual EffectResult Resolve(GameState* state, MatchInstance* match) = 0;
     };
 
