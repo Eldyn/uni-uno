@@ -50,12 +50,16 @@
 		{/if}
 	</div>
 
-	<label for="lobby-is-public">Is Public?</label>
-	<input id="lobby-is-public" type="checkbox" bind:checked={isLobbyPublic} />
+	<div class="form-actions">
+		<div class="checkbox-group">
+			<label for="lobby-is-public">Is Public?</label>
+			<input id="lobby-is-public" type="checkbox" bind:checked={isLobbyPublic} />
+		</div>
 
-	<button type="submit" disabled={isLoading} class="submit-button">
-		{isLoading ? "Creating..." : "Create Lobby"}
-	</button>
+		<button type="submit" disabled={isLoading} class="submit-button">
+			{isLoading ? "Creating..." : "Create Lobby"}
+		</button>
+	</div>
 </form>
 
 <style>
@@ -63,8 +67,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
+		width: 92%;
+		max-width: 400px;
 	}
-
 	h3 {
 		margin: 0;
 		font-size: 16px;
@@ -91,6 +96,7 @@
 		color: var(--text-h);
 		background: var(--bg);
 		transition: border-color 0.2s;
+		width: 100%;
 	}
 
 	input:focus {
@@ -112,16 +118,42 @@
 		color: #dc2626;
 	}
 
+	.form-actions {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+
+	.checkbox-group {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+        padding: 10px 14px;
+	}
+
+	.checkbox-group label {
+		cursor: pointer;
+	}
+
+	input[type="checkbox"] {
+		padding: 0;
+		width: 16px;
+		height: 16px;
+		cursor: pointer;
+	}
+
 	.submit-button {
-		padding: 10px 16px;
+		padding: 10px 14px;
+		font-size: 13px;
 		background: var(--accent);
 		color: white;
 		border: none;
 		border-radius: 6px;
-		font-size: 14px;
 		font-weight: 500;
 		cursor: pointer;
 		transition: opacity 0.2s;
+		white-space: nowrap;
 	}
 
 	.submit-button:hover:not(:disabled) {

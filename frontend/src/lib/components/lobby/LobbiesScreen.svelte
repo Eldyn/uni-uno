@@ -155,6 +155,7 @@
         border-radius: 8px;
         padding: 20px;
         margin-bottom: 24px;
+        width: 30%;
     }
     .lobbies-container {
         display: flex;
