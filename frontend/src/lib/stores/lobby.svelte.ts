@@ -239,6 +239,12 @@ class StoreLobby {
         if (!code) return;
 
         try {
+            const unsubscribeGameRejoin = ws.on(ServerAction.GameStateUpdated, (data) => {
+                storeNavigation.goto("game");
+
+                unsubscribeGameRejoin();
+            });
+
             const response = await ws.emitAndWait(ClientAction.LobbyRejoin, { code });
 
             if (!response.ok) {

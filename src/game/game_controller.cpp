@@ -47,16 +47,16 @@ void GameController::HandlePlayCard(WsContext context, const json& message) {
         return;
     }
 
-    // 1. Resolve any synchronous effects resulting from the card
+    // Resolve any synchronous effects resulting from the card
     active_lobby->match->Tick();
     
-    // 2. The human player successfully acted, so we cancel their AFK timer
+    // The human player successfully acted, so we cancel their AFK timer
     ClearTurnTimer(active_lobby->id); 
     
-    // 3. Broadcast the new board state
+    // Broadcast the new board state
     BroadcastGameState(active_lobby);
     
-    // 4. Trigger evaluation for the next player (in case it is a bot's turn)
+    // Trigger evaluation for the next player (in case it is a bot's turn)
     OnTurnStarted(active_lobby);
 }
 
@@ -181,7 +181,6 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
     }
 }
 
-// Timer Data Struct
 struct TurnTimerData {
     std::function<void()> callback;
     uint32_t lobby_id;

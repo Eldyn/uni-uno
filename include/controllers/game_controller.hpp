@@ -7,9 +7,6 @@
 #include <functional>
 #include <cstdint>
 
-// Forward declaration for the uWebSockets timer struct
-struct us_timer_t;
-
 class GameController {
 public:
     GameController(WebServer& server, LobbyController& lobby_controller);

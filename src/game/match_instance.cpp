@@ -105,6 +105,7 @@ namespace game {
     
         state_.effect_queue.push_back(std::make_unique<AdvanceTurnEffect>());
     
+        // TODO: propagate to players the game end
         if (current_player->hand.empty()) {
             state_.status = MatchStatus::kFinished;
             state_.winner = username;

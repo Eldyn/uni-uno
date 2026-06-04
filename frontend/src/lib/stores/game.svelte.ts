@@ -1,6 +1,5 @@
 import { storeNavigation } from "./navigation.svelte";
-import { storeToast } from "./toast.svelte";
-import { ws } from "./ws.svelte";
+import { ServerAction, ws } from "./ws.svelte";
 import { storeAuth } from "./auth.svelte";
 
 const COLOR_MAP = ["red", "blue", "green", "yellow", "wild"] as const;
@@ -59,7 +58,7 @@ class StoreGame {
     }
 
     #registerListeners() {
-        ws.on("game_state_updated", (data: any) => {
+        ws.on(ServerAction.GameStateUpdated, (data: any) => {
             const previousTurn = this.state?.current_turn;
             const rawState = data.game_state;
 

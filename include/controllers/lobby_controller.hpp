@@ -135,6 +135,7 @@ private:
 
     // ── State ────────────────────────────────────────────────────────────
     ActionRouter& action_router_;
+    uWS::SSLApp&     app_;
 
     // Primary store: lobby_id → Lobby
     std::unordered_map<uint32_t, Lobby> lobbies_;

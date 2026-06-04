@@ -21,7 +21,7 @@ static constexpr char kCodeAlphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 static constexpr int  kCodeLen        = 6;
 static constexpr int  kAlphabetLen    = 36;   
 
-LobbyController::LobbyController(WebServer& server) : action_router_(server.GetActionRouter()) {
+LobbyController::LobbyController(WebServer& server) : action_router_(server.GetActionRouter()), app_(server.GetApp()) {
     action_router_.On("lobby_create", [this](WsContext ctx, const json& msg) {
         HandleCreate(ctx, msg);
         return true;
@@ -206,6 +206,9 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
 
     code_to_id_[code] = id;
     ctx.socket_data->lobby_code = code;
+    
+    std::string topic = "lobby_" + code;
+    ctx.socket->subscribe(topic);
 
     Logger::Log("[Lobby] Created lobby ", id, " code=", code, " host=", username);
 
@@ -313,9 +316,8 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
     const string& username = ctx.socket_data->username;
 
     if (std::ranges::contains(lobby.members, username, &LobbyMember::username)) {
-        if (lobby.match) {
-            // TODO: Also handle Game rejoin
-        }
+        string topic = "lobby_" + lobby.invite_code;
+        ctx.socket->subscribe(topic);
 
         auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, request_id);
         resp["lobby"] = json({
@@ -324,7 +326,17 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
             {"members",     MemberListJson(lobby)},
             {"name",        lobby.name}
         });
+
         ctx.socket->send(resp.dump(), ctx.op_code);
+
+        if (lobby.match) {
+            auto game_resp = MakeResponse(ws::ServerAction::kGameStateUpdated);
+            
+            game_resp["game_state"] = lobby.match->SerializePlayerState(username);
+            
+            ctx.socket->send(game_resp.dump(), ctx.op_code);
+        }
+
         return;
     }
 
@@ -613,11 +625,8 @@ void LobbyController::BroadcastUpdate(const Lobby& lobby) const {
         {"name", lobby.name}
     };
 
-    for (const auto& m : lobby.members) {
-        if (m.is_connected && m.socket) {
-            m.socket->send(notification.dump(), uWS::OpCode::TEXT);
-        }
-    }
+    // Broadcast is more perfomant!
+    app_.publish("lobby_" + lobby.invite_code, notification.dump(), uWS::OpCode::TEXT);
 }
 
 bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bool explicit_leave, const string& request_id) {
@@ -632,6 +641,9 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
             PerSocketData* sd = member_it->socket->getUserData();
             if (sd) sd->lobby_code.clear();
 
+            string topic = "lobby_" + lobby.invite_code;
+            member_it->socket->unsubscribe(topic);
+
             json response;
             if (explicit_leave) {
                 response = MakeResponse(ws::ServerAction::kLobbyLeft, request_id);
@@ -640,13 +652,14 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
                 response["reason"] = "Kicked by host";
             }
             
-            // Send notice directly down the target's pipeline
+
             member_it->socket->send(response.dump(), uWS::OpCode::TEXT);
         }
 
         // 3. Actually clear them from memory
         lobby.members.erase(member_it);
     }
+
 
     if (lobby.members.empty()) {
         code_to_id_.erase(lobby.invite_code);
