@@ -4,6 +4,7 @@
 	import { ws } from "../../stores/ws.svelte";
 
 	let isHost = $derived(storeAuth.username === storeLobby.current?.host);
+	let startable = $derived(storeLobby.current!.members.length > 2);
 
 	// Local UI state for handling the name-editing interaction
 	let isEditingName = $state(false);
@@ -45,7 +46,7 @@
 			onclick={() => {
 				ws.emit("lobby_start_game");
 			}}
-			disabled={!isHost || storeLobby.current!.members.length < 2}
+			disabled={!isHost || !startable}
 		>
 			Start Game
 		</button>
