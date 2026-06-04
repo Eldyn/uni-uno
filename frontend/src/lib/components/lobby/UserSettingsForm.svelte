@@ -3,23 +3,19 @@
     import { storeAuth } from "../../stores/auth.svelte";
 
     let userEmail = $state("utente@esempio.com");
-    let winCount = $state(69); // idk mate
-    let profileImage = $state("https://via.placeholder.com/100");
+    let winCount = $state(69); 
 
     function handleImageChange(event: Event) {
         const target = event.target as HTMLInputElement;
+        
         if (target.files && target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (e.target?.result) {
-                    profileImage = e.target.result as string;
-                    // TODO: storeAuth.updateAvatar(profileImage)
-                }
-            };
-            reader.readAsDataURL(target.files[0]);
+            const file = target.files[0];
+            storeAuth.updateAvatar(file);
         }
     }
 </script>
+
+//TODO : bindare l'immagine del profilo all'account reale, e mostrare statistiche reali (vittorie totali, partite giocate, ecc.) 
 
 <div class="settings-container">
     <div class="settings-card">
@@ -27,12 +23,21 @@
         
         <div class="profile-avatar-section">
             <div class="avatar-wrapper">
-                <img src={profileImage} alt="Avatar" class="avatar-preview" />
+                {#if storeAuth.avatar}
+                    <img src={storeAuth.avatar} alt="Avatar" class="avatar-preview" />
+                {:else}
+                    <div class="avatar-fallback">👤</div>
+                {/if}
             </div>
             
             <label class="upload-btn">
                 Cambia Immagine
-                <input type="file" accept="image/*" onchange={handleImageChange} hidden />
+                <input 
+                    type="file" 
+                    accept="image/*" 
+                    onchange={handleImageChange} 
+                    hidden 
+                />
             </label>
         </div>
 
@@ -98,7 +103,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.1);
         overflow: hidden;
     }
 
@@ -106,12 +111,12 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        font-size: 14px;
-        color: var(--text, #fff);
+    }
+
+    .avatar-fallback {
+        font-size: 40px;
+        line-height: 1;
+        user-select: none;
     }
 
     .upload-btn {
@@ -142,7 +147,7 @@
     .info-group label {
         font-size: 14px;
         font-weight: 500;
-        color:white;
+        color: white;
     }
 
     .info-group input {
@@ -156,7 +161,7 @@
     .info-group input:disabled {
         background: rgba(0,0,0,0.05);
         cursor: not-allowed;
-        color:white;
+        color: white;
     }
 
     .stats-section {

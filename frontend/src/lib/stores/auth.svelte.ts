@@ -22,6 +22,7 @@ export interface AuthFieldErrors {
 
 class StoreAuth {
     username = $state("");
+    avatar = $state(""); // Gestito localmente come URL string
     isLoggedIn = $state(false);
     isLoading = $state(false);
 
@@ -39,7 +40,7 @@ class StoreAuth {
 
             if (res.ok) {
                 const data = await res.json();
-                this.#setLoggedIn(data.username);
+                this.#setLoggedIn(data.username, data.avatar || "");
                 return true;
             }
 
@@ -135,7 +136,7 @@ class StoreAuth {
 
             if (res.ok) {
                 const data = await res.json();
-                this.#setLoggedIn(data.username);
+                this.#setLoggedIn(data.username, data.avatar || "");
                 return {};
             }
 
@@ -155,6 +156,22 @@ class StoreAuth {
     }
 
     /**
+     * Aggiorna l'avatar nello stato locale del client.
+     * Evita chiamate HTTP a endpoint inesistenti (404).
+     * @param file Il file nativo proveniente dall'input HTML
+     */
+    updateAvatar(file: File): boolean {
+        try {
+            this.avatar = URL.createObjectURL(file);
+            storeToast.success("Immagine del profilo aggiornata localmente!");
+            return true;
+        } catch {
+            storeToast.error("Impossibile caricare l'immagine.");
+            return false;
+        }
+    }
+
+    /**
      * Attempts a logout.
      * @remarks even if the server request fails, the client logs out.
      */
@@ -167,13 +184,15 @@ class StoreAuth {
         }
     }
 
-    #setLoggedIn(username: string): void {
+    #setLoggedIn(username: string, avatar: string = ""): void {
         this.username = username;
+        this.avatar = avatar;
         this.isLoggedIn = true;
     }
 
     #setLoggedOut(): void {
         this.username = "";
+        this.avatar = "";
         this.isLoggedIn = false;
     }
 }
