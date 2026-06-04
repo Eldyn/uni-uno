@@ -150,18 +150,18 @@
 	}
 
 	.game-field {
-		height: 100vh;
-		display: grid;
-		justify-content: center;
-		align-content: center;
-		grid-gap: 0.5em;
-		grid-template-columns: var(--playerSpace) var(--fieldSize) var(--playerSpace);
-		grid-template-rows: var(--playerSpace) var(--fieldSize) var(--playerSpace);
-	}
+	height: 100vh;
+	display: grid;
+	justify-content: center;
+	align-content: center;
+	grid-gap: 0.5em;
+	grid-template-columns: var(--playerSpace) var(--fieldSize) var(--playerSpace);
+	grid-template-rows: var(--playerSpace) var(--fieldSize) var(--playerSpace);
+}
 
-	.game-field.perspective {
-		transform: rotateX(30deg);
-	}
+.game-field.perspective {
+	transform: perspective(1200px) rotateX(10deg);
+}
 
 	.game-field #piles_area {
 		position: relative;
