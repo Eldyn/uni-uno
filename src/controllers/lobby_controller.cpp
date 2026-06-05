@@ -84,52 +84,48 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
         auto* self = *(LobbyController**)us_timer_ext(t);
         auto  now  = steady_clock::now();
 
-        vector<uint32_t> to_broadcast;
-        vector<uint32_t> to_destroy;
+        std::vector<std::pair<uint32_t, std::string>> to_evict;
 
-        for (auto& [id, lobby] : self->lobbies_) {
-            bool changed = false;
-
-            // NOTE: If we want evicted users to get a clean visual "You were disconnected" 
-            //       notification, we could invoke a specialized variant of RemoveMember here.
-            //       For now, we clean them silently as they are already offline.
-            erase_if(lobby.members, [&](const LobbyMember& m) {
-                if (!m.is_connected) {
+        for (const auto& [id, lobby] : self->lobbies_) {
+            for (const auto& m : lobby.members) {
+                if (!m.is_connected && !m.is_bot) {
                     auto elapsed = duration_cast<milliseconds>(now - m.disconnected_at).count();
                     if (elapsed > kReconnectGraceMs) {
-                        Logger::Log("[Lobby] Evicted ", m.username, " from lobby ", id, " (grace expired)");
-                        changed = true;
-                        return true;
+                        to_evict.push_back({id, m.username});
                     }
-                }
-                return false;
-            });
-
-            if (changed) {
-                // NOTE: Checks whether we need to abort the match
-                self->CheckMatchIntegrity(lobby);
-
-                bool has_humans = std::ranges::any_of(lobby.members, [](const LobbyMember& m) {
-                    return !m.is_bot;
-                });
-        
-                if (!has_humans) {
-                    to_destroy.push_back(id);
-                } else {
-                    to_broadcast.push_back(id);
                 }
             }
         }
 
-        for (uint32_t id : to_broadcast) {
-            self->BroadcastUpdate(self->lobbies_.at(id));
+        std::set<uint32_t> lobbies_to_update;
+
+        for (const auto& [id, username] : to_evict) {
+            Logger::Log("[Lobby] Grace expired. Evicting ", username, " from lobby ", id);
+            
+            bool lobby_survived = self->RemoveMember(id, username, false, "");
+
+            if (lobby_survived) {
+                Lobby& lobby = self->lobbies_.at(id);
+                
+                if (lobby.host == username) {
+                    for (const auto& m : lobby.members) {
+                        if (m.is_connected && !m.is_bot) {
+                            lobby.host = m.username;
+                            Logger::Log("[Lobby] Host auto-passed to ", m.username, " in lobby ", id);
+                            break;
+                        }
+                    }
+                }
+
+                self->SyncBots(lobby);
+                lobbies_to_update.insert(id);
+            } else {
+                lobbies_to_update.erase(id);
+            }
         }
 
-        for (uint32_t id : to_destroy) {
-            const auto& lobby = self->lobbies_.at(id);
-            self->code_to_id_.erase(lobby.invite_code);
-            self->lobbies_.erase(id);
-            Logger::Log("[Lobby] Destroyed empty lobby ", id);
+        for (uint32_t id : lobbies_to_update) {
+            self->BroadcastUpdate(self->lobbies_.at(id));
         }
 
     }, 1000, 1000);
@@ -294,7 +290,7 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     auto lobby_it = lobbies_.find(it->second);
     if (lobby_it == lobbies_.end()) {
         code_to_id_.erase(it); 
-        ws::SendError(ctx.socket, ctx.op_code, "Lobby data integrity error", request_id);
+        ws::SendError(ctx.socket, ctx.op_code, "Lobby not found", request_id);
         return;
     }
 
@@ -306,48 +302,52 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
         return;
     }
 
-    bool took_over_bot = false;
-    for (auto& member : lobby.members) {
-        if (member.is_bot) {
-            std::string old_bot_name = member.username;
-            
-            member.username = username;
-            member.socket = ctx.socket;
-            member.is_connected = true;
-            member.is_bot = false;
-            
-            if (lobby.match) {
-                game::Player* engine_player = lobby.match->GetPlayer(old_bot_name);
-                if (engine_player) {
-                    engine_player->username = username;
-                    engine_player->is_bot = false;
+    bool joined = false;
+
+    if (lobby.members.size() < kMaxMembers) {
+        lobby.members.emplace_back(username, ctx.socket, true, false);
+        
+        if (lobby.match) {
+            lobby.match->AddPlayerMidGame(username, false);
+        }
+
+        joined = true;
+        Logger::Info("[Lobby] '", username, "' joined an empty slot.");
+    } else {
+        for (auto& member : lobby.members) {
+            if (member.is_bot) {
+                std::string old_bot_name = member.username;
+                
+                member.username = username;
+                member.socket = ctx.socket;
+                member.is_connected = true;
+                member.is_bot = false;
+                
+                // Hijack the engine struct if a game is actively running
+                if (lobby.match) {
+                    game::Player* engine_player = lobby.match->GetPlayer(old_bot_name);
+                    if (engine_player) {
+                        engine_player->username = username;
+                        engine_player->is_bot = false;
+                    }
                 }
+
+                joined = true;
+                Logger::Info("[Game] '", username, "' hijacked ", old_bot_name);
+                break;
             }
-
-            if (lobby.settings.bot_count > 0) {
-                lobby.settings.bot_count--;
-            }  
-
-            took_over_bot = true;
-            Logger::Info("[Game] '", username, "' took over ", old_bot_name);
-            break;
         }
     }
 
-    if (!took_over_bot) {
-        if (lobby.members.size() >= 4) {
-            ws::SendError(ctx.socket, ctx.op_code, "Lobby full", request_id);
-            return;
-        }
-        lobby.members.emplace_back(username, ctx.socket, true, false);
+    if (!joined) {
+        ws::SendError(ctx.socket, ctx.op_code, "Lobby full", request_id);
+        return;
     }
 
     ctx.socket_data->lobby_code = code;
     
     std::string topic = "lobby_" + code;
     ctx.socket->subscribe(topic);
-
-    Logger::Log("[Lobby] ", username, " joined lobby ", lobby.id);
 
     auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, request_id);
     resp["lobby"] = json({
@@ -360,6 +360,12 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     ctx.socket->send(resp.dump(), ctx.op_code);
 
     BroadcastUpdate(lobby);
+
+    if (lobby.match) {
+        auto game_resp = MakeResponse(ws::ServerAction::kGameStateUpdated);
+        game_resp["game_state"] = lobby.match->SerializePlayerState(username);
+        ctx.socket->send(game_resp.dump(), ctx.op_code);
+    }
 }
 
 void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
@@ -570,30 +576,36 @@ void LobbyController::HandleKick(WsContext ctx, const json& message) {
     }
     Lobby& lobby = lobby_it->second;
 
-    // 1. Authorization Check
     if (ctx.socket_data->username != lobby.host) {
         ws::SendError(ctx.socket, ctx.op_code, "You must be the host of this lobby!", request_id);
         return;
     }
 
-    // 2. Prevent Host Self-Kick
     if (username == lobby.host) {
         ws::SendError(ctx.socket, ctx.op_code, "You cannot kick yourself", request_id);
         return;
     }
 
-    // 3. Target Verification
-    if (!std::ranges::contains(lobby.members, username, &LobbyMember::username)) {
+    auto target_it = std::ranges::find(lobby.members, username, &LobbyMember::username);
+    
+    if (target_it == lobby.members.end()) {
         ws::SendError(ctx.socket, ctx.op_code, "No such user is in the lobby", request_id);
         return;
     }
 
-    // 4. Remove target. RemoveMember will notify the victim socket directly.
-    bool lobby_still_exists = RemoveMember(lobby.id, username, false);
+    if (target_it->is_bot && lobby.settings.bot_count > 0) {
+        lobby.settings.bot_count--;
+        Logger::Info("[Lobby] Host kicked a bot. New bot_count setting is ", lobby.settings.bot_count);
+    }
 
-    // 5. If the lobby survived, broadcast the update to remaining players
+    uint32_t lobby_id = lobby.id;
+    bool lobby_still_exists = RemoveMember(lobby_id, username, false, request_id);
+
     if (lobby_still_exists) {
-        BroadcastUpdate(lobby);
+        // NOTE: We sync bots in case a HUMAN was kicked and the bot_count demands a refill, if
+        //       a bot was kicked, we just decremented the count, so SyncBots won't respawn it.
+        SyncBots(lobbies_.at(lobby_id));
+        BroadcastUpdate(lobbies_.at(lobby_id));
     }
 }
 
@@ -736,7 +748,7 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
 
     Lobby& lobby = it->second;
 
-    auto member_it = std::ranges::find(lobby.members, username, &LobbyMember::username);
+auto member_it = std::ranges::find(lobby.members, username, &LobbyMember::username);
     if (member_it != lobby.members.end()) {
         if (member_it->is_connected && member_it->socket) {
             PerSocketData* sd = member_it->socket->getUserData();
@@ -746,18 +758,40 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
             member_it->socket->unsubscribe(topic);
 
             json response;
-            if (explicit_leave) {
-                response = MakeResponse(ws::ServerAction::kLobbyLeft, request_id);
-            } else {
+            if (explicit_leave) response = MakeResponse(ws::ServerAction::kLobbyLeft, request_id);
+            else {
                 response = MakeResponse(ws::ServerAction::kLobbyEvicted);
                 response["reason"] = "Kicked by host";
             }
-            
-
             member_it->socket->send(response.dump(), uWS::OpCode::TEXT);
         }
 
-        lobby.members.erase(member_it);
+        if (lobby.match) {
+            std::string old_name = member_it->username;
+            bool was_their_turn = (lobby.match->GetCurrentPlayerUsername() == old_name);
+
+            static int bot_id = 1;
+            std::string new_bot_name = "Bot_" + std::to_string(bot_id++);
+
+            member_it->username = new_bot_name;
+            member_it->is_bot = true;
+            member_it->is_connected = true;
+
+            game::Player* engine_player = lobby.match->GetPlayer(old_name);
+            if (engine_player) {
+                engine_player->username = new_bot_name;
+                engine_player->is_bot = true;
+            }
+
+            Logger::Info("[Match] Human '", old_name, "' evicted mid-game. Replaced by ", new_bot_name);
+
+            if (was_their_turn && player_replaced_callback_) {
+                player_replaced_callback_(&lobby);
+            }
+        } else {
+            lobby.members.erase(member_it);
+        }
+
         CheckMatchIntegrity(lobby);
     }
 
@@ -786,6 +820,7 @@ Lobby* LobbyController::FindLobbyForUser(const string& username) {
 }
 
 void LobbyController::SyncBots(Lobby& lobby) {
+    if (lobby.match) return;
     int human_count = 0;
     int bot_count = 0;
 

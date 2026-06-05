@@ -71,6 +71,47 @@ bool WebServer::InitDB() {
             salt       TEXT    NOT NULL,
             email      TEXT    NOT NULL UNIQUE
         );
+
+        CREATE TABLE IF NOT EXISTS matches (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            winner_username TEXT NOT NULL,
+            ended_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS match_participants (
+            match_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            FOREIGN KEY(match_id) REFERENCES matches(id) ON DELETE CASCADE,
+            PRIMARY KEY(match_id, username)
+        );
+
+        CREATE TABLE IF NOT EXISTS player_stats (
+            username TEXT PRIMARY KEY,
+            total_wins INTEGER DEFAULT 0,
+            total_losses INTEGER DEFAULT 0,
+            
+            cards_played_red INTEGER DEFAULT 0,
+            cards_played_blue INTEGER DEFAULT 0,
+            cards_played_green INTEGER DEFAULT 0,
+            cards_played_yellow INTEGER DEFAULT 0,
+            cards_played_wild_color INTEGER DEFAULT 0, 
+            
+            cards_played_0 INTEGER DEFAULT 0,
+            cards_played_1 INTEGER DEFAULT 0,
+            cards_played_2 INTEGER DEFAULT 0,
+            cards_played_3 INTEGER DEFAULT 0,
+            cards_played_4 INTEGER DEFAULT 0,
+            cards_played_5 INTEGER DEFAULT 0,
+            cards_played_6 INTEGER DEFAULT 0,
+            cards_played_7 INTEGER DEFAULT 0,
+            cards_played_8 INTEGER DEFAULT 0,
+            cards_played_9 INTEGER DEFAULT 0,
+            cards_played_skip INTEGER DEFAULT 0,
+            cards_played_reverse INTEGER DEFAULT 0,
+            cards_played_draw2 INTEGER DEFAULT 0,
+            cards_played_draw4 INTEGER DEFAULT 0,
+            cards_played_colorswitch INTEGER DEFAULT 0
+        );
     )";
 
     VoidResult schema_result = Database::Get().ApplySchema(schema);

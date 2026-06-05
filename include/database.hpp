@@ -13,6 +13,7 @@ class DbRow {
 public:
     void Set(const std::string& col, DbValue val);
 
+    // BUG: Should be Optional instead of throw
     template<typename T>
     T Get(const std::string& col) const {
         if (!Has(col)) {

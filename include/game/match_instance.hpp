@@ -25,7 +25,9 @@ namespace game {
         void CallUno(const std::string& username);
     
         void TakeBotTurn();
+
         std::string GetCurrentPlayerUsername() const;
+        void AddPlayerMidGame(const std::string& username, bool is_bot);
     
         json ExportState() const;
 
@@ -44,6 +46,7 @@ namespace game {
     private:
         GameState state_;
         LobbySettings settings_;
+        std::unordered_map<std::string, PlayerSessionStats> session_stats_;
         std::vector<std::unique_ptr<GameRule>> active_rules_;
     
         void GenerateDeck();

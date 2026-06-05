@@ -11,6 +11,7 @@
 #include <webserver.hpp>
 
 using GameStartedCallback = std::function<void(Lobby*)>;
+using PlayerReplacedCallback = std::function<void(Lobby*)>;
 
 //  Owns all in-memory lobby state. No database involved — lobbies are
 //  ephemeral session state that dies with the server process.
@@ -73,11 +74,15 @@ public:
         game_started_callback_ = std::move(callback);
     }
 
+    void OnPlayerReplaced(PlayerReplacedCallback callback) {
+        player_replaced_callback_ = std::move(callback);
+    }
+
     void SaveMatchStateToDB(Lobby& lobby);
 
     // Grace period before a disconnected member is evicted 3 minutes in milliseconds.
     // static constexpr int kReconnectGraceMs = 1'000 * 60 * 3;
-    static constexpr int kReconnectGraceMs = 1'000 * 60 * 3;
+    static constexpr int kReconnectGraceMs = 1'000 * 30;
 
     // Maximum players per lobby.
     static constexpr int kMaxMembers = 4;
@@ -147,6 +152,7 @@ private:
 
     // ── State ────────────────────────────────────────────────────────────
     GameStartedCallback game_started_callback_;
+    PlayerReplacedCallback player_replaced_callback_;
 
     ActionRouter& action_router_;
 
