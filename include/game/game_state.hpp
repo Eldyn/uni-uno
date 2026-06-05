@@ -13,7 +13,11 @@ namespace game {
     struct Player {
         std::string username;
         std::vector<CompactCard> hand;
+        bool is_bot;
         bool has_called_uno = false;
+
+        Player(std::string u, std::vector<CompactCard> h, bool b, bool uno) : username(u), hand(h), is_bot(b), has_called_uno(uno) {};
+        Player(std::string u, bool b, bool uno) : username(u), is_bot(b), has_called_uno(uno) {};
     };
     
     enum class MatchStatus {

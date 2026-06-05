@@ -73,6 +73,8 @@ public:
         game_started_callback_ = std::move(callback);
     }
 
+    void SaveMatchStateToDB(Lobby& lobby);
+
     // Grace period before a disconnected member is evicted 3 minutes in milliseconds.
     // static constexpr int kReconnectGraceMs = 1'000 * 60 * 3;
     static constexpr int kReconnectGraceMs = 1'000 * 60 * 3;
@@ -81,7 +83,10 @@ public:
     static constexpr int kMaxMembers = 4;
 
 private:
+    void SyncBots(Lobby& lobby);
+
     void CheckMatchIntegrity(Lobby& lobby);
+
     // lobby_create  { }
     //   Creates a new lobby, makes the sender the host, responds with
     //   lobby_joined carrying the invite_code and member list.

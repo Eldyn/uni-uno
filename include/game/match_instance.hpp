@@ -13,7 +13,8 @@ struct LobbySettings;
 namespace game {
     class MatchInstance {
     public:
-        explicit MatchInstance(const std::vector<std::string>& usernames, const LobbySettings& settings);
+        explicit MatchInstance(const std::vector<std::pair<std::string, bool>>& players_info, const LobbySettings& settings);
+        explicit MatchInstance(const json& saved_state, const LobbySettings& settings);
         
         void Start();
         void Tick(); 
@@ -26,8 +27,12 @@ namespace game {
         void TakeBotTurn();
         std::string GetCurrentPlayerUsername() const;
     
+        json ExportState() const;
+
         bool IsWaitingForInput() const { return !state_.pending_player.empty(); }
         void SetTurnEndTime(std::chrono::steady_clock::time_point end_time) { state_.turn_end_time = end_time; }
+
+        Player* GetPlayer(const std::string& username);
         std::string GetPendingPlayer() const { return state_.pending_player; }
         std::string GetPendingInputType() const { return state_.pending_input_type; }
         std::string GetPendingInputContext() const { return state_.pending_input_context; }
@@ -36,13 +41,11 @@ namespace game {
         std::string GetWinner() const { return state_.winner; }
     
         nlohmann::json SerializePlayerState(const std::string& username) const;
-    
     private:
         GameState state_;
         LobbySettings settings_;
         std::vector<std::unique_ptr<GameRule>> active_rules_;
     
         void GenerateDeck();
-        Player* GetPlayer(const std::string& username);
     };
 }

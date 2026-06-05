@@ -18,6 +18,7 @@ struct LobbySettings {
     BotTakeoverMode bot_mode = BotTakeoverMode::kWaitUntilTurnEnd;
     std::vector<std::string> active_mods; // e.g., ["0_7_mod", "liars_uno"]
 
+    int bot_count = 3;
     int starting_cards = 7;                                    
 
     int count_zeros          = 1;
@@ -38,10 +39,11 @@ struct LobbyMember {
     std::string     username;
     AppWebSocket*   socket;        // nullptr when disconnected
     bool            is_connected;
+    bool            is_bot;
     
     std::chrono::steady_clock::time_point disconnected_at{};
 
-    LobbyMember(std::string u, AppWebSocket* s, bool c) : username(std::move(u)), socket(s), is_connected(c)  {}
+    LobbyMember(std::string u, AppWebSocket* s, bool c, bool b) : username(std::move(u)), socket(s), is_connected(c), is_bot(b)  {}
 };
 
 struct Lobby {

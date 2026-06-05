@@ -1,7 +1,4 @@
 <script lang="ts">
-	import { storeNavigation } from "../../stores/navigation.svelte";
-	import { storeToast } from "../../stores/toast.svelte";
-	import { ClientAction, ws } from "../../stores/ws.svelte";
 	import { storeLobby, type Lobby } from "../../stores/lobby.svelte";
 
 	let { lobby }: { lobby: Lobby } = $props();

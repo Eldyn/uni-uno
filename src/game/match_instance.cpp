@@ -1,12 +1,16 @@
 #include "common/game/card_types.hpp"
+#include "common/lobby.hpp"
+#include "game/game_state.hpp"
 #include <game/match_instance.hpp>
 #include <game/rules/standard.hpp>
 #include <game/effects/standard.hpp>
 #include <common/game/effect.hpp>
 #include <controllers/lobby_controller.hpp>
 #include <algorithm>
+#include <memory>
 #include <random>
 #include <string>
+#include <vector>
 
 namespace game {
     void ReshuffleDiscardIntoDraw(GameState* game_state) {
@@ -23,9 +27,9 @@ namespace game {
         std::shuffle(game_state->draw_pile.begin(), game_state->draw_pile.end(), random_generator);
     }
 
-    MatchInstance::MatchInstance(const std::vector<std::string>& usernames, const LobbySettings& settings) : settings_(settings) {
-        for (const auto& uname : usernames) {
-            state_.players.push_back({uname, {}, false});
+    MatchInstance::MatchInstance(const std::vector<std::pair<std::string, bool>>& players_info, const LobbySettings& settings) : settings_(settings) {
+        for (const auto& player_info : players_info) {
+            state_.players.emplace_back(player_info.first, player_info.second, false);
         }
 
         for (const auto& mod_name : settings.active_mods) {
@@ -35,6 +39,53 @@ namespace game {
         }
 
         active_rules_.push_back(std::make_unique<StandardRule>());
+    }
+
+    json MatchInstance::ExportState() const {
+        json state_json;
+        
+        state_json["status"] = state_.status;
+        state_json["active_color"] = state_.active_color;
+        state_json["current_player_index"] = state_.current_player_index;
+        state_json["play_direction"] = state_.play_direction;
+
+        state_json["discard_pile"] = state_.discard_pile;
+        state_json["draw_pile"] = state_.draw_pile;
+
+        json players_json = json::array();
+        for (const Player player : state_.players) {
+            json player_json;
+
+            player_json["username"] = player.username;
+            player_json["hand"] = player.hand;
+            player_json["has_called_uno"] = player.has_called_uno;
+            player_json["is_bot"] = player.is_bot;
+            
+            players_json.push_back(player_json);
+        }
+
+        state_json["players"] = players_json;
+    
+        return state_json;
+    }
+
+    MatchInstance::MatchInstance(const json& saved_state, const LobbySettings& settings) : settings_(settings) {
+        active_rules_.push_back(std::make_unique<StandardRule>());
+
+        state_.status = static_cast<MatchStatus>(saved_state["status"].get<int>());
+        state_.active_color = static_cast<Color>(saved_state["active_color"].get<int>());
+        state_.current_player_index = saved_state["current_player_index"].get<int>();
+        state_.play_direction = saved_state["play_direction"].get<int>();
+
+        saved_state["draw_pile"].get_to(state_.draw_pile);
+        saved_state["discard_pile"].get_to(state_.discard_pile);
+
+        for (const auto& player_json : saved_state["players"]) {
+            std::vector<CompactCard> hand;
+            player_json["hand"].get_to(hand);
+
+            state_.players.emplace_back(player_json["username"], hand, player_json.value("is_bot", false), player_json["has_called_uno"]);
+        }
     }
     
     void MatchInstance::Start() {

@@ -1,9 +1,11 @@
+#include "common/lobby.hpp"
 #include "webserver.hpp"
 #include "websocket_context.hpp"
 #include <WebSocketProtocol.h>
 #include <controllers/lobby_controller.hpp>
 #include <common/ws.hpp>
 #include <logger.hpp>
+#include <numeric>
 #include <openssl/rand.h>
 #include <algorithm>
 #include <chrono>
@@ -107,7 +109,11 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
                 // NOTE: Checks whether we need to abort the match
                 self->CheckMatchIntegrity(lobby);
 
-                if (lobby.members.empty()) {
+                bool has_humans = std::ranges::any_of(lobby.members, [](const LobbyMember& m) {
+                    return !m.is_bot;
+                });
+        
+                if (!has_humans) {
                     to_destroy.push_back(id);
                 } else {
                     to_broadcast.push_back(id);
@@ -135,6 +141,21 @@ LobbyController::~LobbyController() {
     if (eviction_timer_) {
         us_timer_close(eviction_timer_);
         eviction_timer_ = nullptr;
+    }
+}
+
+void LobbyController::SaveMatchStateToDB(Lobby& lobby) {
+    if (!lobby.match || lobby.match->IsGameOver()) return;
+
+    nlohmann::json saved_state = lobby.match->ExportState();
+    std::string json_payload = saved_state.dump();
+
+    // The user requested: "Save it to all the non-bot players that were in the lobby"
+    for (const auto& member : lobby.members) {
+        if (!member.is_bot) {
+            // Database::UpsertSavedMatch(member.username, lobby.id, json_payload);
+            Logger::Info("Saved match state for human player: ", member.username);
+        }
     }
 }
 
@@ -225,13 +246,14 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
     lobby.invite_code = code;
     lobby.host        = username;
     lobby.name        = ws::GetOr<string>(message, "name", username+"'s lobby");
-    lobby.members.emplace_back(username, ctx.socket, true);
+    lobby.members.emplace_back(username, ctx.socket, true, false);
 
     code_to_id_[code] = id;
     ctx.socket_data->lobby_code = code;
     
     std::string topic = "lobby_" + code;
     ctx.socket->subscribe(topic);
+    SyncBots(lobby);
 
     Logger::Log("[Lobby] Created lobby ", id, " code=", code, " host=", username);
 
@@ -272,17 +294,11 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     auto lobby_it = lobbies_.find(it->second);
     if (lobby_it == lobbies_.end()) {
         code_to_id_.erase(it); 
-        ws::SendError(ctx.socket, ctx.op_code, "Lobby not found", request_id);
+        ws::SendError(ctx.socket, ctx.op_code, "Lobby data integrity error", request_id);
         return;
     }
 
     Lobby& lobby = lobby_it->second;
-    
-    if (lobby.members.size() >= 4) {
-        ws::SendError(ctx.socket, ctx.op_code, "Lobby full", request_id);
-        return;
-    }
-
     const string& username = ctx.socket_data->username;
 
     if (std::ranges::contains(lobby.members, username, &LobbyMember::username)) {
@@ -290,8 +306,46 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
         return;
     }
 
-    lobby.members.emplace_back(username, ctx.socket, true);
+    bool took_over_bot = false;
+    for (auto& member : lobby.members) {
+        if (member.is_bot) {
+            std::string old_bot_name = member.username;
+            
+            member.username = username;
+            member.socket = ctx.socket;
+            member.is_connected = true;
+            member.is_bot = false;
+            
+            if (lobby.match) {
+                game::Player* engine_player = lobby.match->GetPlayer(old_bot_name);
+                if (engine_player) {
+                    engine_player->username = username;
+                    engine_player->is_bot = false;
+                }
+            }
+
+            if (lobby.settings.bot_count > 0) {
+                lobby.settings.bot_count--;
+            }  
+
+            took_over_bot = true;
+            Logger::Info("[Game] '", username, "' took over ", old_bot_name);
+            break;
+        }
+    }
+
+    if (!took_over_bot) {
+        if (lobby.members.size() >= 4) {
+            ws::SendError(ctx.socket, ctx.op_code, "Lobby full", request_id);
+            return;
+        }
+        lobby.members.emplace_back(username, ctx.socket, true, false);
+    }
+
     ctx.socket_data->lobby_code = code;
+    
+    std::string topic = "lobby_" + code;
+    ctx.socket->subscribe(topic);
 
     Logger::Log("[Lobby] ", username, " joined lobby ", lobby.id);
 
@@ -390,12 +444,16 @@ void LobbyController::HandleLeave(WsContext ctx, const json& message) {
     // Pass true for explicit_action, pass request_id so they match their pending promise
     bool lobby_still_exists = RemoveMember(id, username, true, request_id);
 
-    if (lobby_still_exists && was_host) {
-        for (const auto& m : lobbies_.at(id).members) {
-            if (m.is_connected) {
-                lobbies_.at(id).host = m.username;
-                Logger::Log("[Lobby] Host auto-passed to ", m.username, " in lobby ", id);
-                break;
+
+    if (lobby_still_exists) {
+        SyncBots(lobbies_.at(id));
+        if (was_host) {
+            for (const auto& m : lobbies_.at(id).members) {
+                if (m.is_connected && !m.is_bot) {
+                    lobbies_.at(id).host = m.username;
+                    Logger::Log("[Lobby] Host auto-passed to ", m.username, " in lobby ", id);
+                    break;
+                }
             }
         }
         BroadcastUpdate(lobbies_.at(id));
@@ -406,22 +464,30 @@ void LobbyController::HandleList(WsContext ctx, const json& message) {
     json list = json::array();
     string request_id = ws::GetOr<string>(message, "request_id", "");
 
+    // BUG: Will hang the entire server if there are too many lobbies
     for (const auto& [id, lobby] : lobbies_) {
         bool any_connected = std::ranges::any_of(lobby.members, &LobbyMember::is_connected);
 
+        int humans = std::ranges::count_if(lobby.members, [](const auto& member) {
+            return !member.is_bot;
+        });
+
         if (!any_connected) continue;
-        if (static_cast<int>(lobby.members.size()) >= kMaxMembers) continue;
+        
+        if (humans >= kMaxMembers) continue;
        
         if (lobby.is_public) {
             list.push_back({
                 {"name", lobby.name},
-                {"member_count", lobby.members.size()},
+                {"member_count", humans},
+                {"bot_count", lobby.members.size()}, 
                 {"invite_code", lobby.invite_code}
             });
         } else {
             list.push_back({
                 {"name", lobby.name},
-                {"member_count", lobby.members.size()}
+                {"host", lobby.host},
+                {"member_count", humans}
             });
         }
     }
@@ -461,8 +527,15 @@ void LobbyController::HandlePromote(WsContext ctx, const json& message) {
         return;
     }
 
-    if (!std::ranges::contains(lobby.members, username, &LobbyMember::username)) {
+    auto target_it = std::ranges::find(lobby.members, username, &LobbyMember::username);
+    
+    if (target_it == lobby.members.end()) {
         ws::SendError(ctx.socket, ctx.op_code, "No such user is in the lobby", request_id);
+        return;
+    }
+
+    if (target_it->is_bot) {
+        ws::SendError(ctx.socket, ctx.op_code, "You cannot promote a bot to host", request_id);
         return;
     }
 
@@ -543,17 +616,22 @@ void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
 
     bool changed = false;
 
-    if (message.contains("is_public") && message["is_public"].is_boolean()) {
-        lobby.is_public = message["is_public"];
+    if (message.contains("is_public")) {
+        lobby.is_public = ws::GetOr<bool>(message, "is_public", false);
         changed = true;
     }
 
-    if (message.contains("name") && message["name"].is_string()) {
-        string tentative_name = message["name"];
-        if (!tentative_name.empty() && tentative_name.length() <= 32) {
-            lobby.name = tentative_name;
+    if (message.contains("name")) {
+        auto tentative_name = ws::Get<string>(message, "name");
+        if (tentative_name && tentative_name.value().length() <= 32) {
+            lobby.name = tentative_name.value();
             changed = true;
         }
+    }
+
+    if (message.contains("bot_count")) {
+        lobby.settings.bot_count = ws::GetOr<int>(message, "bot_count", 3);
+        changed = true;
     }
 
     if (changed) {
@@ -589,12 +667,12 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
         return;
     }
 
-    std::vector<std::string> player_usernames;
+    std::vector<std::pair<std::string, bool>> players_info;
     for (const auto& lobby_member : lobby.members) {
-        player_usernames.push_back(lobby_member.username);
+        players_info.push_back({lobby_member.username, lobby_member.is_bot});
     }
 
-    lobby.match = std::make_unique<game::MatchInstance>(player_usernames, lobby.settings);
+    lobby.match = std::make_unique<game::MatchInstance>(players_info, lobby.settings);
     lobby.match->Start();
 
     if (game_started_callback_) {
@@ -683,11 +761,16 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
         CheckMatchIntegrity(lobby);
     }
 
+    SaveMatchStateToDB(lobby);
 
-    if (lobby.members.empty()) {
+    bool has_humans = std::ranges::any_of(lobby.members, [](const LobbyMember& m) {
+        return !m.is_bot;
+    });
+
+    if (!has_humans) {
         code_to_id_.erase(lobby.invite_code);
         lobbies_.erase(it);
-        Logger::Log("[Lobby] Destroyed lobby ", lobby_id, " (no more members)");
+        Logger::Log("[Lobby] Destroyed lobby ", lobby_id, " (no humans left)");
         return false;
     }
     return true;
@@ -700,4 +783,41 @@ Lobby* LobbyController::FindLobbyForUser(const string& username) {
         }
     }
     return nullptr;
+}
+
+void LobbyController::SyncBots(Lobby& lobby) {
+    int human_count = 0;
+    int bot_count = 0;
+
+    for (const auto& member : lobby.members) {
+        if (member.is_bot) bot_count++;
+        else human_count++;
+    }
+
+    int desired_bots = lobby.settings.bot_count;
+    if (human_count + desired_bots > 4) {
+        desired_bots = 4 - human_count;
+    }
+
+    while (bot_count < desired_bots) {
+        static int bot_id = 1;
+        // TODO: Random bot names
+        std::string bot_name = "Bot_" + std::to_string(bot_id++);
+        
+        LobbyMember bot = {bot_name, nullptr, true, true};
+        
+        lobby.members.push_back(bot);
+        bot_count++;
+    }
+
+    // INFO: Remove excess bots (e.g. if the host lowered the bot count)
+    while (bot_count > desired_bots) {
+        for (auto it = lobby.members.rbegin(); it != lobby.members.rend(); ++it) {
+            if (it->is_bot) {
+                lobby.members.erase(std::next(it).base());
+                bot_count--;
+                break;
+            }
+        }
+    }
 }
