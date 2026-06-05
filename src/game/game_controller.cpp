@@ -28,6 +28,10 @@ GameController::GameController(WebServer& server, LobbyController& lobby_control
         return true;
     });
 
+    lobby_controller.OnGameStarted([this](Lobby* active_lobby) {
+        OnTurnStarted(active_lobby);
+    });
+
     Logger::Info("[Game] GameController registered");
 }
 
@@ -47,17 +51,14 @@ void GameController::HandlePlayCard(WsContext context, const json& message) {
         return;
     }
 
-    // Resolve any synchronous effects resulting from the card
     active_lobby->match->Tick();
     
-    // The human player successfully acted, so we cancel their AFK timer
     ClearTurnTimer(active_lobby->id); 
     
+    OnTurnStarted(active_lobby);
+
     // Broadcast the new board state
     BroadcastGameState(active_lobby);
-    
-    // Trigger evaluation for the next player (in case it is a bot's turn)
-    OnTurnStarted(active_lobby);
 }
 
 void GameController::HandleDrawCard(WsContext context, const json& message) {
@@ -78,8 +79,8 @@ void GameController::HandleDrawCard(WsContext context, const json& message) {
     active_lobby->match->Tick();
 
     ClearTurnTimer(active_lobby->id);
-    BroadcastGameState(active_lobby);
     OnTurnStarted(active_lobby);
+    BroadcastGameState(active_lobby);
 }
 
 void GameController::HandleProvideInput(WsContext context, const json& message) {
@@ -91,8 +92,8 @@ void GameController::HandleProvideInput(WsContext context, const json& message) 
     active_lobby->match->Tick();
     
     ClearTurnTimer(active_lobby->id);
-    BroadcastGameState(active_lobby);
     OnTurnStarted(active_lobby);
+    BroadcastGameState(active_lobby);
 }
 
 void GameController::BroadcastGameState(Lobby* current_lobby) {
@@ -164,7 +165,6 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
         Logger::Info("[Bot] Taking instant turn for disconnected player: ", current_player_username);
         
         active_lobby->match->TakeBotTurn();
-        BroadcastGameState(active_lobby);
         
         // Recursively evaluate the next turn (in case multiple players are disconnected)
         OnTurnStarted(active_lobby); 
@@ -189,10 +189,9 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
                     Logger::Info("[Bot] Time expired. Bot playing for AFK player: ", current_player_username);
                     
                     verified_lobby->match->TakeBotTurn();
-                    BroadcastGameState(verified_lobby);
                     
-                    // Recursively call for the next player's turn
                     OnTurnStarted(verified_lobby);
+                    BroadcastGameState(verified_lobby);
                 }
             }
         });

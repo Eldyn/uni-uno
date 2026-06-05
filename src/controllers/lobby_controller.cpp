@@ -274,10 +274,11 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
 
     auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, request_id);
     resp["lobby"] = json({
+        {"members",     MemberListJson(lobby)},
         {"invite_code", code},
         {"host",        lobby.host},
-        {"members",     MemberListJson(lobby)},
-        {"name",        lobby.name}
+        {"name",        lobby.name},
+        {"is_public",   lobby.is_public}
     });
     ctx.socket->send(resp.dump(), ctx.op_code);
 
@@ -570,22 +571,21 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
         player_usernames.push_back(lobby_member.username);
     }
 
-    // 4. Instantiate and start the game engine!
     lobby.match = std::make_unique<game::MatchInstance>(player_usernames, lobby.settings);
     lobby.match->Start();
 
+    if (game_started_callback_) {
+        game_started_callback_(&lobby);
+    }
+
     Logger::Info("[Lobby] Match started by host '", lobby.host, "' in lobby ", lobby.id);
 
-    // 5. Broadcast the initial game state to all players.
-    // (This automatically triggers storeGame on the frontend to navigate to the GameScreen)
     for (const auto& lobby_member : lobby.members) {
         if (!lobby_member.is_connected || !lobby_member.socket) {
             continue;
         }
 
         nlohmann::json response_payload = ws::MakeResponse(ws::ServerAction::kGameStateUpdated);
-        
-        // Serialize state specifically for this player (hiding opponent's cards)
         response_payload["game_state"] = lobby.match->SerializePlayerState(lobby_member.username);
         
         lobby_member.socket->send(response_payload.dump(), uWS::OpCode::TEXT);

@@ -10,6 +10,8 @@
 #include <websocket_context.hpp>
 #include <webserver.hpp>
 
+using GameStartedCallback = std::function<void(Lobby*)>;
+
 //  Owns all in-memory lobby state. No database involved — lobbies are
 //  ephemeral session state that dies with the server process.
 //
@@ -65,6 +67,10 @@ public:
             return &it->second;
         }
         return nullptr;
+    }
+
+    void OnGameStarted(GameStartedCallback callback) {
+        game_started_callback_ = std::move(callback);
     }
 
     // Grace period before a disconnected member is evicted 3 minutes in milliseconds.
@@ -134,7 +140,10 @@ private:
     Lobby* FindLobbyForUser(const std::string& username);
 
     // ── State ────────────────────────────────────────────────────────────
+    GameStartedCallback game_started_callback_;
+
     ActionRouter& action_router_;
+
     uWS::SSLApp&     app_;
 
     // Primary store: lobby_id → Lobby
