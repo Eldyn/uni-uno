@@ -2,6 +2,8 @@
 	import { storeLobby } from "../../stores/lobby.svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
 	import { ws } from "../../stores/ws.svelte";
+	
+	import LobbySettings from "./LobbySettings.svelte";
 
 	let isHost = $derived(storeAuth.username === storeLobby.current?.host);
 	let startable = $derived(storeLobby.current!.members.length >= 2);
@@ -22,11 +24,6 @@
 		if (trimmed && trimmed !== storeLobby.current?.name && trimmed.length <= 32) {
 			storeLobby.updateSettings({ name: trimmed });
 		}
-	}
-
-	function togglePublic(e: Event) {
-		const target = e.target as HTMLInputElement;
-		storeLobby.updateSettings({ is_public: target.checked });
 	}
 </script>
 
@@ -74,17 +71,7 @@
 		</div>
 	</div>
 
-	<div class="settings-row">
-		<label class="toggle-label">
-			<input
-				type="checkbox"
-				checked={storeLobby.current!.is_public}
-				disabled={!isHost}
-				onchange={togglePublic}
-			/>
-			<span>Public Lobby</span>
-		</label>
-	</div>
+	<LobbySettings />
 
 	<ul class="members">
 		{#each storeLobby.current!.members as member}
@@ -171,31 +158,6 @@
 		font-weight: bold;
 	}
 
-	.settings-row {
-		margin-bottom: 25px;
-		background: var(--bg);
-		padding: 10px 15px;
-		border-radius: 6px;
-		display: inline-block;
-	}
-
-	.toggle-label {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		color: var(--text);
-		cursor: pointer;
-		user-select: none;
-	}
-
-	.toggle-label input:disabled {
-		cursor: not-allowed;
-	}
-
-	.toggle-label input:disabled + span {
-		color: #666;
-	}
-
 	.join-button {
 		padding: 10px 16px;
 		background: var(--accent);
@@ -215,6 +177,10 @@
 		color: #888888;
 		cursor: not-allowed;
 		opacity: 0.6;
+	}
+
+	.join-button:hover:not(:disabled) {
+		opacity: 0.9;
 	}
 
 	.members {
