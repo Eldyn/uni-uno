@@ -32,6 +32,11 @@ GameController::GameController(WebServer& server, LobbyController& lobby_control
         OnTurnStarted(active_lobby);
     });
 
+    lobby_controller.OnPlayerReplaced([this](Lobby* active_lobby) {
+        OnTurnStarted(active_lobby);
+        BroadcastGameState(active_lobby);
+    });
+
     Logger::Info("[Game] GameController registered");
 }
 
@@ -158,7 +163,6 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
     std::string current_player_username = active_lobby->match->GetCurrentPlayerUsername();
     game::Player* current_player = active_lobby->match->GetPlayer(current_player_username);
 
-    Logger::Warn(current_player->is_bot);
     if (current_player->is_bot) {
         int bot_thinking_ms = 1500 + (std::rand() % 3000);
         
@@ -191,7 +195,7 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
     }
 
     if (active_lobby->settings.bot_mode == BotTakeoverMode::kPlayInstantly && !is_player_connected) {
-        Logger::Info("[Bot] Taking instant turn for disconnected player: ", current_player_username);
+        Logger::Info("[MATCH] Bot instant turn for: ", current_player_username);
         
         active_lobby->match->TakeBotTurn();
         
@@ -215,7 +219,7 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
             if (verified_lobby && verified_lobby->match) {
                 // Ensure it is still the exact same player's turn (they didn't play at the last millisecond)
                 if (verified_lobby->match->GetCurrentPlayerUsername() == current_player_username) {
-                    Logger::Info("[Bot] Time expired. Bot playing for AFK player: ", current_player_username);
+                    Logger::Info("[MATCH] Bot playing for AFK player: ", current_player_username);
                     
                     verified_lobby->match->TakeBotTurn();
                     

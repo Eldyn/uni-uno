@@ -1,3 +1,4 @@
+#include "database.hpp"
 #include "common/game/card_types.hpp"
 #include "common/lobby.hpp"
 #include "game/game_state.hpp"
@@ -87,6 +88,22 @@ namespace game {
             state_.players.emplace_back(player_json["username"], hand, player_json.value("is_bot", false), player_json["has_called_uno"]);
         }
     }
+
+    void MatchInstance::AddPlayerMidGame(const std::string& username, bool is_bot) {
+        Player p(username, is_bot, false);
+
+        for (int index = 0; index < settings_.starting_cards; ++index) {
+            if (state_.draw_pile.empty()) {
+                ReshuffleDiscardIntoDraw(&state_);
+                if (state_.draw_pile.empty()) break; // Failsafe
+            }
+            p.hand.push_back(state_.draw_pile.back());
+            state_.draw_pile.pop_back();
+        }
+
+        state_.players.push_back(p);
+        Logger::Info("[Match] Hot-joined player ", username, " with ", p.hand.size(), " cards.");
+    }
     
     void MatchInstance::Start() {
         GenerateDeck();
@@ -140,42 +157,138 @@ namespace game {
     
     bool MatchInstance::PlayCard(const std::string& username, uint16_t card_id) {
         if (IsWaitingForInput() || IsGameOver()) return false;
-    
+
         Player* current_player = GetPlayer(username);
         if (!current_player) return false;
-    
+
         if (GetCurrentPlayerUsername() != username) return false;
      
         auto card_iterator = std::ranges::find(current_player->hand, card_id, GetId);
         if (card_iterator == current_player->hand.end()) return false;
-    
+
         CompactCard played_card = *card_iterator;
         CardPlayedEvent play_event = { username, played_card, true, false };
-    
+
         for (auto& rule : active_rules_) {
             rule->ValidatePlay(&state_, play_event);
             if (play_event.is_handled) break;
         }
         
         if (!play_event.is_valid_play) return false;
-    
+
         state_.discard_pile.push_back(played_card);
         state_.active_color = GetColor(played_card);
         current_player->hand.erase(card_iterator);
-    
+
+        if (!current_player->is_bot) {
+            Color c = GetColor(played_card);
+            Value v = GetValue(played_card);
+
+            session_stats_[username].color_counts[static_cast<int>(c)]++;
+            session_stats_[username].value_counts[static_cast<int>(v)]++;
+        }
+
         for (auto& rule : active_rules_) {
             rule->OnCardPlayed(&state_, play_event);
             if (play_event.is_handled) break;
         }
-    
+
         state_.effect_queue.push_back(std::make_unique<AdvanceTurnEffect>());
-    
+
         if (current_player->hand.empty()) {
             state_.status = MatchStatus::kFinished;
             state_.winner = username;
+
+            try {
+                auto& db = Database::Get();
+                if (db.IsOpen()) {
+                
+                auto match_status = db.Exec("INSERT INTO matches (winner_username) VALUES (?)", {username});
+                if (!match_status) {
+                    throw std::runtime_error("Failed to execute INSERT for matches table.");
+                }
+                
+                auto match_row = db.QueryOne("SELECT last_insert_rowid() as id", {});
+                if (!match_row) {
+                    throw std::runtime_error("Failed to retrieve last_insert_rowid() for match.");
+                }
+
+                int match_id = match_row->value().Get<int>("id");
+
+                for (const auto& p : state_.players) {
+                    if (p.is_bot) continue;
+
+                    auto part_status = db.Exec("INSERT INTO match_participants (match_id, username) VALUES (?, ?)", {match_id, p.username});
+                    if (!part_status) {
+                        throw std::runtime_error("Failed to link participant to match: " + p.username);
+                    }
+                    
+                    auto profile_status = db.Exec("INSERT OR IGNORE INTO player_stats (username) VALUES (?)", {p.username});
+                    if (!profile_status) {
+                        throw std::runtime_error("Failed to ensure player_stats row for: " + p.username);
+                    }
+
+                    bool is_winner = (p.username == username);
+                    auto& stats = session_stats_[p.username];
+
+                    auto update_status = db.Exec(R"(
+                        UPDATE player_stats SET 
+                            total_wins = total_wins + ?,
+                            total_losses = total_losses + ?,
+                            
+                            cards_played_red = cards_played_red + ?,
+                            cards_played_blue = cards_played_blue + ?,
+                            cards_played_green = cards_played_green + ?,
+                            cards_played_yellow = cards_played_yellow + ?,
+                            cards_played_wild_color = cards_played_wild_color + ?,
+                            
+                            cards_played_0 = cards_played_0 + ?,
+                            cards_played_1 = cards_played_1 + ?,
+                            cards_played_2 = cards_played_2 + ?,
+                            cards_played_3 = cards_played_3 + ?,
+                            cards_played_4 = cards_played_4 + ?,
+                            cards_played_5 = cards_played_5 + ?,
+                            cards_played_6 = cards_played_6 + ?,
+                            cards_played_7 = cards_played_7 + ?,
+                            cards_played_8 = cards_played_8 + ?,
+                            cards_played_9 = cards_played_9 + ?,
+                            cards_played_skip = cards_played_skip + ?,
+                            cards_played_reverse = cards_played_reverse + ?,
+                            cards_played_draw2 = cards_played_draw2 + ?,
+                            cards_played_draw4 = cards_played_wilddraw4 + ?,
+                            cards_played_colorswitch = cards_played_wild + ?
+                        WHERE username = ?
+                    )", {
+                        is_winner ? 1 : 0, 
+                        is_winner ? 0 : 1,
+                        
+                        stats.color_counts[0], stats.color_counts[1], stats.color_counts[2], stats.color_counts[3], stats.color_counts[4],
+                        
+                        stats.value_counts[0], stats.value_counts[1], stats.value_counts[2], stats.value_counts[3], stats.value_counts[4],
+                        stats.value_counts[5], stats.value_counts[6], stats.value_counts[7], stats.value_counts[8], stats.value_counts[9],
+                        stats.value_counts[10], stats.value_counts[11], stats.value_counts[12], stats.value_counts[14], stats.value_counts[13],
+                        
+                        p.username
+                    });
+
+                    if (!update_status) {
+                        throw std::runtime_error("Failed to update player_stats bulk counters for: " + p.username);
+                    }
+                }
+                Logger::Info("[Match] Saved match stats to DB securely.");
+            } else {
+                Logger::Error("[Match] Could not save stats: Database is not open.");
+            }
+        } catch (const std::exception& e) {
+            // Because we throw std::runtime_error on failure, this catch block 
+            // acts as a single point of failure reporting. It safely aborts the 
+            // save sequence without crashing the rest of the game engine!
+            Logger::Error("[Match DB Error] ", e.what());
+        }
+
             return true;
         }
-    
+
         return true;
     }
     

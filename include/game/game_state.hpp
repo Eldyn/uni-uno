@@ -10,6 +10,11 @@
 
 namespace game {
     
+    struct PlayerSessionStats {
+        int color_counts[5] = {0};
+        int value_counts[15] = {0}; // 0-9, Skip, Reverse, Draw2, ColorSwitch, Draw4
+    };
+
     struct Player {
         std::string username;
         std::vector<CompactCard> hand;
