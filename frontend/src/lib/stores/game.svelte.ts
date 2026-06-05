@@ -40,7 +40,7 @@ export interface GameState {
     play_direction: number;
     top_card?: Card;
     players: GamePlayer[];
-    is_over: boolean;
+    is_over?: boolean;
     winner?: string;
 }
 
@@ -59,61 +59,72 @@ class StoreGame {
         ws.onOpen(() => this.#registerListeners());
     }
 
+    returnToLobby() {
+        this.state = null;
+        this.actionRequired = null;
+        storeNavigation.goto("lobby");
+    }
+
     #registerListeners() {
-        //  gameover -> matchstatus 2, winner = data.winner 
-        ws.on(ServerAction.GameOver, (data: any) => {
+        ws.on(ServerAction.GameOver, (data) => {
+            console.log(data);
+            if (!this.state) return;
+
+            console.log("gameover!");
             const winner = data.winner;
             this.state.is_over = true;
-            this.state.winner = winner;
-        }); 
+            this.state.winner = winner as string;
+
+            if (this.#timerInterval) clearInterval(this.#timerInterval);
+        });
+
         ws.on(ServerAction.GameStateUpdated, (data: any) => {
             const previousTurn = this.state?.current_turn;
-            const rawState = data.game_state;
+            const stateJson = data.game_state;
 
             this.state = {
-                active_color: COLOR_MAP[rawState.active_color] || "green",
-                current_turn: rawState.current_turn,
-                play_direction: rawState.play_direction,
-                top_card: rawState.top_card ? this.#parseCard(rawState.top_card) : undefined,
-                players: rawState.players.map((p: any) => ({
+                active_color: COLOR_MAP[stateJson.active_color] || "green",
+                current_turn: stateJson.current_turn,
+                play_direction: stateJson.play_direction,
+                top_card: stateJson.top_card ? this.#parseCard(stateJson.top_card) : undefined,
+                players: stateJson.players.map((p: any) => ({
                     ...p,
                     hand: p.hand ? p.hand.map(this.#parseCard) : undefined
-                }))
+                })),
+                is_over: undefined,
+                winner: undefined
             };
 
             this.actionRequired = data.action_required || null;
-            this.actionContext = data.action_context || null; // Capture the JSON context
+            this.actionContext = data.action_context || null;
 
-            // Handle the Timer Syncing
-            if (previousTurn !== this.state?.current_turn) {
-                this.#resetTurnTimer();
-            }
+            console.log(stateJson);
+            const remainingMs = stateJson.turn_time_remaining_ms ?? 15000;
+            this.#syncTurnTimer(remainingMs);
 
             if (storeNavigation.current === "lobby") {
                 storeNavigation.goto("game");
             }
         });
 
-        // we don't really care about sending toasts since too many errors would be sent
-        // INFO: Listen for standard game errors (like playing out of turn)
+        // INFO: we don't really care about sending toasts since too many errors would be sent
         // ws.on("error", (data: any) => {
         //     storeToast.error(data.reason || "Invalid move!");
         // });
     }
 
-    #resetTurnTimer() {
-        // Clear any existing interval
+    #syncTurnTimer(remainingMs: number) {
         if (this.#timerInterval) {
             clearInterval(this.#timerInterval);
         }
 
-        // Reset to your lobby's default time limit (e.g., 15 seconds)
-        this.turnTimeRemaining = 15;
+        this.turnTimeRemaining = Math.ceil(remainingMs / 1000);
 
-        // Start the local countdown
         this.#timerInterval = window.setInterval(() => {
             this.turnTimeRemaining -= 1;
+
             if (this.turnTimeRemaining <= 0) {
+                this.turnTimeRemaining = 0;
                 clearInterval(this.#timerInterval!);
             }
         }, 1000);

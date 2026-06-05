@@ -104,6 +104,9 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
             });
 
             if (changed) {
+                // NOTE: Checks whether we need to abort the match
+                self->CheckMatchIntegrity(lobby);
+
                 if (lobby.members.empty()) {
                     to_destroy.push_back(id);
                 } else {
@@ -132,6 +135,26 @@ LobbyController::~LobbyController() {
     if (eviction_timer_) {
         us_timer_close(eviction_timer_);
         eviction_timer_ = nullptr;
+    }
+}
+
+void LobbyController::CheckMatchIntegrity(Lobby& lobby) {
+    if (lobby.match && lobby.members.size() < 2) {
+        Logger::Info("[Lobby] Match aborted for lobby ", lobby.id, " due to disconnections.");
+        
+        if (lobby.members.size() == 1) {
+            json game_over_payload = ws::MakeResponse(ws::ServerAction::kGameOver);
+            game_over_payload["winner"] = lobby.members.front().username;
+            
+            if (lobby.members.front().is_connected && lobby.members.front().socket) {
+                lobby.members.front().socket->send(game_over_payload.dump(), uWS::OpCode::TEXT);
+            }
+        }
+        
+        lobby.match.reset();
+        
+        // NOTE: Because GameController's Turn Timer checks if (verified_lobby->match)`, it
+        //       will safely ignore the missing match and silently clean itself up next tick
     }
 }
 
@@ -656,8 +679,8 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
             member_it->socket->send(response.dump(), uWS::OpCode::TEXT);
         }
 
-        // 3. Actually clear them from memory
         lobby.members.erase(member_it);
+        CheckMatchIntegrity(lobby);
     }
 
 

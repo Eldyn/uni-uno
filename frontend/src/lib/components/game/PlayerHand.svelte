@@ -138,16 +138,42 @@
 		border-radius: 90% 40%;
 	}
 
-	.card.red { color: #dc251c; }
-	.card.red .bckg { background-color: #dc251c; }
-	.card.yellow { color: #fcf604; }
-	.card.yellow .bckg { background-color: #fcf604; }
-	.card.blue { color: #0493de; }
-	.card.blue .bckg { background-color: #0493de; }
-	.card.green { color: #018d41; }
-	.card.green .bckg { background-color: #018d41; }
-	.card.black { color: #1f1b18; }
-	.card.black .bckg { background-color: #1f1b18; }
-	.card.wild { color: #888; background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de); }
-	.card.wild .bckg { background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de); }
+	.card.red {
+		color: #dc251c;
+	}
+	.card.red .bckg {
+		background-color: #dc251c;
+	}
+	.card.yellow {
+		color: #fcf604;
+	}
+	.card.yellow .bckg {
+		background-color: #fcf604;
+	}
+	.card.blue {
+		color: #0493de;
+	}
+	.card.blue .bckg {
+		background-color: #0493de;
+	}
+	.card.green {
+		color: #018d41;
+	}
+	.card.green .bckg {
+		background-color: #018d41;
+	}
+	.card.black {
+		color: #1f1b18;
+	}
+	.card.black .bckg {
+		background-color: #1f1b18;
+	}
+	.card.wild {
+		color: #888;
+		background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de);
+	}
+	.card.wild .bckg {
+		background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de);
+	}
 </style>
+

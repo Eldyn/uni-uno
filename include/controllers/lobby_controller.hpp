@@ -81,6 +81,7 @@ public:
     static constexpr int kMaxMembers = 4;
 
 private:
+    void CheckMatchIntegrity(Lobby& lobby);
     // lobby_create  { }
     //   Creates a new lobby, makes the sender the host, responds with
     //   lobby_joined carrying the invite_code and member list.

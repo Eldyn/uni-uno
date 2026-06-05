@@ -198,7 +198,8 @@ class StoreLobby {
 
             localStorage.setItem("lobby_code", lobby.invite_code);
             storeNavigation.goto("lobby");
-            storeToast.success("Joined lobby successfully!");
+            // INFO: commented since it gets annoying once you start refreshing yourself
+            // storeToast.success("Joined lobby successfully!");
         });
 
         ws.on(ServerAction.LobbyUpdated, (data) => {
@@ -239,7 +240,7 @@ class StoreLobby {
         if (!code) return;
 
         try {
-            const unsubscribeGameRejoin = ws.on(ServerAction.GameStateUpdated, (data) => {
+            const unsubscribeGameRejoin = ws.on(ServerAction.GameStateUpdated, (_data) => {
                 storeNavigation.goto("game");
 
                 unsubscribeGameRejoin();

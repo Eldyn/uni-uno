@@ -97,25 +97,20 @@ void GameController::HandleProvideInput(WsContext context, const json& message) 
 }
 
 void GameController::BroadcastGameState(Lobby* current_lobby) {
-    if (current_lobby->match->IsGameOver()) {
-        json game_over_payload = ws::MakeResponse(ws::ServerAction::kGameOver);
+    if (!current_lobby || !current_lobby->match) return;
 
-        game_over_payload["winner"] = current_lobby->match->GetCurrentPlayerUsername(); 
-            
-        std::string serialized = game_over_payload.dump();
-            
-        for (const auto& lobby_member : current_lobby->members) {
-            if (lobby_member.is_connected && lobby_member.socket) {
-                lobby_member.socket->send(serialized, uWS::OpCode::TEXT);
-            }
-        }
-
-        return;
-    }
+    bool is_game_over = current_lobby->match->IsGameOver();
 
     bool is_waiting_for_input = current_lobby->match->IsWaitingForInput();
     std::string pending_player_username = current_lobby->match->GetPendingPlayer();
     std::string required_input_type = current_lobby->match->GetPendingInputType();
+
+    json game_over_payload;
+    if (is_game_over) {
+        game_over_payload = ws::MakeResponse(ws::ServerAction::kGameOver);
+        
+        game_over_payload["winner"] = current_lobby->match->GetWinner(); 
+    }
 
     for (const auto& lobby_member : current_lobby->members) {
         if (!lobby_member.is_connected || !lobby_member.socket) continue;
@@ -133,6 +128,15 @@ void GameController::BroadcastGameState(Lobby* current_lobby) {
         }
 
         lobby_member.socket->send(response_payload.dump(), uWS::OpCode::TEXT);
+
+        if (is_game_over) {
+            lobby_member.socket->send(game_over_payload.dump(), uWS::OpCode::TEXT);
+        }
+    }
+        
+    if (is_game_over) {
+        current_lobby->match.reset();
+        Logger::Info("[MATCH] destroyed after GameOver in lobby ", current_lobby->id);
     }
 }
 
@@ -208,18 +212,24 @@ void GameController::SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::functi
     ClearTurnTimer(lobby_id);
     struct us_loop_t* loop = (struct us_loop_t*) uWS::Loop::get();
     
-    // INFO: Allocate space for a POINTER, not the struct itself
     struct us_timer_t* timer = us_create_timer(loop, 0, sizeof(TurnTimerData*));
-
     auto* timer_data = new TurnTimerData{std::move(callback), lobby_id, this};
     *(TurnTimerData**)us_timer_ext(timer) = timer_data;
 
     us_timer_set(timer, [](struct us_timer_t* fired_timer) {
         TurnTimerData* data = *(TurnTimerData**)us_timer_ext(fired_timer);
-        if (data->callback) data->callback();
         
-        // This will call delete data and us_timer_close!
-        data->controller->ClearTurnTimer(data->lobby_id); 
+        auto cb = data->callback;
+        auto l_id = data->lobby_id;
+        auto* ctrl = data->controller;
+        
+        ctrl->active_turn_timers_.erase(l_id);
+        
+        if (cb) cb();
+        
+        delete data;
+        us_timer_close(fired_timer);
+        
     }, timeout_ms, 0);
 
     active_turn_timers_[lobby_id] = timer;

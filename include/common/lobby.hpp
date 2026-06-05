@@ -28,7 +28,10 @@ struct LobbySettings {
     int count_wild           = 4;
     int count_wild_draw_four = 4;
 
-    int turn_time_limit_ms = 15'000; 
+
+    //int turn_time_limit_ms = 60'000;  //standard
+    int turn_time_limit_ms = 15'000;  //testing
+    // int turn_time_limit_ms = 500;    //testing bots
 };
 
 struct LobbyMember {

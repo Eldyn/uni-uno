@@ -6,6 +6,7 @@
 #include <controllers/lobby_controller.hpp>
 #include <algorithm>
 #include <random>
+#include <string>
 
 namespace game {
     void ReshuffleDiscardIntoDraw(GameState* game_state) {
@@ -205,11 +206,15 @@ namespace game {
             return colors[max_idx];
         };
 
-
+        string bot_username = GetCurrentPlayerUsername();
         constexpr int kMaxBotSteps = 10;
         int steps = 0;
         
         while (steps < kMaxBotSteps) {
+            if (GetCurrentPlayerUsername() != bot_username || IsGameOver()) {
+                return;
+            }
+
             // INFO: Action 1
             //       If we are waiting for input, based on the type we
             //       provide the best decision that we can "think" of.
@@ -229,7 +234,7 @@ namespace game {
             //       We need to play a card! We use heuristics to pick
             //       the best card worth playing in the current situation
 
-            Player& current_player = state_.players[state_.current_player_index];
+            Player* current_player = GetPlayer(bot_username);
 
             std::string dominant_color_str = greatestColor();
             Color dominant_color = Color::kWild;
@@ -245,8 +250,8 @@ namespace game {
             int best_score = -9999;
             CompactCard best_card;
 
-            for (CompactCard card : current_player.hand) {
-                CardPlayedEvent event = { current_player.username, card, true, false };
+            for (CompactCard card : current_player->hand) {
+                CardPlayedEvent event = { current_player->username, card, true, false };
 
                 for (auto& rule : active_rules_) {
                     rule->ValidatePlay(&state_, event);
@@ -310,11 +315,13 @@ namespace game {
             //       We found a card? We play it.
             //       We had no playable card? We draw.
             if (found_playable) {
-                PlayCard(current_player.username, GetId(best_card));
+                // INFO: Here, we CallUno regardless of hand size,
+                //       but actually, CallUno checks directly!
+                CallUno(bot_username);
+                PlayCard(current_player->username, GetId(best_card));
             } else {
-                DrawCard(current_player.username);
+                DrawCard(current_player->username);
             }
-
             Tick(); 
 
             // INFO: Action 2.2

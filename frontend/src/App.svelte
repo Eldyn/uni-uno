@@ -4,7 +4,7 @@
 	import AuthScreen from "./lib/components/auth/AuthScreen.svelte";
 	import GameScreen from "./lib/components/game/GameScreen.svelte";
 	import LobbyScreen from "./lib/components/lobby/LobbyScreen.svelte";
-	import LobbiesScreen from "./lib/components/lobby/LobbiesScreen.svelte";
+	import LobbyBrowse from "./lib/components/lobby/LobbyBrowse.svelte";
 	import { storeNavigation } from "./lib/stores/navigation.svelte";
 	import { ws } from "./lib/stores/ws.svelte";
 	import { storeToast } from "./lib/stores/toast.svelte";
@@ -45,7 +45,7 @@
 	{#if storeNavigation.current === "auth"}
 		<AuthScreen onAuthSuccess={handleAuthSuccess} />
 	{:else if storeNavigation.current === "lobbies"}
-		<LobbiesScreen />
+		<LobbyBrowse />
 	{:else if storeNavigation.current === "lobby"}
 		<LobbyScreen />
 	{:else if storeNavigation.current === "game"}
