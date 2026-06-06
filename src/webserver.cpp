@@ -1,11 +1,10 @@
 #include "action_router.hpp"
 #include "common/http.hpp"
-#include "common/ws.hpp"
+#include <fstream>
 #include "controllers/auth_controller.hpp"
 #include "http_router.hpp"
 #include "websocket_context.hpp"
 #include <WebSocketProtocol.h>
-#include <cstdlib>
 #include <nlohmann/json.hpp>
 #include <sqlite3.h>
 #include <string>
@@ -16,6 +15,9 @@
 #include <logger.hpp>
 
 namespace fs = std::filesystem;
+using json = nlohmann::json;
+using std::string, std::string_view, std::ifstream, std::stringstream, std::ios, std::runtime_error, std::to_string, std::isalnum;
+
 
 WebServer::WebServer(int port, string_view key_file, string_view cert_file, string_view db_file)
     : port_(port), db_file_(db_file), app_(uWS::SSLApp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})) {
@@ -125,66 +127,6 @@ bool WebServer::InitDB() {
 }
 
 void WebServer::RegisterRoutes() {
-    ws_router_.On("query", [this](WsContext context, const json& message) {
-        if (context.socket_data->room.empty()) {
-            Logger::Warn("User tried do query a room while not being in one!");
-            return false;
-        };
-
-        const string request_id = ws::GetOr<string>(message, "request_id", "");
-
-        json response = ws::MakeResponse(ws::ServerAction::kQueried, request_id);
-
-        response["clicks"]      = to_string(GetClicks(context.socket_data->room));
-        response["lastCLicker"] = GetLastClicker(context.socket_data->room);
-
-        context.socket->send(response.dump(), context.op_code);
-        return true;
-    });
-
-    ws_router_.On("join", [this](WsContext context, const json& message) {
-        if (!message.contains("topic")) {
-            return false;
-        }
-    
-        if (!context.socket_data->room.empty()) {
-            Logger::Warn("[WS] " + context.socket_data->username + " tried to join whilst already in a room");
-            return false;
-        }
-    
-        const string topic = message["topic"];
-        context.socket_data->room = topic;
-        context.socket->subscribe(topic);
-        EnsureRoom(topic);
-
-        const string request_id = ws::GetOr<string>(message, "request_id", "");
-
-        json response = ws::MakeResponse(ws::ServerAction::kSyncData, request_id);
-        response["username"] = context.socket_data->username;
-        response["room"] = context.socket_data->room;
-
-        context.socket->send(response.dump(), uWS::OpCode::TEXT);
-        return true;
-    });
-
-    ws_router_.On("click", [this](WsContext context, const json& message) {
-        if (context.socket_data->room.empty()) {
-            Logger::Warn("[WS] Click from " + context.socket_data->username + " who is not in a room");
-            return false;
-        }
-    
-        IncrementClicks(context.socket_data->room);
-        SetLastClicker(context.socket_data->room, context.socket_data->username);
-        int total = GetClicks(context.socket_data->room);
-
-        json response = ws::MakeResponse(ws::ServerAction::kSyncCount);
-        response["count"] = total;
-        response["last_clicker"] = GetLastClicker(context.socket_data->room);
-
-        app_.publish(context.socket_data->room, response.dump(), context.op_code, true);
-        return true;
-    });
-
     http_router_.Post("/room", [this](auto *response, auto *request) {
         HandlePost(response, request);
     });
@@ -206,10 +148,10 @@ void WebServer::RegisterRoutes() {
                 return;
             }
 
-            PerSocketData sd;
-            sd.username = payload->username;
+            PerSocketData socket_data;
+            socket_data.username = payload->username;
 
-            res->upgrade(std::move(sd),
+            res->upgrade(std::move(socket_data),
                 req->getHeader("sec-websocket-key"),
                 req->getHeader("sec-websocket-protocol"),
                 req->getHeader("sec-websocket-extensions"),
@@ -292,10 +234,6 @@ void WebServer::HandleGet(AppResponse *res, AppRequest *req) {
     }
 }
 
-// ────────────────────────────────────────────────────────────────
-//  WebSocket – open
-// ────────────────────────────────────────────────────────────────
-
 void WebServer::OnSocketOpen(AppWebSocket* socket) {
     PerSocketData *socket_data = socket->getUserData();
     connections_[socket_data->username] = socket;
@@ -332,69 +270,6 @@ void WebServer::OnSocketMessage(AppWebSocket *socket, string_view message, uWS::
     if (!ws_router_.Dispatch(context, message_json)) {
         Logger::Warn("No handler found for action: " + message_json.value("action", "UNKNOWN"));
     }
-}
-
-void WebServer::EnsureRoom(const string &topic) {
-    VoidResult result = Database::Get().Exec("INSERT OR IGNORE INTO rooms (topic, clicks) VALUES (?, 0);", {topic});
-    if (!result) {
-        Error error = result.error();
-        Logger::Error("DB error in ensureRoom: " + error.message);
-    }
-}
-
-void WebServer::IncrementClicks(const string &topic) {
-    VoidResult result = Database::Get().Exec("UPDATE rooms SET clicks = clicks + 1 WHERE topic = ?;", {topic});
-    if (!result) {
-        Error error = result.error();
-        Logger::Error("DB error in incrementClicks: " + error.message);
-    }
-}
-
-void WebServer::SetLastClicker(const string &topic, const string &username) {
-    VoidResult result = Database::Get().Exec("UPDATE rooms SET last_clicker = ? WHERE topic = ?;", {username, topic});
-    if (!result) {
-        Error error = result.error();
-        Logger::Error("DB error in setLastClicker: " + error.message);
-    }
-}
-
-int WebServer::GetClicks(const string& topic) {
-    auto result = Database::Get().QueryOne("SELECT clicks FROM rooms WHERE topic = ?;", {topic});
-
-    // 1. Check if the Database operation itself failed
-    if (!result) {
-        Logger::Error("DB error in getClicks: " + result.error().message);
-        return -1; // Fallback
-    }
-
-    // 2. Access the Optional (did the row actually exist?)
-    // 'result.value()' is the optional<DbRow>
-    auto& maybe_row = result.value(); 
-
-    if (!maybe_row.has_value()) {
-        Logger::Warn("Room not found: " + topic);
-        return -1; // Fallback if room doesn't exist
-    }
-
-    // 3. Get the value safely using the template type
-    return maybe_row->GetOr<int>("clicks", 0);
-}
-
-string WebServer::GetLastClicker(const string &topic) {
-    auto result = Database::Get().QueryOne("SELECT last_clicker FROM rooms WHERE topic = ?;", {topic});
-    if (!result) {
-        Logger::Error("DB error in getLastClicker: " + result.error().message);
-        return "unknown";
-    }
-
-    auto& maybe_row = result.value();
-
-    if (!maybe_row.has_value()) {
-        Logger::Warn("Room not found: " + topic);
-        return "unknown";
-    }
-
-    return maybe_row->GetOr<string>("last_clicker", "unknown");
 }
 
 string WebServer::ReadFile(string_view path) {
