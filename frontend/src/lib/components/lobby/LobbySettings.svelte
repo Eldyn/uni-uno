@@ -4,20 +4,31 @@
 
 	let isHost = $derived(storeAuth.username === storeLobby.current?.host);
 	let showSettings = $state(false);
-	
+
 	// Valore locale per il timer del turno
 	let localTimerValue = $state(
-        storeLobby.current?.turn_time_limit_ms 
-            ? storeLobby.current.turn_time_limit_ms / 1000 
-            : 15
-    );
+		storeLobby.current?.turn_time_limit_ms ? storeLobby.current.turn_time_limit_ms / 1000 : 15
+	);
 
 	// Valore locale per il numero di bot (default a 0)
 	let localBotCountValue = $state(
-		storeLobby.current?.bot_count !== undefined
-			? storeLobby.current.bot_count
-			: 0
+		storeLobby.current?.bot_count !== undefined ? storeLobby.current.bot_count : 0
 	);
+
+	// Placeholder per le future regole aggiuntive con le relative descrizioni
+	let placeholderRules = $state([
+		{
+			id: "rule1",
+			label: "Rule 1",
+			enabled: false,
+			desc: "Eldyn"
+		},
+		{ id: "rule2", label: "Rule 2", enabled: false, desc: "è" },
+		{ id: "rule3", label: "Rule 3", enabled: false, desc: "tanto" },
+		{ id: "rule4", label: "Rule 4", enabled: false, desc: "molto" },
+		{ id: "rule5", label: "Rule 5", enabled: false, desc: "troppo" },
+		{ id: "rule6", label: "Rule 6", enabled: false, desc: "gay" }
+	]);
 
 	// Sincronizza i valori con lo store quando arrivano aggiornamenti dal server
 	$effect(() => {
@@ -58,17 +69,24 @@
 		if (!isHost) return;
 		storeLobby.updateSettings({ bot_count: localBotCountValue });
 	}
+
+	// --- Handler per le regole Placeholder ---
+	function handleRuleToggle(index: number, e: Event) {
+		if (!isHost) return;
+		const target = e.target as HTMLInputElement;
+		placeholderRules[index].enabled = target.checked;
+	}
 </script>
 
 <div class="lobby-settings-container">
-	<button 
-		class="settings-toggle-btn" 
+	<button
+		class="settings-toggle-btn"
 		class:active={showSettings}
-		onclick={() => showSettings = !showSettings}
+		onclick={() => (showSettings = !showSettings)}
 		aria-expanded={showSettings}
 	>
 		<span>⚙️ Lobby Settings</span>
-		<span class="arrow">{showSettings ? '▲' : '▼'}</span>
+		<span class="arrow">{showSettings ? "▲" : "▼"}</span>
 	</button>
 
 	{#if showSettings}
@@ -87,7 +105,6 @@
 
 			<hr class="settings-divider" />
 
-			<!-- Slider per il Turn Timer -->
 			<div class="settings-row slider-row">
 				<div class="slider-header">
 					<label for="turn-timer" class="slider-label">Turn Timer:</label>
@@ -108,7 +125,6 @@
 
 			<hr class="settings-divider" />
 
-			<!-- Slider per il Numero di Bot -->
 			<div class="settings-row slider-row">
 				<div class="slider-header">
 					<label for="bot-count" class="slider-label">Bot Count:</label>
@@ -125,6 +141,25 @@
 					onchange={commitBotSliderChange}
 					class="custom-slider"
 				/>
+			</div>
+
+			<hr class="settings-divider" />
+
+			<div class="settings-row rules-row">
+				<div class="rules-header">Custom Rules</div>
+				<div class="rules-grid">
+					{#each placeholderRules as rule, i}
+						<label class="toggle-label rule-label" data-tooltip={rule.desc}>
+							<input
+								type="checkbox"
+								checked={rule.enabled}
+								disabled={!isHost}
+								onchange={(e) => handleRuleToggle(i, e)}
+							/>
+							<span>{rule.label}</span>
+						</label>
+					{/each}
+				</div>
 			</div>
 		</div>
 	{/if}
@@ -152,7 +187,7 @@
 		transition: border-color 0.2s;
 	}
 
-	.settings-toggle-btn:hover, 
+	.settings-toggle-btn:hover,
 	.settings-toggle-btn.active {
 		outline: none;
 		border-color: var(--accent);
@@ -172,7 +207,7 @@
 		border: 2px solid var(--border);
 		border-radius: 6px;
 		padding: 12px 16px;
-		min-width: 200px;
+		min-width: 260px;
 		z-index: 10;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 		display: flex;
@@ -210,7 +245,6 @@
 		opacity: 0.5;
 	}
 
-	/* Rinominate le classi timer-* in slider-* per generalizzare */
 	.slider-row {
 		gap: 10px;
 	}
@@ -234,7 +268,62 @@
 		font-family: var(--mono);
 	}
 
-	/* Reset dello stile base dello slider */
+	/* --- Stili per la griglia delle regole --- */
+	.rules-row {
+		gap: 10px;
+	}
+
+	.rules-header {
+		font-size: 13px;
+		color: var(--text-h);
+		font-weight: 500;
+		margin-bottom: 2px;
+	}
+
+	.rules-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+	.rule-label {
+		position: relative;
+		font-size: 13px;
+		cursor: help; /* Il cursore a punto di domanda indica che c'è un info-box */
+	}
+
+	.rule-label::after {
+		content: attr(data-tooltip);
+		position: absolute;
+		bottom: 125%; /* Posizionato sopra la riga */
+		left: 50%;
+		transform: translateX(-50%) scale(0.9);
+		padding: 6px 10px;
+		background: #1e1e24; /* Sfondo scuro per contrasto */
+		color: #ffffff;
+		font-size: 11px;
+		font-weight: 400;
+		border-radius: 4px;
+		border: 1px solid var(--border);
+		white-space: nowrap;
+		z-index: 99;
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+		opacity: 0;
+		pointer-events: none; /* Evita che dia fastidio ai click */
+		transition:
+			opacity 0.15s ease,
+			transform 0.15s ease;
+	}
+
+	.rule-label:hover::after {
+		opacity: 1;
+		transform: translateX(-50%) scale(1);
+	}
+
+	.rule-label input:disabled {
+		cursor: not-allowed;
+	}
+
 	.custom-slider {
 		-webkit-appearance: none;
 		width: 100%;
@@ -247,7 +336,6 @@
 		opacity: 0.6;
 	}
 
-	/* Track (la linea di scorrimento) */
 	.custom-slider::-webkit-slider-runnable-track {
 		width: 100%;
 		height: 6px;
@@ -255,14 +343,13 @@
 		border-radius: 3px;
 	}
 
-	/* Thumb (il pallino che slidi) */
 	.custom-slider::-webkit-slider-thumb {
 		-webkit-appearance: none;
 		height: 16px;
 		width: 16px;
 		border-radius: 50%;
 		background: var(--accent);
-		margin-top: -5px; /* Centra il pallino sulla linea */
+		margin-top: -5px;
 		transition: transform 0.1s;
 	}
 
@@ -274,7 +361,6 @@
 		transform: none;
 	}
 
-	/* Supporto base per Firefox */
 	.custom-slider::-moz-range-track {
 		width: 100%;
 		height: 6px;
