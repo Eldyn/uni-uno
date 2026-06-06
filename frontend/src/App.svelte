@@ -5,6 +5,8 @@
 	import GameScreen from "./lib/components/game/GameScreen.svelte";
 	import LobbyScreen from "./lib/components/lobby/LobbyScreen.svelte";
 	import LobbyBrowse from "./lib/components/lobby/LobbyBrowse.svelte";
+	import StatisticsScreen from "./lib/components/StatisticsScreen.svelte";
+
 	import { storeNavigation } from "./lib/stores/navigation.svelte";
 	import { ws } from "./lib/stores/ws.svelte";
 	import { storeToast } from "./lib/stores/toast.svelte";
@@ -37,6 +39,10 @@
 	function handleBackToLobbies() {
 		storeNavigation.goto("lobbies");
 	}
+
+	function handleBackFromStatistics() {
+		storeNavigation.goto("lobbies");
+	}
 </script>
 
 <div id="app">
@@ -50,6 +56,8 @@
 		<LobbyScreen />
 	{:else if storeNavigation.current === "game"}
 		<GameScreen onBack={handleBackToLobbies} />
+	{:else if storeNavigation.current === "statistics"}
+		<StatisticsScreen onBack={handleBackFromStatistics} />
 	{/if}
 </div>
 
