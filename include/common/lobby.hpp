@@ -18,7 +18,7 @@ struct LobbySettings {
     BotTakeoverMode bot_mode = BotTakeoverMode::kWaitUntilTurnEnd;
     std::vector<std::string> active_mods; // e.g., ["0_7_mod", "liars_uno"]
 
-    int bot_count = 3;
+    int bot_count = 0;
     int starting_cards = 7;                                    
 
     int count_zeros          = 1;
@@ -30,9 +30,7 @@ struct LobbySettings {
     int count_wild_draw_four = 4;
 
 
-    //int turn_time_limit_ms = 60'000;  //standard
-    int turn_time_limit_ms = 15'000;  //testing
-    // int turn_time_limit_ms = 500;    //testing bots
+    int turn_time_limit_ms = 15'000;
 };
 
 struct LobbyMember {
