@@ -5,37 +5,58 @@
 	let isHost = $derived(storeAuth.username === storeLobby.current?.host);
 	let showSettings = $state(false);
 	
-	// Leggi la chiave corretta (turn_time_limit_ms) e converti i ms in secondi per lo slider
+	// Valore locale per il timer del turno
 	let localTimerValue = $state(
         storeLobby.current?.turn_time_limit_ms 
             ? storeLobby.current.turn_time_limit_ms / 1000 
             : 15
     );
 
-	// Sincronizza il valore usando la chiave che ora il backend invierà
+	// Valore locale per il numero di bot (default a 0)
+	let localBotCountValue = $state(
+		storeLobby.current?.bot_count !== undefined
+			? storeLobby.current.bot_count
+			: 0
+	);
+
+	// Sincronizza i valori con lo store quando arrivano aggiornamenti dal server
 	$effect(() => {
 		if (storeLobby.current?.turn_time_limit_ms) {
 			localTimerValue = storeLobby.current.turn_time_limit_ms / 1000;
+		}
+		if (storeLobby.current?.bot_count !== undefined) {
+			localBotCountValue = storeLobby.current.bot_count;
 		}
 	});
 
 	function togglePublic(e: Event) {
 		if (!isHost) return;
-
 		const target = e.target as HTMLInputElement;
 		storeLobby.updateSettings({ is_public: target.checked });
 	}
 
-	function handleSliderDrag(e: Event) {
+	// --- Handlers per il Timer ---
+	function handleTimerSliderDrag(e: Event) {
 		if (!isHost) return;
-
 		const target = e.target as HTMLInputElement;
 		localTimerValue = parseInt(target.value);
 	}
 
-	function commitSliderChange() {
+	function commitTimerSliderChange() {
 		if (!isHost) return;
 		storeLobby.updateSettings({ turn_time_limit_ms: localTimerValue * 1000 });
+	}
+
+	// --- Handlers per i Bot ---
+	function handleBotSliderDrag(e: Event) {
+		if (!isHost) return;
+		const target = e.target as HTMLInputElement;
+		localBotCountValue = parseInt(target.value);
+	}
+
+	function commitBotSliderChange() {
+		if (!isHost) return;
+		storeLobby.updateSettings({ bot_count: localBotCountValue });
 	}
 </script>
 
@@ -56,7 +77,7 @@
 				<label class="toggle-label">
 					<input
 						type="checkbox"
-						checked={storeLobby.current!.is_public}
+						checked={storeLobby.current?.is_public ?? false}
 						disabled={!isHost}
 						onchange={togglePublic}
 					/>
@@ -66,10 +87,11 @@
 
 			<hr class="settings-divider" />
 
-			<div class="settings-row timer-row">
-				<div class="timer-header">
-					<label for="turn-timer" class="timer-label">Turn Timer:</label>
-					<span class="timer-value">{localTimerValue}s</span>
+			<!-- Slider per il Turn Timer -->
+			<div class="settings-row slider-row">
+				<div class="slider-header">
+					<label for="turn-timer" class="slider-label">Turn Timer:</label>
+					<span class="slider-value">{localTimerValue}s</span>
 				</div>
 				<input
 					id="turn-timer"
@@ -78,9 +100,30 @@
 					max="30"
 					value={localTimerValue}
 					disabled={!isHost}
-					oninput={handleSliderDrag}
-					onchange={commitSliderChange}
-					class="timer-slider"
+					oninput={handleTimerSliderDrag}
+					onchange={commitTimerSliderChange}
+					class="custom-slider"
+				/>
+			</div>
+
+			<hr class="settings-divider" />
+
+			<!-- Slider per il Numero di Bot -->
+			<div class="settings-row slider-row">
+				<div class="slider-header">
+					<label for="bot-count" class="slider-label">Bot Count:</label>
+					<span class="slider-value">{localBotCountValue}</span>
+				</div>
+				<input
+					id="bot-count"
+					type="range"
+					min="0"
+					max="3"
+					value={localBotCountValue}
+					disabled={!isHost}
+					oninput={handleBotSliderDrag}
+					onchange={commitBotSliderChange}
+					class="custom-slider"
 				/>
 			</div>
 		</div>
@@ -167,23 +210,24 @@
 		opacity: 0.5;
 	}
 
-	.timer-row {
+	/* Rinominate le classi timer-* in slider-* per generalizzare */
+	.slider-row {
 		gap: 10px;
 	}
 
-	.timer-header {
+	.slider-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 	}
 
-	.timer-label {
+	.slider-label {
 		font-size: 13px;
 		color: var(--text-h);
 		font-weight: 500;
 	}
 
-	.timer-value {
+	.slider-value {
 		font-size: 13px;
 		color: var(--accent);
 		font-weight: bold;
@@ -191,20 +235,20 @@
 	}
 
 	/* Reset dello stile base dello slider */
-	.timer-slider {
+	.custom-slider {
 		-webkit-appearance: none;
 		width: 100%;
 		background: transparent;
 		cursor: pointer;
 	}
 
-	.timer-slider:disabled {
+	.custom-slider:disabled {
 		cursor: not-allowed;
 		opacity: 0.6;
 	}
 
 	/* Track (la linea di scorrimento) */
-	.timer-slider::-webkit-slider-runnable-track {
+	.custom-slider::-webkit-slider-runnable-track {
 		width: 100%;
 		height: 6px;
 		background: var(--border);
@@ -212,7 +256,7 @@
 	}
 
 	/* Thumb (il pallino che slidi) */
-	.timer-slider::-webkit-slider-thumb {
+	.custom-slider::-webkit-slider-thumb {
 		-webkit-appearance: none;
 		height: 16px;
 		width: 16px;
@@ -222,23 +266,23 @@
 		transition: transform 0.1s;
 	}
 
-	.timer-slider::-webkit-slider-thumb:hover {
+	.custom-slider::-webkit-slider-thumb:hover {
 		transform: scale(1.2);
 	}
 
-	.timer-slider:disabled::-webkit-slider-thumb:hover {
+	.custom-slider:disabled::-webkit-slider-thumb:hover {
 		transform: none;
 	}
 
 	/* Supporto base per Firefox */
-	.timer-slider::-moz-range-track {
+	.custom-slider::-moz-range-track {
 		width: 100%;
 		height: 6px;
 		background: var(--border);
 		border-radius: 3px;
 	}
 
-	.timer-slider::-moz-range-thumb {
+	.custom-slider::-moz-range-thumb {
 		height: 16px;
 		width: 16px;
 		border: none;
@@ -247,7 +291,7 @@
 		transition: transform 0.1s;
 	}
 
-	.timer-slider::-moz-range-thumb:hover {
+	.custom-slider::-moz-range-thumb:hover {
 		transform: scale(1.2);
 	}
 </style>

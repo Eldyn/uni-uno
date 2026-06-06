@@ -641,7 +641,8 @@ void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
     }
 
     if (message.contains("bot_count")) {
-        lobby.settings.bot_count = ws::GetOr<int>(message, "bot_count", 3);
+        lobby.settings.bot_count = ws::GetOr<int>(message, "bot_count", 0);
+        SyncBots(lobby);
         changed = true;
     }
 
