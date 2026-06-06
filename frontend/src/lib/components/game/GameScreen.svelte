@@ -3,7 +3,7 @@
 	import GameUnoButton from "./GameUnoButton.svelte";
 	import GameVictoryPopup from "./GameVictoryPopup.svelte";
 	import GameHud from "./GameHud.svelte";
-	import GameActions from "./GameActions.svelte"; 
+	import GameActions from "./GameActions.svelte";
 	import { storeGame } from "../../stores/game.svelte";
 	import { storeNavigation } from "../../stores/navigation.svelte.ts";
 	import { ClientAction, ServerAction, ws } from "../../stores/ws.svelte";
@@ -15,12 +15,12 @@
 	<div class="game-controls">
 		<GameHud />
 
-		<GameActions /> 
+		<GameActions />
 	</div>
 
 	<GameBoard gameColor={storeGame.state?.active_color ?? "green"} />
 
-	<GameUnoButton /> 
+	<GameUnoButton />
 </div>
 
 <style>
@@ -263,21 +263,51 @@
 		position: absolute;
 	}
 
-	.player_hand .card:nth-child(1) { left: calc(1 * 2.2em); }
-	.player_hand .card:nth-child(2) { left: calc(2 * 2.2em); }
-	.player_hand .card:nth-child(3) { left: calc(3 * 2.2em); }
-	.player_hand .card:nth-child(4) { left: calc(4 * 2.2em); }
-	.player_hand .card:nth-child(5) { left: calc(5 * 2.2em); }
-	.player_hand .card:nth-child(6) { left: calc(6 * 2.2em); }
-	.player_hand .card:nth-child(7) { left: calc(7 * 2.2em); }
-	.player_hand .card:nth-child(8) { left: calc(8 * 2.2em); }
-	.player_hand .card:nth-child(9) { left: calc(9 * 2.2em); }
-	.player_hand .card:nth-child(10) { left: calc(10 * 2.2em); }
-	.player_hand .card:nth-child(11) { left: calc(11 * 2.2em); }
-	.player_hand .card:nth-child(12) { left: calc(12 * 2.2em); }
-	.player_hand .card:nth-child(13) { left: calc(13 * 2.2em); }
-	.player_hand .card:nth-child(14) { left: calc(14 * 2.2em); }
-	.player_hand .card:nth-child(15) { left: calc(15 * 2.2em); }
+	.player_hand .card:nth-child(1) {
+		left: calc(1 * 2.2em);
+	}
+	.player_hand .card:nth-child(2) {
+		left: calc(2 * 2.2em);
+	}
+	.player_hand .card:nth-child(3) {
+		left: calc(3 * 2.2em);
+	}
+	.player_hand .card:nth-child(4) {
+		left: calc(4 * 2.2em);
+	}
+	.player_hand .card:nth-child(5) {
+		left: calc(5 * 2.2em);
+	}
+	.player_hand .card:nth-child(6) {
+		left: calc(6 * 2.2em);
+	}
+	.player_hand .card:nth-child(7) {
+		left: calc(7 * 2.2em);
+	}
+	.player_hand .card:nth-child(8) {
+		left: calc(8 * 2.2em);
+	}
+	.player_hand .card:nth-child(9) {
+		left: calc(9 * 2.2em);
+	}
+	.player_hand .card:nth-child(10) {
+		left: calc(10 * 2.2em);
+	}
+	.player_hand .card:nth-child(11) {
+		left: calc(11 * 2.2em);
+	}
+	.player_hand .card:nth-child(12) {
+		left: calc(12 * 2.2em);
+	}
+	.player_hand .card:nth-child(13) {
+		left: calc(13 * 2.2em);
+	}
+	.player_hand .card:nth-child(14) {
+		left: calc(14 * 2.2em);
+	}
+	.player_hand .card:nth-child(15) {
+		left: calc(15 * 2.2em);
+	}
 
 	#player .player_hand .card {
 		cursor: pointer;
@@ -304,3 +334,4 @@
 		transform: rotate(-90deg) translate(-24em, 1em);
 	}
 </style>
+
