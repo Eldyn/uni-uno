@@ -5,7 +5,6 @@
 #include <controllers/lobby_controller.hpp>
 #include <common/ws.hpp>
 #include <logger.hpp>
-#include <numeric>
 #include <openssl/rand.h>
 #include <algorithm>
 #include <chrono>
@@ -13,7 +12,7 @@
 #include <string>
 
 using namespace std::chrono;
-using std::string, std::vector, std::runtime_error, std::erase_if, std::memory_order_relaxed, std::transform, std::to_string; 
+using std::string, std::vector, std::runtime_error, std::memory_order_relaxed, std::transform, std::to_string; 
 
 //  Invite code alphabet — A-Z + 0-9 = 36 chars.
 //  6 characters → 36^6 = ~2.18 billion combinations.
@@ -646,6 +645,11 @@ void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
         changed = true;
     }
 
+    if (message.contains("turn_time_limit_ms")) {
+        lobby.settings.turn_time_limit_ms = ws::GetOr<int>(message, "turn_time_limit_ms", 15'000);
+        changed = true;
+    }
+
     if (changed) {
         BroadcastUpdate(lobby);
     }
@@ -723,6 +727,7 @@ json LobbyController::MemberListJson(const Lobby& lobby) {
             {"username",  m.username},
             {"is_connected", m.is_connected},
             {"is_host",   m.username == lobby.host},
+            {"is_bot", m.is_bot}
         });
     }
     return arr;
@@ -738,7 +743,6 @@ void LobbyController::BroadcastUpdate(const Lobby& lobby) const {
         {"name", lobby.name}
     };
 
-    // Broadcast is more perfomant!
     app_.publish("lobby_" + lobby.invite_code, notification.dump(), uWS::OpCode::TEXT);
 }
 
