@@ -12,6 +12,8 @@ export interface LobbyMember {
     is_connected: boolean;
     /** True if this player is the owner/host of the lobby. */
     is_host: boolean;
+    /** True if this is a bot account. */
+    is_bot: boolean;
 }
 
 /**
