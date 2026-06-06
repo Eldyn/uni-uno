@@ -258,6 +258,7 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
         {"invite_code", code},
         {"host", lobby.host},
         {"members", MemberListJson(lobby)},
+        {"settings", SettingsJson(lobby)},
         {"name", lobby.name}
     };
     ctx.socket->send(resp.dump(), ctx.op_code);
@@ -407,6 +408,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
             {"invite_code", code},
             {"host",        lobby.host},
             {"members",     MemberListJson(lobby)},
+            {"settings",    SettingsJson(lobby)},
             {"name",        lobby.name}
         });
 
@@ -471,6 +473,7 @@ void LobbyController::HandleList(WsContext ctx, const json& message) {
 
     // BUG: Will hang the entire server if there are too many lobbies
     for (const auto& [id, lobby] : lobbies_) {
+        if (!lobby.is_public) continue;
         bool any_connected = std::ranges::any_of(lobby.members, &LobbyMember::is_connected);
 
         int humans = std::ranges::count_if(lobby.members, [](const auto& member) {
@@ -481,20 +484,12 @@ void LobbyController::HandleList(WsContext ctx, const json& message) {
         
         if (humans >= kMaxMembers) continue;
        
-        if (lobby.is_public) {
-            list.push_back({
-                {"name", lobby.name},
-                {"member_count", humans},
-                {"bot_count", lobby.members.size()}, 
-                {"invite_code", lobby.invite_code}
-            });
-        } else {
-            list.push_back({
-                {"name", lobby.name},
-                {"host", lobby.host},
-                {"member_count", humans}
-            });
-        }
+        list.push_back({
+            {"name", lobby.name},
+            {"member_count", humans},
+            {"bot_count", lobby.members.size()}, 
+            {"invite_code", lobby.invite_code}
+        });
     }
 
     auto resp = MakeResponse(ws::ServerAction::kLobbyList, request_id);
@@ -652,6 +647,8 @@ void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
     }
 
     if (changed) {
+        auto response = ws::MakeResponse(ws::ServerAction::kSuccess, request_id);
+        ctx.socket->send(response.dump(), uWS::OpCode::TEXT);
         BroadcastUpdate(lobby);
     }
 }
@@ -734,15 +731,28 @@ json LobbyController::MemberListJson(const Lobby& lobby) {
     return arr;
 }
 
+json LobbyController::SettingsJson(const Lobby& lobby) {
+    json json;
+
+    json["turn_time_limit_ms"] = lobby.settings.turn_time_limit_ms;
+    json["active_mods"] = lobby.settings.active_mods;
+    json["bot_count"] = lobby.settings.bot_count;
+    json["bot_mode"] =  static_cast<int>(lobby.settings.bot_mode);
+    json["starting_cards"] = lobby.settings.starting_cards;
+    json["is_public"] = lobby.is_public;
+
+    return json;
+}
+
 void LobbyController::BroadcastUpdate(const Lobby& lobby) const {
     auto notification = MakeResponse(ws::ServerAction::kLobbyUpdated);
     notification["lobby"] = json{
+        {"name", lobby.name},
+        {"host", lobby.host},
         {"is_public", lobby.is_public},
         {"invite_code", lobby.invite_code},
-        {"host", lobby.host},
         {"members", MemberListJson(lobby)},
-        {"name", lobby.name},
-        {"turn_time_limit_ms", lobby.settings.turn_time_limit_ms}
+        {"settings", SettingsJson(lobby)}
     };
 
     app_.publish("lobby_" + lobby.invite_code, notification.dump(), uWS::OpCode::TEXT);

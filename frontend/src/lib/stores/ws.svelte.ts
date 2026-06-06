@@ -22,9 +22,10 @@ export const ClientAction = {
 } as const;
 
 export const ServerAction = {
+    Success: "success",
+    Error: "error",
     GameStateUpdated: "game_state_updated",
     SyncData: "sync_data",
-    Error: "error",
     LobbyEvicted: "lobby_evicted",
     LobbyList: "lobby_list",
     LobbyUpdated: "lobby_updated",

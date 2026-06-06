@@ -9,6 +9,8 @@
 
 namespace ws {
     enum class ServerAction {
+        kSuccess,           // Generic Success
+                            
         kQueried,           // Send queried buttonTest information
         kSyncCount,         // Sync buttonTest information
                             
@@ -78,6 +80,7 @@ namespace ws {
     };
     
 inline const std::unordered_map<ServerAction, std::string> kServerActionStr {
+        { ServerAction::kSuccess,              "success"                 },
         { ServerAction::kQueried,              "queried"                 },
         { ServerAction::kSyncCount,            "sync_count"              },
         { ServerAction::kSyncData,             "sync_data"               },

@@ -139,6 +139,9 @@ private:
     // Each entry: { "username": "...", "connected": true/false, "host": bool }
     static json MemberListJson(const Lobby& lobby);
 
+    // Serialise the settings list for a lobby_updated / lobby_joined payload.
+    static json SettingsJson(const Lobby& lobby);
+
     // Broadcast lobby_updated to every CONNECTED member of a lobby.
     void BroadcastUpdate(const Lobby& lobby) const;
 

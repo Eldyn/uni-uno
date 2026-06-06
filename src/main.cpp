@@ -19,6 +19,7 @@ int main() {
         LobbyController lobby(server);        
         GameController  game(server, lobby);
 
+        // INFO: Logging Middleware
         server.GetHTTPRouter().OnAny([](AppResponse *response, AppRequest *request) {
             Logger::Log("[HTTP] route received: ", std::string(request->getFullUrl()));
             return true;

@@ -2,6 +2,35 @@ import { storeNavigation } from "./navigation.svelte";
 import { storeToast } from "./toast.svelte";
 import { ClientAction, ServerAction, ws } from "./ws.svelte";
 
+export enum BotTakeoverMode {
+    PlayInstantly,
+    WaitUntilTurnEnd
+}
+
+export enum Rules { }
+
+/**
+ * Represents a lobby's settings
+ */
+export interface LobbySettings {
+    is_public: boolean;
+    bot_count: number;
+    bot_mode: BotTakeoverMode;
+    active_mods: Rules[];
+
+    starting_cards: number;
+
+    count_zeros: number;
+    count_numbered: number;
+    count_skips: number;
+    count_reverses: number;
+    count_draw_two: number;
+    count_wild: number;
+    count_wild_draw_four: number;
+
+    turn_time_limit_ms: number;
+}
+
 /**
  * Represents a single player inside a lobby.
  */
@@ -30,6 +59,18 @@ export interface Lobby {
     member_count: number;
     /** List of players currently in the lobby. */
     members: LobbyMember[];
+
+    settings: LobbySettings;
+}
+
+/**
+ * Represents a game lobby with minimal data for a browsing list.
+ */
+export interface ListedLobby {
+    name: string;
+    member_count: number;
+    bot_count: number;
+    invite_code: string;
 }
 
 /**
@@ -40,7 +81,7 @@ class StoreLobby {
     current = $state<Lobby | null>(null);
 
     /** The list of public lobbies available to join. */
-    available = $state<Lobby[]>([]);
+    available = $state<ListedLobby[]>([]);
 
     /** True when fetching the public lobby list from the server. */
     isLoadingList = $state(false);
@@ -86,12 +127,15 @@ class StoreLobby {
      * Updates the lobby settings (name and visibility).
      * @param settings - The settings fields to modify.
      */
-    async updateSettings(settings: { name?: string; is_public?: boolean }): Promise<void> {
+    async updateSettings(settings: Partial<LobbySettings>): Promise<void> {
         try {
             await ws.connect();
-            // Using emit because the backend automatically replies with a
-            // ServerAction.LobbyUpdated broadcast which refreshes our state.
-            ws.emit(ClientAction.LobbyUpdateSettings, settings);
+            const response = await ws.emitAndWait(ClientAction.LobbyUpdateSettings, settings);
+            if (!response.ok) {
+                storeToast.error(response.reason);
+            }
+
+            storeToast.success("Impostazioni Aggiornate!");
         } catch (error) {
             storeToast.error("Failed to update lobby settings.");
         }
@@ -167,7 +211,7 @@ class StoreLobby {
             const response = await ws.emitAndWait(ClientAction.LobbyList);
 
             if (response.ok) {
-                this.available = response.get<Lobby[]>("lobbies") ?? [];
+                this.available = response.get<ListedLobby[]>("lobbies") ?? [];
             }
         } finally {
             this.isLoadingList = false;
@@ -200,23 +244,22 @@ class StoreLobby {
 
             localStorage.setItem("lobby_code", lobby.invite_code);
             storeNavigation.goto("lobby");
-            // INFO: commented since it gets annoying once you start refreshing yourself
-            // storeToast.success("Joined lobby successfully!");
         });
 
         ws.on(ServerAction.LobbyUpdated, (data) => {
             const updatedLobby = data.lobby as Lobby;
             if (!updatedLobby) return;
 
-            // Update the current lobby if the user is inside it
             if (this.current) {
                 this.current = updatedLobby;
+                console.log(this.current);
             }
 
-            // Sync the public browser list if the lobby is visible
             const idx = this.available.findIndex((l) => l.invite_code === updatedLobby.invite_code);
             if (idx !== -1) {
-                this.available[idx] = updatedLobby;
+                this.available[idx].member_count = updatedLobby.member_count;
+                this.available[idx].bot_count = updatedLobby.settings.bot_count;
+                this.available[idx].name = updatedLobby.name;
             }
         });
 
