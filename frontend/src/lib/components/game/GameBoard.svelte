@@ -611,16 +611,41 @@
 
 	.player-label {
 		position: absolute;
-		top: 0;
-		width: 100%;
-		text-align: center;
 		font-weight: bold;
 		color: white;
 		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 		font-size: 0.95em;
 		letter-spacing: 0.04em;
+		white-space: nowrap;
+		z-index: 110;
+	}
+	
+    /* Posizione etichette giocatori */
+	#player .player-label {
+		top: -7em;
+		left: 50%;
+		transform: translateX(-50%);
 	}
 
+	#player_top .player-label {
+		bottom: -1em;
+		left: 50%;
+		transform: translateX(-50%);
+	}
+
+	#player_left .player-label {
+		top: 40%;
+		right: -4.5em;
+		transform: translateY(-50%);
+	}
+
+	#player_right .player-label {
+		top: 40%;
+		left: -4.5em;
+		transform: translateY(-50%);
+	}
+    /* --- */
+    
 	.card {
 		display: inline-block;
 		background-color: white;
