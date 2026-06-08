@@ -1,7 +1,7 @@
 <script lang="ts">
 	import GameBoard from "./GameBoard.svelte";
 	import GameUnoButton from "./GameUnoButton.svelte";
-	import GameVictoryPopup from "./GameVictoryPopup.svelte";
+	import GameOverPopup from "./GameOverPopup.svelte"; 
 	import GameHud from "./GameHud.svelte";
 	import GameActions from "./GameActions.svelte";
 	import { storeGame } from "../../stores/game.svelte";
@@ -10,7 +10,7 @@
 </script>
 
 <div class="game-screen">
-	<GameVictoryPopup />
+	<GameOverPopup />
 
 	<div class="game-controls">
 		<GameHud />
@@ -57,6 +57,4 @@
 		--fieldSize: 24em;
 		--playerSpace: 12em;
 	}
-
 </style>
-

@@ -1,25 +1,23 @@
 <script lang="ts">
-	import { storeGame } from "../../stores/game.svelte";
+	import { storeGame } from "../../../stores/game.svelte";
 </script>
 
-{#if storeGame.state.is_over && storeGame.state.winner}
-	<div class="modal-overlay victory-overlay">
-		<div class="modal-content victory-content">
-			<h1>🏆 Partita Terminata!</h1>
-			<h2>
-				Ha vinto: <span class="winner-highlight">{storeGame.state.winner || "Sconosciuto"}</span>
-			</h2>
-			<p>Tutte le carte in mano sono state esaurite correttamente.</p>
-			<button
-				type="button"
-				class="action-btn back-to-lobby-btn"
-				onclick={storeGame.returnToLobby}
-			>
-				Back (ancora no destroy match instance + frontend data)
-			</button>
-		</div>
+<div class="modal-overlay victory-overlay">
+	<div class="modal-content victory-content">
+		<h1>🏆 Partita Terminata!</h1>
+		<h2>
+			Ha vinto: <span class="winner-highlight">{storeGame.state.winner || "Sconosciuto"}</span>
+		</h2>
+		<p>Tutte le carte in mano sono state esaurite correttamente.</p>
+		<button
+			type="button"
+			class="action-btn back-to-lobby-btn"
+			onclick={storeGame.returnToLobby}
+		>
+			Back (ancora no destroy match instance + frontend data)
+		</button>
 	</div>
-{/if}
+</div>
 
 <style>
 	/* DESIGN OVERLAY DI VITTORIA (STILE MODALE BLOCCANTE) */
@@ -32,7 +30,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		z-index: 200; /* Assicura che sia sopra gli altri elementi */
+		z-index: 200;
 	}
 
 	.victory-overlay {
@@ -75,9 +73,7 @@
 		font-weight: bold;
 		font-size: 1.1rem;
 		cursor: pointer;
-		transition:
-			background 0.2s,
-			transform 0.1s;
+		transition: background 0.2s, transform 0.1s;
 		box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3);
 	}
 
