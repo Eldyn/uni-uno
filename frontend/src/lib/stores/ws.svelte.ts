@@ -9,6 +9,7 @@ export const ClientAction = {
     GameDrawCard: "game_draw_card",
     GameSubmitInput: "game_submit_input",
     GameCallUno: "game_call_uno",
+    GameExit: "game_exit",
     LobbyList: "lobby_list",
     LobbyCreate: "lobby_create",
     LobbyJoin: "lobby_join",
