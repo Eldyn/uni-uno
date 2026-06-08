@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { storeGame } from "../../../stores/game.svelte";
+	import GameCards from "../GameCards.svelte"; 
 </script>
 
 {#if storeGame.actionRequired && storeGame.actionContext}
@@ -14,26 +15,11 @@
 					)}
 
 					{#if drawnCard}
-						<div class="card {drawnCard.color}">
-							<div class="bckg"></div>
-							<div class="card-value">
-								{#if drawnCard.value === "Skip"}
-									<img src="/images/skip.png" alt="Skip" class="card-icon" />
-								{:else if drawnCard.value === "Rev" || drawnCard.value === "Reverse"}
-									<img src="/images/reverse.png" alt="Reverse" class="card-icon" />
-								{:else if drawnCard.value === "Wild_Draw4" || drawnCard.value === "+4"}
-									<div class="wild-draw4-container">
-										<img src="/images/wild.png" alt="Wild" class="card-icon wild-bg" />
-										<span class="draw4-text">+4</span>
-									</div>
-								{:else if drawnCard.value === "Wild"}
-									<img src="/images/wild.png" alt="Wild" class="card-icon" />
-								{:else}
-									<span class="text-value" class:small-text={drawnCard.value.length > 1}>
-										{drawnCard.value}
-									</span>
-								{/if}
-							</div>
+						<div class="card-wrapper">
+							<GameCards 
+								card={drawnCard} 
+								style="position: relative; left: 0;" 
+							/>
 						</div>
 
 						<div class="action-buttons-group">
@@ -101,104 +87,12 @@
 		margin-top: 20px;
 	}
 
-	/* Rendering della carta nel modale */
-	.card {
-		display: inline-block;
-		background-color: white;
-		border: 1px solid #ccc;
-		border-radius: 0.8em;
-		padding: 0.3em;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-		position: relative;
+	/* Semplice wrapper per centrare e ingrandire la carta delegando tutto a GameCards */
+	.card-wrapper {
+		display: flex;
+		justify-content: center;
+		margin: 30px 0;
 		transform: scale(1.5);
-		margin: 30px auto;
 	}
-
-	.card .bckg {
-		width: 5em;
-		height: calc(5em * 1.5357);
-		border-radius: 0.5em;
-		overflow: hidden;
-		position: relative;
-	}
-
-	.card .bckg::before {
-		content: "";
-		width: 5em;
-		height: calc(5em * 1.3);
-		background-color: white;
-		position: absolute;
-		left: 50%;
-		top: 50%;
-		transform: translate(-50%, -50%) rotate(10deg);
-		transform-origin: center center;
-		border-radius: 90% 40%;
-	}
-
-	.card-value {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		pointer-events: none;
-		width: 100%;
-		height: 100%;
-	}
-
-	/* Gestione Icone delle carte Speciali */
-	.card-icon {
-		width: 2.5em;
-		height: 2.5em;
-		object-fit: contain;
-	}
-
-	.wild-draw4-container {
-		position: relative;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		width: 100%;
-		height: 100%;
-	}
-
-	.wild-bg {
-		opacity: 0.85;
-	}
-
-	.draw4-text {
-		position: absolute;
-		font-size: 1.6rem;
-		font-weight: 900;
-		color: white;
-		text-shadow: 
-			-2px -2px 0 #000,  
-			 2px -2px 0 #000,
-			-2px  2px 0 #000,
-			 2px  2px 0 #000,
-			 0px 4px 8px rgba(0,0,0,0.8);
-		letter-spacing: -1px;
-	}
-
-	.text-value {
-		font-weight: bold;
-		font-size: 2em;
-	}
-
-	.text-value.small-text {
-		font-size: 1em;
-	}
-
-	.card.red { color: #dc251c; }
-	.card.red .bckg { background-color: #dc251c; }
-	.card.yellow { color: #fcf604; }
-	.card.yellow .bckg { background-color: #fcf604; }
-	.card.blue { color: #0493de; }
-	.card.blue .bckg { background-color: #0493de; }
-	.card.green { color: #018d41; }
-	.card.green .bckg { background-color: #018d41; }
-	.card.black { color: #1f1b18; }
-	.card.black .bckg { background-color: #1f1b18; }
+	
 </style>

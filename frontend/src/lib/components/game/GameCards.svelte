@@ -41,6 +41,7 @@
 		if (value === "Skip") return "/images/skip.png";
 		if (value === "Rev") return "/images/reverse.png";
 		if (value === "Wild") return "/images/wild.png";
+        if (value === "Wild_Draw4" || value === "+4") return "/images/wild_four.png";
 		if (/^[0-9]$/.test(value)) return `/images/${value}.png`;
 		return null;
 	}
