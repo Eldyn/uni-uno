@@ -1,179 +1,187 @@
 <script lang="ts">
-	import { storeGame, type Card } from "../../stores/game.svelte";
+	import { storeGame } from "../../stores/game.svelte";
+	import { untrack } from "svelte";
+	import GameCard from "./GameCards.svelte";
 
 	let {
-		cards = [],
-		position = "bottom"
-	}: { cards?: Card[]; position?: "bottom" | "top" | "left" | "right" } = $props();
+		hand = [],
+		hiddenCardIds = new Set<number>(),
+		playableCardIds = new Set<number>(),
+		handEl = $bindable<HTMLElement | null>(null)
+	} = $props();
 
-	function handleCardClick(card: Card) {
-		storeGame.playCard(card.id);
+	// ─────────────────────────────────────────────────────────────────────────
+	// CARD ORDER & DRAG STATE
+	// ─────────────────────────────────────────────────────────────────────────
+
+	let cardOrder = $state<Map<number, number>>(new Map());
+	let draggedCardId = $state<number | null>(null);
+	let dragOverCardId = $state<number | null>(null);
+	let isDragging = $state(false);
+
+	$effect(() => {
+		const currentHand = hand;
+		const currentIds = new Set(currentHand.map((c) => c.id));
+
+		untrack(() => {
+			const next = new Map(cardOrder);
+			let mapChanged = false;
+
+			for (const [id] of next) {
+				if (!currentIds.has(id)) {
+					next.delete(id);
+					mapChanged = true;
+				}
+			}
+
+			let maxOrd = next.size > 0 ? Math.max(...next.values()) : -1;
+
+			for (const c of currentHand) {
+				if (!next.has(c.id)) {
+					next.set(c.id, ++maxOrd);
+					mapChanged = true;
+				}
+			}
+
+			if (
+				mapChanged ||
+				next.size !== cardOrder.size ||
+				[...next].some(([k, v]) => cardOrder.get(k) !== v)
+			) {
+				cardOrder = next;
+			}
+		});
+	});
+
+	let sortedHand = $derived(
+		[...hand].sort((a, b) => (cardOrder.get(a.id) ?? 0) - (cardOrder.get(b.id) ?? 0))
+	);
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// DRAG E DROP
+	// ─────────────────────────────────────────────────────────────────────────
+
+	function onDragStart(e: DragEvent, cardId: number) {
+		draggedCardId = cardId;
+		isDragging = true;
+		e.dataTransfer?.setData("text/plain", String(cardId));
+	}
+
+	function onDragOver(e: DragEvent, cardId: number) {
+		e.preventDefault();
+		if (draggedCardId !== cardId) dragOverCardId = cardId;
+	}
+
+	function onDragLeave() {
+		dragOverCardId = null;
+	}
+
+	function onDrop(e: DragEvent, targetId: number) {
+		e.preventDefault();
+		if (draggedCardId === null || draggedCardId === targetId) {
+			resetDrag();
+			return;
+		}
+
+		const from = cardOrder.get(draggedCardId) ?? 0;
+		const to = cardOrder.get(targetId) ?? 0;
+		const next = new Map(cardOrder);
+
+		if (from < to) {
+			for (const [id, o] of next) {
+				if (o > from && o <= to) next.set(id, o - 1);
+			}
+		} else {
+			for (const [id, o] of next) {
+				if (o < from && o >= to) next.set(id, o + 1);
+			}
+		}
+
+		next.set(draggedCardId, to);
+		cardOrder = next;
+		resetDrag();
+	}
+
+	function onDragEnd() {
+		resetDrag();
+	}
+
+	function resetDrag() {
+		draggedCardId = null;
+		dragOverCardId = null;
+		isDragging = false;
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// TOUCH REORDER
+	// ─────────────────────────────────────────────────────────────────────────
+
+	let touchStartX = $state(0);
+	let touchCardId = $state<number | null>(null);
+	let touchStartIdx = $state(0);
+
+	function onTouchStart(e: TouchEvent, cardId: number) {
+		touchCardId = cardId;
+		touchStartX = e.touches[0].clientX;
+		touchStartIdx = cardOrder.get(cardId) ?? 0;
+	}
+
+	function onTouchEnd(e: TouchEvent) {
+		if (touchCardId === null) return;
+
+		const delta = Math.round((e.changedTouches[0].clientX - touchStartX) / 50);
+
+		if (delta !== 0) {
+			const newOrd = Math.max(0, Math.min(hand.length - 1, touchStartIdx + delta));
+			const target = [...cardOrder].find(([, o]) => o === newOrd);
+			if (target) onDrop({ preventDefault: () => {} } as DragEvent, target[0]);
+		}
+
+		touchCardId = null;
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────
+	// ACTIONS
+	// ─────────────────────────────────────────────────────────────────────────
+
+	function handleCardClick(cardId: number) {
+		if (!isDragging) storeGame.playCard(cardId);
 	}
 </script>
 
-<div class="player_hand" class:position-{position}>
-	{#each cards as card (card.id)}
-		<div
-			class="card {card.color}"
-			role="button"
-			tabindex="0"
-			onclick={() => handleCardClick(card)}
-			onkeydown={(e) => e.key === "Enter" && handleCardClick(card)}
-		>
-			<div class="bckg"></div>
-			<div class="card-value">
-				{#if card.value === "Skip"}
-					<img src="/images/skip.png" alt="Skip" class="card-icon" />
-				{:else if card.value === "Rev"}
-					<img src="/images/reverse.png" alt="Reverse" class="card-icon" />
-				{:else if card.value === "Wild"}
-					<img src="/images/wild.png" alt="Wild" class="card-icon" />
-				{:else}
-					<span class="text-value" class:small-text={card.value.length > 1}>{card.value}</span>
-				{/if}
-			</div>
-		</div>
+<div
+	bind:this={handEl}
+	class="player_hand"
+	style="
+		position: absolute;
+		top: 20%; left: 50%;
+		transform: translate(-50%, -30%);
+		width: calc({sortedHand.length} * 2.2em + 7.2em);
+		height: calc(var(--cardSize) * 1.5357);
+	"
+>
+	{#each sortedHand as card, i (card.id)}
+		<GameCard
+			{card}
+			index={i}
+			isHidden={hiddenCardIds.has(card.id)}
+			isDragged={draggedCardId === card.id}
+			isDragTarget={dragOverCardId === card.id}
+			isPlayable={playableCardIds.has(card.id)}
+			onCardClick={handleCardClick}
+			{onDragStart}
+			{onDragOver}
+			{onDragLeave}
+			{onDrop}
+			{onDragEnd}
+			{onTouchStart}
+			{onTouchEnd}
+		/>
 	{/each}
 </div>
 
 <style>
-	.card-value {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		font-weight: bold;
-		pointer-events: none;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		width: 100%;
-		height: 100%;
-	}
-
-	.card-icon {
-		width: 50%;
-		height: 50%;
-		object-fit: contain;
-	}
-
-	.text-value {
-		font-size: 2em;
-	}
-
-	.text-value.small-text {
-		font-size: 1em;
-	}
-
 	.player_hand {
 		position: relative;
-		display: flex;
-		gap: 10px;
-		flex-wrap: wrap;
-	}
-
-	.position-bottom {
-		flex-direction: row;
-		justify-content: center;
-	}
-
-	.position-top {
-		flex-direction: row;
-		justify-content: center;
-		transform: scaleY(-1);
-	}
-
-	.position-left {
-		flex-direction: column;
-		justify-content: center;
-		transform: rotate(-90deg);
-	}
-
-	.position-right {
-		flex-direction: column;
-		justify-content: center;
-		transform: rotate(90deg);
-	}
-
-	.card {
-		position: relative;
-		display: inline-block;
-		background-color: white;
-		border: 1px solid #ccc;
-		border-radius: 0.8em;
-		padding: 0.3em;
-		box-shadow: var(--lowShadow);
-		transition: 200ms;
-		cursor: pointer;
-		width: var(--cardSize);
-		height: calc(var(--cardSize) * 1.5357);
-	}
-
-	.card:hover {
-		transform: translateY(-0.5em);
-		box-shadow: var(--lowShadowHover);
-	}
-
-	.card:focus-visible {
-		outline: 2px solid var(--accent);
-		outline-offset: 2px;
-	}
-
-	.card .bckg {
-		width: 100%;
-		height: 100%;
-		border-radius: 0.5em;
-		overflow: hidden;
-		position: relative;
-	}
-
-	.card .bckg::before {
-		content: "";
-		width: 100%;
-		height: 100%;
-		background-color: white;
-		position: absolute;
-		left: 0;
-		top: 0;
-		border-radius: 90% 40%;
-	}
-
-	.card.red {
-		color: #dc251c;
-	}
-	.card.red .bckg {
-		background-color: #dc251c;
-	}
-	.card.yellow {
-		color: #fcf604;
-	}
-	.card.yellow .bckg {
-		background-color: #fcf604;
-	}
-	.card.blue {
-		color: #0493de;
-	}
-	.card.blue .bckg {
-		background-color: #0493de;
-	}
-	.card.green {
-		color: #018d41;
-	}
-	.card.green .bckg {
-		background-color: #018d41;
-	}
-	.card.black {
-		color: #1f1b18;
-	}
-	.card.black .bckg {
-		background-color: #1f1b18;
-	}
-	.card.wild {
-		color: #888;
-		background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de);
-	}
-	.card.wild .bckg {
-		background: linear-gradient(45deg, #dc251c, #fcf604, #018d41, #0493de);
 	}
 </style>
-

@@ -5,6 +5,5 @@
 </script>
 
 <ActionPlayDrawn />
-
 <ActionPickColor />
 <ActionChooseTarget />
