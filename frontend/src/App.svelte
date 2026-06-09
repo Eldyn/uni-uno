@@ -5,7 +5,7 @@
 	import GameScreen from "./lib/components/game/GameScreen.svelte";
 	import LobbyScreen from "./lib/components/lobby/LobbyScreen.svelte";
 	import LobbyBrowse from "./lib/components/lobby/LobbyBrowse.svelte";
-	import StatisticsScreen from "./lib/components/StatisticsScreen.svelte";
+	import UserSettingsForm from "./lib/components/StatisticsScreen.svelte"; 
 
 	import { storeNavigation } from "./lib/stores/navigation.svelte";
 	import { ws } from "./lib/stores/ws.svelte";
@@ -36,7 +36,7 @@
 		storeNavigation.goto("lobbies");
 	}
 
-	function handleBackFromStatistics() {
+	function handleBackToLobbies() {
 		storeNavigation.goto("lobbies");
 	}
 </script>
@@ -52,8 +52,14 @@
 		<LobbyScreen />
 	{:else if storeNavigation.current === "game"}
 		<GameScreen />
-	{:else if storeNavigation.current === "statistics"}
-		<StatisticsScreen onBack={handleBackFromStatistics} />
+	{:else if storeNavigation.current === "settings"} <div class="settings-header">
+			<button class="back-btn" onclick={handleBackToLobbies}>
+				← Torna alle Lobbies
+			</button>
+		</div>
+
+		<UserSettingsForm />
+
 	{/if}
 </div>
 
@@ -68,5 +74,27 @@
 		color-scheme: light dark;
 		color: var(--text);
 		background: var(--bg);
+	}
+
+	/* Stili per l'header del bottone indietro */
+	.settings-header {
+		max-width: 600px;
+		margin: 20px auto 0 auto;
+		padding: 0 16px;
+	}
+
+	.back-btn {
+		background: transparent;
+		border: none;
+		color: var(--accent, #cba6f7);
+		font-size: 16px;
+		font-weight: bold;
+		cursor: pointer;
+		padding: 8px 0;
+		transition: opacity 0.2s;
+	}
+
+	.back-btn:hover {
+		opacity: 0.8;
 	}
 </style>
