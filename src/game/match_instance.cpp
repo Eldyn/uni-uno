@@ -233,7 +233,7 @@ namespace game {
 
             try {
                 auto& db = Database::Get();
-                if (db.IsOpen()) {
+                if (!db.IsOpen()) {
                     throw std::runtime_error("DB is not open");
                 }
 
