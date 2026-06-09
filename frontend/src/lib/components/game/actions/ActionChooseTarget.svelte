@@ -6,13 +6,13 @@
 {#if storeGame.actionRequired === "choose_target"}
 	<div class="modal-overlay">
 		<div class="modal-content">
-			<h2 class="choose-color-text">Choose Color:</h2>
+			<h2 class="choose-color-text">Choose Target:</h2>
 
 			<div class="color-buttons">
 				{#each storeLobby.current?.members as member}
 					<button
 						type="button"
-						class="color-button color-red"
+						class="color-button"
 						onclick={() => storeGame.submitInput(member.username)}
 					>
 						{member.username}
@@ -65,7 +65,7 @@
 	}
 
 	.color-button {
-		width: 50px;
+		width: 80px;
 		height: 50px;
 		border: 2px solid transparent;
 		border-radius: 8px;
@@ -75,27 +75,12 @@
 			transform 0.2s ease,
 			filter 0.2s ease;
 		font-size: 18px;
+		color: var(--text);
+		background-color: var(--bg);
 	}
 
 	.color-button:hover {
 		transform: scale(1.1);
 		filter: brightness(1.2);
-	}
-
-	.color-red {
-		background: #dc251c;
-		color: white;
-	}
-	.color-yellow {
-		background: #fcf604;
-		color: black;
-	}
-	.color-green {
-		background: #018d41;
-		color: white;
-	}
-	.color-blue {
-		background: #0493de;
-		color: white;
 	}
 </style>
