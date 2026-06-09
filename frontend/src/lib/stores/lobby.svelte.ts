@@ -154,6 +154,7 @@ class StoreLobby {
             const response = await ws.emitAndWait(ClientAction.LobbyUpdateSettings, settings);
             if (!response.ok) {
                 storeToast.error(response.reason);
+                return;
             }
 
             storeToast.success("Impostazioni Aggiornate!");
