@@ -62,6 +62,7 @@ class StoreGame {
     }
 
     returnToLobby() {
+        this.#clearTimer();
         this.state = null;
         this.actionRequired = null;
         storeNavigation.goto("lobby");
@@ -77,11 +78,10 @@ class StoreGame {
             this.state.is_over = true;
             this.state.winner = winner as string;
 
-            if (this.#timerInterval) clearInterval(this.#timerInterval);
+            this.#clearTimer();
         });
 
         ws.on(ServerAction.GameStateUpdated, (data: any) => {
-            const previousTurn = this.state?.current_turn;
             const stateJson = data.game_state;
 
             this.state = {
@@ -115,20 +115,25 @@ class StoreGame {
         // });
     }
 
-    #syncTurnTimer(remainingMs: number) {
-        if (this.#timerInterval) {
+    #clearTimer() {
+        if (this.#timerInterval !== null) {
             clearInterval(this.#timerInterval);
+            this.#timerInterval = null;
         }
+    }
+
+    #syncTurnTimer(remainingMs: number) {
+        this.#clearTimer();
 
         this.turnTimeRemaining = Math.ceil(remainingMs / 1000);
 
         this.#timerInterval = window.setInterval(() => {
-            this.turnTimeRemaining -= 1;
-
             if (this.turnTimeRemaining <= 0) {
-                this.turnTimeRemaining = 0;
-                clearInterval(this.#timerInterval!);
+                this.#clearTimer();
+                return;
             }
+
+            this.turnTimeRemaining -= 1;
         }, 1000);
     }
 
