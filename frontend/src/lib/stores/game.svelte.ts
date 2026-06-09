@@ -153,7 +153,7 @@ class StoreGame {
     }
 
     submitInput(value: string) {
-        ws.emit("game_submit_input", { value: value.toUpperCase() });
+        ws.emit("game_submit_input", { value: value });
     }
 }
 
