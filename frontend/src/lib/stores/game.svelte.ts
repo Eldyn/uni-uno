@@ -14,17 +14,20 @@ const VALUE_MAP = [
     "7",
     "8",
     "9",
-    "Skip",
-    "Rev",
+    "skip",
+    "reverse",
     "+2",
-    "Wild",
+    "colorswitch",
     "+4"
 ] as const;
 
+export type CardColor = (typeof COLOR_MAP)[number];
+export type CardValue = (typeof VALUE_MAP)[number];
+
 export interface Card {
     id: number;
-    color: string;
-    value: string;
+    color: CardColor;
+    value: CardValue;
 }
 
 export interface GamePlayer {

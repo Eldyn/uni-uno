@@ -10,7 +10,7 @@
 		<button
 			type="button"
 			class="action-btn back-to-lobby-btn"
-			onclick={() => storeGame.returnToLobby}
+			onclick={() => storeGame.returnToLobby()}
 		>
 			Torna alla Lobby
 		</button>
@@ -88,4 +88,3 @@
 		transform: scale(1.03);
 	}
 </style>
-

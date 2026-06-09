@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { type Card, type CardValue } from "../../stores/game.svelte";
+
 	let {
 		card,
 		index = 0,
@@ -6,9 +8,9 @@
 		isDragged = false,
 		isDragTarget = false,
 		isPlayable = false,
-		turned = false, 
-		style = "",      
-		extraClass = "", 
+		turned = false,
+		style = "",
+		extraClass = "",
 		onCardClick = () => {},
 		onDragStart = () => {},
 		onDragOver = () => {},
@@ -18,7 +20,7 @@
 		onTouchStart = () => {},
 		onTouchEnd = () => {}
 	}: {
-		card: { id: number; color: string; value: string };
+		card: Card;
 		index?: number;
 		isHidden?: boolean;
 		isDragged?: boolean;
@@ -37,20 +39,32 @@
 		onTouchEnd?: (e: TouchEvent) => void;
 	} = $props();
 
-	function cardValueImg(value: string): string | null {
-		if (value === "Skip") return "/images/skip.png";
-		if (value === "Rev") return "/images/reverse.png";
-		if (value === "Wild") return "/images/wild.png";
-        if (value === "Wild_Draw4" || value === "+4") return "/images/wild_four.png";
-		if (/^[0-9]$/.test(value)) return `/images/${value}.png`;
-		return null;
+	const actionMap = new Map<CardValue, string>([
+		["skip", "/assets/cards/skip.png"],
+		["reverse", "/assets/cards/reverse.png"],
+		["+2", "/assets/cards/+2.png"],
+		["+4", "/assets/cards/+4.png"],
+		["colorswitch", "/assets/cards/colorswitch.png"]
+	]);
+
+	function getCardImage(value: CardValue): string {
+		const staticImage = actionMap.get(value);
+		if (staticImage) return staticImage;
+
+		if (/^\d$/.test(value)) {
+			return `/assets/cards/${value}.png`;
+		}
+
+		return "/assets/base_player.gif";
 	}
 
-	const imgSrc = $derived(cardValueImg(card.value));
+	const imgSrc = $derived(getCardImage(card.value));
+	const tint = $derived(card.value !== "colorswitch");
 </script>
 
 <div
-	class="card {card.color} {extraClass}" class:card--playable={isPlayable}
+	class="card {card.color} {extraClass}"
+	class:card--playable={isPlayable}
 	class:card--dragging={isDragged}
 	class:card--drag-target={isDragTarget}
 	class:card--hidden={isHidden}
@@ -70,15 +84,16 @@
 >
 	<div class="bckg">
 		{#if turned}
-			<img src="/images/card_back.png" alt="" class="layer-bg" />
+			<img src="assets/cards/back.png" alt="" class="layer-bg" />
 		{:else}
-			<img src="/images/background_card_dark.png" alt="" class="layer-bg" />
-			{#if imgSrc}
+			<img src="assets/cards/background.png" alt="" class="layer-bg" />
+			{#if imgSrc && tint}
 				<div class="layer-mask" style="--mask-img: url('{imgSrc}')"></div>
 			{:else}
-				<span class="layer-text" class:small-text={card.value.length > 1}>{card.value}</span>
+				<img src={imgSrc} alt="" class="layer-bg" />
 			{/if}
-			<div class="layer-mask" style="--mask-img: url('/images/empty.png')"></div>
+
+			<div class="layer-mask" style="--mask-img: url('/assets/cards/border.png')"></div>
 		{/if}
 	</div>
 
@@ -90,6 +105,7 @@
 <style>
 	:root {
 		--cardSize: 5em;
+		--wildCard: white;
 		--redCard: #dc251c;
 		--yellowCard: #fcf604;
 		--blueCard: #0493de;
@@ -103,7 +119,10 @@
 		display: inline-block;
 		border-radius: 0.8em;
 		box-shadow: var(--lowShadow);
-		transition: transform 200ms ease, box-shadow 200ms ease, filter 200ms ease;
+		transition:
+			transform 200ms ease,
+			box-shadow 200ms ease,
+			filter 200ms ease;
 		position: absolute;
 		will-change: transform;
 		padding: 0;
@@ -111,11 +130,24 @@
 		touch-action: none;
 	}
 
-	.card.red    { --card-color: var(--redCard); }
-	.card.yellow { --card-color: var(--yellowCard); }
-	.card.blue   { --card-color: var(--blueCard); }
-	.card.green  { --card-color: var(--greenCard); }
-	.card.black  { --card-color: var(--blackCard); }
+	.card.wild {
+		--card-color: var(--wildCard);
+	}
+	.card.red {
+		--card-color: var(--redCard);
+	}
+	.card.yellow {
+		--card-color: var(--yellowCard);
+	}
+	.card.blue {
+		--card-color: var(--blueCard);
+	}
+	.card.green {
+		--card-color: var(--greenCard);
+	}
+	.card.black {
+		--card-color: var(--blackCard);
+	}
 
 	.bckg {
 		width: var(--cardSize);
@@ -127,16 +159,20 @@
 
 	.layer-bg {
 		position: absolute;
-		top: 0; left: 0;
-		width: 100%; height: 100%;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
 		display: block;
 		object-fit: fill;
 		z-index: 1;
 	}
 
 	.layer-mask {
-		position: absolute; inset: 0;
-		width: 100%; height: 100%;
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
 		background-color: var(--card-color);
 		z-index: 2;
 		pointer-events: none;
@@ -151,15 +187,22 @@
 	}
 
 	.layer-text {
-		position: absolute; inset: 0;
-		display: flex; justify-content: center; align-items: center;
-		font-size: 2em; font-weight: bold;
+		position: absolute;
+		inset: 0;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		font-size: 2em;
+		font-weight: bold;
 		color: var(--card-color);
 		text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-		z-index: 2; pointer-events: none;
+		z-index: 2;
+		pointer-events: none;
 	}
 
-	.layer-text.small-text { font-size: 1em; }
+	.layer-text.small-text {
+		font-size: 1em;
+	}
 
 	:global(.player_hand) .card:hover {
 		transform-origin: left bottom;
@@ -176,9 +219,19 @@
 		cursor: grabbing;
 	}
 
-	.card--hidden   { opacity: 0 !important; pointer-events: none; }
-	.card--dragging { opacity: 0.4; filter: brightness(0.75); animation: none !important; }
-	.card--drag-target { outline: 2px dashed rgba(255, 255, 255, 0.85); outline-offset: 3px; }
+	.card--hidden {
+		opacity: 0 !important;
+		pointer-events: none;
+	}
+	.card--dragging {
+		opacity: 0.4;
+		filter: brightness(0.75);
+		animation: none !important;
+	}
+	.card--drag-target {
+		outline: 2px dashed rgba(255, 255, 255, 0.85);
+		outline-offset: 3px;
+	}
 
 	.card--playable {
 		animation: playable-float 1.9s ease-in-out infinite;
@@ -191,20 +244,36 @@
 	}
 
 	@keyframes playable-float {
-		0%, 100% { transform-origin: left bottom; transform: translateY(0); }
-		50%       { transform-origin: left bottom; transform: translateY(-0.4em); }
+		0%,
+		100% {
+			transform-origin: left bottom;
+			transform: translateY(0);
+		}
+		50% {
+			transform-origin: left bottom;
+			transform: translateY(-0.4em);
+		}
 	}
 
 	.playable-glow {
-		position: absolute; inset: -3px;
-		border-radius: 0.85em; border: 2px solid rgba(255, 255, 255, 0.82);
+		position: absolute;
+		inset: -3px;
+		border-radius: 0.85em;
+		border: 2px solid rgba(255, 255, 255, 0.82);
 		pointer-events: none;
 		animation: glow-pulse 1.9s ease-in-out infinite;
 		z-index: 20;
 	}
 
 	@keyframes glow-pulse {
-		0%, 100% { opacity: 0.55; box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.35); }
-		50%       { opacity: 1;    box-shadow: 0 0 14px 5px rgba(255, 255, 255, 0.7); }
+		0%,
+		100% {
+			opacity: 0.55;
+			box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.35);
+		}
+		50% {
+			opacity: 1;
+			box-shadow: 0 0 14px 5px rgba(255, 255, 255, 0.7);
+		}
 	}
 </style>

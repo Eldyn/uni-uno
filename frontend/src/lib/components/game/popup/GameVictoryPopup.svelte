@@ -12,7 +12,7 @@
 		<button
 			type="button"
 			class="action-btn back-to-lobby-btn"
-			onclick={() => storeGame.returnToLobby}
+			onclick={() => storeGame.returnToLobby()}
 		>
 			Back to Lobby
 		</button>

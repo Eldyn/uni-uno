@@ -5,9 +5,6 @@
 	import GameCard from "./GameCard.svelte";
 	import FlyingCardsOverlay from "./FlyingCardsOverlay.svelte";
 
-	let { gameColor = "green" }: { gameColor?: string } = $props();
-
-	// Riferimenti di ancoraggio per geometrie ed elementi nativi
 	let drawPileEl = $state<HTMLElement | null>(null);
 	let discardPileEl = $state<HTMLElement | null>(null);
 	let handEl = $state<HTMLElement | null>(null);
@@ -28,16 +25,14 @@
 
 <FlyingCardsOverlay {drawPileEl} {discardPileEl} {handEl} {opponentHandEls} bind:hiddenCardIds />
 
-<div class="sfondo-gioco"></div>
-
-<div class="game-field perspective {gameColor}">
+<div class="game-field perspective">
 	<div id="player" style="position: relative; width: 100%; height: 100%;">
 		<div class="player-label">(You) {storeGame.localPlayer?.username || ""}</div>
 		<div class="box"></div>
 		<PlayerHand bind:handEl {hand} {hiddenCardIds} {playableCardIds} />
 	</div>
 
-	<GamePiles bind:drawPileEl bind:discardPileEl {gameColor} />
+	<GamePiles bind:drawPileEl bind:discardPileEl />
 
 	<div id="player_left" style="position: relative; width: 100%; height: 100%;">
 		<div class="player-label">{leftPlayer ? leftPlayer.username : "Waiting..."}</div>
@@ -110,17 +105,6 @@
 		--shadowColor: rgba(0, 0, 0, 0.16);
 		--fieldSize: 24em;
 		--playerSpace: 12em;
-	}
-
-	.sfondo-gioco {
-		position: fixed;
-		inset: 0;
-		background-image: url("/images/background_red_dark.png");
-		background-size: cover;
-		background-position: center;
-		background-repeat: no-repeat;
-		z-index: 1;
-		pointer-events: none;
 	}
 
 	.game-field {
@@ -216,4 +200,3 @@
 		position: relative;
 	}
 </style>
-

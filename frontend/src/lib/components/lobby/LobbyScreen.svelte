@@ -4,6 +4,7 @@
 	import { ws } from "../../stores/ws.svelte";
 
 	import LobbySettings from "./LobbySettings.svelte";
+	import LobbySave from "./LobbySave.svelte";
 
 	let isHost = $derived(storeAuth.username === storeLobby.current?.host);
 	let startable = $derived(storeLobby.current!.members.length >= 2);
