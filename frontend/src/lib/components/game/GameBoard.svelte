@@ -123,19 +123,21 @@
 	}
 
 	#player_top {
-		grid-area: 1 / 2;
-	}
-	#player_left {
-		grid-area: 2 / 1;
-		transform: translateX(-4.5em);
-	}
-	#player_right {
-		grid-area: 2 / 3;
-		transform: translateX(4.5em);
-	}
-	#player {
-		grid-area: 3 / 2;
-	}
+        grid-area: 1 / 2;
+        transform: translateY(-2.5em); 
+    }
+    #player_left {
+        grid-area: 2 / 1;
+        transform: translate(-5.5em, -2em);
+    }
+    #player_right {
+        grid-area: 2 / 3;
+        transform: translate(5.5em, -2em);
+    }
+    #player {
+        grid-area: 3 / 2;
+        transform: translateY(-2.5em); 
+    }
 
 	.player-label {
 		position: absolute;
@@ -148,7 +150,7 @@
 		z-index: 110;
 	}
 	#player .player-label {
-		top: -9em;
+		top: -8em;
 		left: 50%;
 		transform: translateX(-50%);
 	}
@@ -176,23 +178,23 @@
 		z-index: 100;
 	}
 	#player .box {
-		top: -7em;
+		top: -5.7em;
 		left: 50%;
 		transform: translateX(-50%);
 	}
 	#player_top .box {
-		bottom: -1.5em;
+		bottom: -1.2em;
 		left: 50%;
 		transform: translateX(-50%);
 	}
 	#player_left .box {
 		top: 40%;
-		right: -2.9em;
+		right: -3em;
 		transform: translate(50%, -50%);
 	}
 	#player_right .box {
 		top: 40%;
-		left: -2.9em;
+		left: -3em;
 		transform: translate(-50%, -50%);
 	}
 
