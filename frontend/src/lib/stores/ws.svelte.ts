@@ -21,6 +21,7 @@ export const ClientAction = {
     LobbyPromote: "lobby_promote",
     LobbyKick: "lobby_kick",
     LobbyUpdateSettings: "lobby_update_settings",
+    LobbyDeleteSavedMatch: "lobby_delete_saved_match",
     ChatSend: "chat_send"
 } as const;
 

@@ -2,13 +2,11 @@
 	import { storeLobby } from "../../stores/lobby.svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
 	import { ws } from "../../stores/ws.svelte";
-
 	import LobbySettings from "./LobbySettings.svelte";
 	import LobbySave from "./LobbySave.svelte";
 
 	let isHost = $derived(storeAuth.username === storeLobby.current?.host);
 	let startable = $derived(storeLobby.current!.members.length >= 2);
-
 	let isEditingName = $state(false);
 	let editedName = $state("");
 
@@ -21,7 +19,6 @@
 	function saveName() {
 		isEditingName = false;
 		const trimmed = editedName.trim();
-
 		if (trimmed && trimmed !== storeLobby.current?.name && trimmed.length <= 32) {
 			storeLobby.updateSettings({ name: trimmed });
 		}
@@ -110,10 +107,7 @@
 				</summary>
 				<ul class="saved-matches-list">
 					{#each storeLobby.savedMatches as save}
-						<li class="saved-match-item">
-							<LobbySave {save} />
-							<button class="delete-btn" title="Delete Match">🗑️</button>
-						</li>
+						<LobbySave {save} />
 					{/each}
 				</ul>
 			</details>
@@ -287,41 +281,5 @@
 		list-style-type: none;
 		padding: 0;
 		margin-top: 15px;
-	}
-
-	.saved-match-item {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 15px;
-		margin-bottom: 10px;
-		padding-bottom: 10px;
-		border-bottom: 1px solid var(--accent-border, #444);
-	}
-
-	.saved-match-item:last-child {
-		border-bottom: none;
-		margin-bottom: 0;
-		padding-bottom: 0;
-	}
-
-	.delete-btn {
-		background: transparent;
-		border: 1px solid salmon;
-		border-radius: 4px;
-		cursor: pointer;
-		padding: 6px 8px;
-		font-size: 14px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition:
-			background 0.2s,
-			opacity 0.2s;
-	}
-
-	.delete-btn:hover {
-		background: rgba(250, 128, 114, 0.2);
-		opacity: 0.8;
 	}
 </style>
