@@ -156,6 +156,8 @@ export class WebSocketClient {
     private openHandlers: Array<() => void | Promise<void>> = [];
     private closeHandlers: Array<() => void | Promise<void>> = [];
 
+    private visibilityListenerAttached = false;
+
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     private reconnectDelayMs = 1000;
     private intentionalClose = false;
@@ -174,6 +176,7 @@ export class WebSocketClient {
         if (this.isConnected) return;
 
         this.intentionalClose = false;
+        this.#attachVisibilityListener();
         await this._connectOnce();
     }
 
@@ -370,12 +373,38 @@ export class WebSocketClient {
 
         this.reconnectTimer = setTimeout(() => {
             this.reconnectTimer = null;
+
+            if (document.visibilityState === "hidden") return;
+
             this.reconnectDelayMs = Math.min(this.reconnectDelayMs * 2, 16_000);
 
             this._connectOnce().catch(() => {
                 this._scheduleReconnect();
             });
         }, this.reconnectDelayMs);
+    }
+
+    /**
+     * Registers a single visibilitychange listener on the document.
+     * When the tab becomes visible and we're not connected, immediately
+     * attempt a reconnect (bypassing the backoff timer).
+     */
+    #attachVisibilityListener() {
+        if (this.visibilityListenerAttached) return;
+        this.visibilityListenerAttached = true;
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible" && !this.isConnected && !this.intentionalClose) {
+                // Cancel any pending backoff timer and reconnect now.
+                if (this.reconnectTimer) {
+                    clearTimeout(this.reconnectTimer);
+                    this.reconnectTimer = null;
+                }
+
+                this.reconnectDelayMs = 1000; // reset backoff on manual tab-return
+                this._connectOnce().catch(() => this._scheduleReconnect());
+            }
+        });
     }
 }
 
