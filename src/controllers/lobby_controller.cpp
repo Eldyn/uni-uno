@@ -58,13 +58,18 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
         return true;
     });
 
-    action_router_.On("lobby_saved_games", [this](WsContext ctx, const json& msg) {
-        HandleGetSavedGames(ctx, msg);
+    action_router_.On("lobby_list_saved_matches", [this](WsContext ctx, const json& msg) {
+        HandleGetSavedMatchesList(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_resume_game", [this](WsContext ctx, const json& msg) {
-        HandleResumeGame(ctx, msg);
+    action_router_.On("lobby_delete_saved_match", [this](WsContext ctx, const json& msg) {
+        HandleDeleteSavedMatch(ctx, msg);
+        return true;
+    });
+
+    action_router_.On("lobby_resume_saved_match", [this](WsContext ctx, const json& msg) {
+        HandleResumeSavedMatch(ctx, msg);
         return true;
     });
 
@@ -696,7 +701,7 @@ void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
     }
 }
 
-void LobbyController::HandleGetSavedGames(WsContext ctx, const json& message) {
+void LobbyController::HandleGetSavedMatchesList(WsContext ctx, const json& message) {
     const string request_id = ws::GetOr<string>(message, "request_id", "");
     const string& username = ctx.socket_data->username;
     const string& code = ctx.socket_data->lobby_code;
@@ -774,7 +779,7 @@ void LobbyController::HandleGetSavedGames(WsContext ctx, const json& message) {
     ctx.socket->send(resp.dump(), ctx.op_code);
 }
 
-void LobbyController::HandleResumeGame(WsContext context, const json& message) {
+void LobbyController::HandleDeleteSavedMatch(WsContext context, const json& message) {
     const string& code = context.socket_data->lobby_code;
     const string request_id = ws::GetOr<string>(message, "request_id", "");
     auto match_id_opt = ws::Get<string>(message, "match_id");
@@ -787,7 +792,42 @@ void LobbyController::HandleResumeGame(WsContext context, const json& message) {
 
     Lobby& lobby = lobbies_.at(it->second);
 
-    // Only host can load a save state
+    if (lobby.host != context.socket_data->username) {
+        ws::SendError(context.socket, context.op_code, "Only host can delete saved matches.", request_id);
+        return;
+    }
+
+    auto& db = Database::Get();
+    auto row = db.QueryOne("SELECT state_json FROM saved_matches WHERE id = ?", {match_id});
+    
+    if (!row || !row->has_value()) {
+        ws::SendError(context.socket, context.op_code, "Match expired or not found.", request_id);
+        return;
+    }
+
+    auto delete_status = db.Exec("DELETE FROM saved_matches WHERE id = ?", {match_id});
+    if (!delete_status) {
+        ws::SendError(context.socket, context.op_code, "Error while deleting.", request_id);
+    }
+    
+    BroadcastUpdate(lobby);
+    json response = ws::MakeResponse(ws::ServerAction::kSuccess, request_id);
+    context.socket->send(response.dump(), context.op_code);
+}
+
+void LobbyController::HandleResumeSavedMatch(WsContext context, const json& message) {
+    const string& code = context.socket_data->lobby_code;
+    const string request_id = ws::GetOr<string>(message, "request_id", "");
+    auto match_id_opt = ws::Get<string>(message, "match_id");
+
+    if (!match_id_opt) return;
+    std::string match_id = match_id_opt.value();
+
+    auto it = code_to_id_.find(code);
+    if (it == code_to_id_.end()) return;
+
+    Lobby& lobby = lobbies_.at(it->second);
+
     if (lobby.host != context.socket_data->username) {
         ws::SendError(context.socket, context.op_code, "Only host can resume games.", request_id);
         return;
@@ -801,14 +841,12 @@ void LobbyController::HandleResumeGame(WsContext context, const json& message) {
         return;
     }
 
-    // 1. Rehydrate the JSON into the Engine!
     std::string state_json_str = row->value().Get<std::string>("state_json");
     lobby.match = std::make_unique<game::MatchInstance>(json::parse(state_json_str), lobby.settings);
     
-    // 2. Retain the same DB ID so future saves overwrite this entry instead of duplicating!
+    // INFO: Retain the same DB ID so future saves overwrite this entry instead of duplicating!
     lobby.match->SetMatchId(match_id); 
 
-    // 3. Trigger GameController turn timers
     if (game_started_callback_) {
         game_started_callback_(&lobby);
     }

@@ -129,9 +129,12 @@ private:
     // lobby_update_settings  { "keyof LobbySettings": value }
     void HandleUpdateSettings(WsContext ctx, const json& msg);
 
-    void HandleGetSavedGames(WsContext ctx, const json& msg);
+    void HandleGetSavedMatchesList(WsContext ctx, const json& msg);
 
-    void HandleResumeGame(WsContext ctx, const json& msg);
+    void HandleResumeSavedMatch(WsContext ctx, const json& msg);
+
+    // lobby_delete_saved_match  { "match_id": "match_XXXXXXXXXXXX" }
+    void HandleDeleteSavedMatch(WsContext ctx, const json& msg);
 
     // lobby_start_game {}
     // starts the game by populating the match object and routing players
