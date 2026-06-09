@@ -36,10 +36,6 @@
 		storeNavigation.goto("lobbies");
 	}
 
-	function handleBackToLobbies() {
-		storeNavigation.goto("lobbies");
-	}
-
 	function handleBackFromStatistics() {
 		storeNavigation.goto("lobbies");
 	}
@@ -55,7 +51,7 @@
 	{:else if storeNavigation.current === "lobby"}
 		<LobbyScreen />
 	{:else if storeNavigation.current === "game"}
-		<GameScreen onBack={handleBackToLobbies} />
+		<GameScreen />
 	{:else if storeNavigation.current === "statistics"}
 		<StatisticsScreen onBack={handleBackFromStatistics} />
 	{/if}

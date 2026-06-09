@@ -2,7 +2,7 @@
 	import { storeGame } from "../../stores/game.svelte";
 	import { storeLobby } from "../../stores/lobby.svelte";
 
-	function handleReturnToLobby() {
+	function handleReturnToLobbies() {
 		storeLobby.leave();
 	}
 </script>
@@ -18,7 +18,7 @@
 			00:{storeGame.turnTimeRemaining.toString().padStart(2, "0")}
 		</span>
 
-		<button class="lobby-btn" onclick={handleReturnToLobby}> Esci </button>
+		<button class="lobby-btn" onclick={handleReturnToLobbies}> Esci </button>
 	</div>
 {/if}
 
@@ -61,4 +61,3 @@
 		transform: scale(0.95);
 	}
 </style>
-
