@@ -21,6 +21,7 @@
         "vite": "^6.3.0"
     },
     "dependencies": {
-        "esbuild": "^0.28.0"
+        "esbuild": "^0.28.0",
+        "svelte-dnd-action": "^0.9.69"
     }
 }

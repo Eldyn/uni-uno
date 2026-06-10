@@ -1,34 +1,10 @@
 <script lang="ts">
-	import { storeGame } from "../../stores/game.svelte";
 	import { untrack } from "svelte";
 	import GameCard from "./GameCard.svelte";
+	import { useCardBus } from "./card-bus.svelte";
+	import { storeGame } from "../../stores/game.svelte";
 
-	interface FlyingCard {
-		id: number;
-		color: string;
-		value: string;
-		turned: boolean;
-		srcRect: DOMRect;
-		dstRect: DOMRect;
-		key: number;
-	}
-
-	let {
-		drawPileEl,
-		discardPileEl,
-		handEl,
-		opponentHandEls,
-		hiddenCardIds = $bindable(new Set<number>())
-	}: {
-		drawPileEl: HTMLElement | null;
-		discardPileEl: HTMLElement | null;
-		handEl: HTMLElement | null;
-		opponentHandEls: (HTMLElement | null)[];
-		hiddenCardIds: Set<number>;
-	} = $props();
-
-	let flyingCards = $state<FlyingCard[]>([]);
-	let flyKey = $state(0);
+	const bus = useCardBus();
 
 	function getRect(el: HTMLElement | null): DOMRect {
 		return (
@@ -37,21 +13,43 @@
 		);
 	}
 
-	function launchCard(card: FlyingCard) {
-		flyingCards = [...flyingCards, card];
-		setTimeout(() => {
-			flyingCards = flyingCards.filter((c) => c.key !== card.key);
-		}, 620);
+	/** Launch a card clone; hides the real card in-hand if hideId is given. */
+	function launch(params: {
+		color: string;
+		value: string;
+		turned: boolean;
+		from: Parameters<typeof bus.launch>[0]["from"];
+		to: Parameters<typeof bus.launch>[0]["to"];
+		hideId?: number;
+		delayMs?: number;
+	}) {
+		const fire = () => {
+			const { color, value, turned, from, to, hideId } = params;
+
+			if (hideId !== undefined) {
+				bus.hide(hideId);
+				setTimeout(() => bus.show(hideId), 550);
+			}
+
+			bus.launch({ color, value, turned, from, to });
+		};
+
+		if (params.delayMs) {
+			setTimeout(fire, params.delayMs);
+		} else {
+			fire();
+		}
 	}
 
-	let prevHandIds = $state<Set<number>>(new Set());
+	let prevHandIds = $state(new Set<number>());
 	let prevTopCardId = $state<number | null>(null);
-	let prevOpponentCounts = $state<Map<string, number>>(new Map());
+	let prevOpponentCounts = $state(new Map<string, number>());
 	let lastKnownHand = $state<{ id: number; color: string; value: string }[]>([]);
 
 	let hand = $derived(storeGame.localPlayer?.hand ?? []);
 
-	// Transizione carte pescate dal giocatore locale
+	// NOTE: EFFECT 1
+	//       Draw Pile -> PlayerHand
 	$effect(() => {
 		const currentHand = hand;
 		const currentIds = new Set(currentHand.map((c) => c.id));
@@ -62,37 +60,26 @@
 				if (!prevHandIds.has(id)) newIds.push(id);
 			}
 
-			if (newIds.length > 0) {
-				for (const id of newIds) {
-					const card = currentHand.find((c) => c.id === id);
-					if (!card) continue;
+			for (const id of newIds) {
+				const card = currentHand.find((c) => c.id === id);
+				if (!card) continue;
 
-					const src = getRect(drawPileEl);
-					const dst = getRect(handEl);
-					const k = ++flyKey;
-
-					hiddenCardIds = new Set([...hiddenCardIds, id]);
-
-					setTimeout(() => {
-						hiddenCardIds = new Set([...hiddenCardIds].filter((x) => x !== id));
-					}, 550);
-
-					launchCard({
-						id,
-						color: card.color,
-						value: card.value,
-						turned: true,
-						srcRect: src,
-						dstRect: dst,
-						key: k
-					});
-				}
+				launch({
+					color: card.color,
+					value: card.value,
+					turned: true,
+					from: "draw-pile",
+					to: "hand-local",
+					hideId: id
+				});
 			}
+
 			prevHandIds = currentIds;
 		});
 	});
 
-	// Transizione carte scartate sulla pila centrale
+	// NOTE: EFFECT 2
+	//       Any Card -> Discard Pile
 	$effect(() => {
 		const top = storeGame.state?.top_card;
 		const currentHand = storeGame.localPlayer?.hand ?? [];
@@ -105,58 +92,50 @@
 				const playedCard = lastKnownHand.find((c) => !currentIds.has(c.id) && c.id === top.id);
 
 				if (playedCard) {
-					const src = getRect(handEl);
-					const dst = getRect(discardPileEl);
-					const k = ++flyKey;
-
-					launchCard({
-						id: playedCard.id,
+					launch({
 						color: playedCard.color,
 						value: playedCard.value,
 						turned: false,
-						srcRect: src,
-						dstRect: dst,
-						key: k
+						from: "hand-local",
+						to: "discard-pile"
 					});
 				}
+
 				prevTopCardId = top.id;
 			}
-			lastKnownHand = currentHand.map((c) => ({ id: c.id, color: c.color, value: c.value }));
+
+			lastKnownHand = currentHand.map((c) => ({
+				id: c.id,
+				color: c.color,
+				value: c.value
+			}));
 		});
 	});
 
-	// Transizione pescate degli avversari
+	// NOTE: EFFECT 3
+	//       Draw Pile -> OpponentHand
 	$effect(() => {
 		const players = storeGame.state?.players ?? [];
 		const localUser = storeGame.localPlayer?.username;
 
 		untrack(() => {
-			for (const p of players) {
-				if (p.username === localUser) continue;
+			const opponents = players.filter((p) => p.username !== localUser);
 
+			for (let idx = 0; idx < opponents.length; idx++) {
+				const p = opponents[idx];
 				const prev = prevOpponentCounts.get(p.username) ?? p.card_count;
 				const delta = p.card_count - prev;
 
 				if (delta > 0) {
-					const opponentsList = players.filter((x) => x.username !== localUser);
-					const idx = opponentsList.findIndex((x) => x.username === p.username);
-					const opEl = opponentHandEls[idx] ?? null;
-					const src = getRect(drawPileEl);
-					const dst = getRect(opEl);
-
 					for (let i = 0; i < delta; i++) {
-						const k = ++flyKey;
-						setTimeout(() => {
-							launchCard({
-								id: -k,
-								color: "black",
-								value: "",
-								turned: true,
-								srcRect: src,
-								dstRect: dst,
-								key: k
-							});
-						}, i * 80);
+						launch({
+							color: "black",
+							value: "",
+							turned: true,
+							from: "draw-pile",
+							to: `hand-opponent-${idx}`,
+							delayMs: i * 80
+						});
 					}
 				}
 			}
@@ -168,21 +147,34 @@
 			prevOpponentCounts = next;
 		});
 	});
+
+	function rects(flight: (typeof bus.flights)[0]) {
+		return {
+			src: getRect(bus.getEl(flight.from)),
+			dst: getRect(bus.getEl(flight.to))
+		};
+	}
 </script>
 
-{#each flyingCards as fc (fc.key)}
+{#each bus.flights as flight (flight.key)}
+	{@const { src, dst } = rects(flight)}
 	<div
 		class="flying-card"
 		style="
-			--src-x: {fc.srcRect.left + fc.srcRect.width / 2}px;
-			--src-y: {fc.srcRect.top + fc.srcRect.height / 2}px;
-			--dst-x: {fc.dstRect.left + fc.dstRect.width / 2}px;
-			--dst-y: {fc.dstRect.top + fc.dstRect.height / 2}px;
-			left: var(--src-x); top: var(--src-y);
-		"
+            --src-x: {src.left + src.width / 2}px;
+            --src-y: {src.top + src.height / 2}px;
+            --dst-x: {dst.left + dst.width / 2}px;
+            --dst-y: {dst.top + dst.height / 2}px;
+            left: var(--src-x);
+            top: var(--src-y);
+        "
+		onanimationend={() => bus.land(flight.key)}
 	>
-		<!-- Usiamo GameCard in modalità statica, passandogli lo stato 'turned' -->
-		<GameCard card={fc} turned={fc.turned} style="position: static;" />
+		<GameCard
+			card={{ id: flight.key, color: flight.color, value: flight.value }}
+			turned={flight.turned}
+			style="position: static;"
+		/>
 	</div>
 {/each}
 
@@ -217,4 +209,3 @@
 		}
 	}
 </style>
-

@@ -1,16 +1,24 @@
 <script lang="ts">
 	import { storeGame } from "../../stores/game.svelte";
 	import GameCard from "./GameCard.svelte";
+	import { useCardBus } from "./card-bus.svelte";
 
-	let {
-		gameColor = "green",
-		drawPileEl = $bindable(null),
-		discardPileEl = $bindable(null)
-	}: {
-		gameColor?: string;
-		drawPileEl: HTMLElement | null;
-		discardPileEl: HTMLElement | null;
-	} = $props();
+	let { gameColor = "green" }: { gameColor?: string } = $props();
+
+	const bus = useCardBus();
+
+	let drawPileEl = $state<HTMLElement | null>(null);
+	let discardPileEl = $state<HTMLElement | null>(null);
+
+	$effect(() => {
+		if (drawPileEl) bus.register("draw-pile", drawPileEl);
+		return () => bus.unregister("draw-pile");
+	});
+
+	$effect(() => {
+		if (discardPileEl) bus.register("discard-pile", discardPileEl);
+		return () => bus.unregister("discard-pile");
+	});
 
 	function handleDrawClick() {
 		if (storeGame.state?.current_turn === storeGame.localPlayer?.username) {
@@ -71,12 +79,12 @@
 		height: 100%;
 	}
 
-	/* DRAW PILE */
 	#draw_pile {
 		position: absolute;
 		left: 5em;
 		top: 7em;
 	}
+
 	#draw_pile :global(.card.top-card),
 	#draw_pile :global(.card.pile) {
 		position: absolute;
@@ -104,17 +112,18 @@
 			box-shadow 200ms ease;
 		cursor: pointer;
 	}
+
 	#draw_pile :global(.card.top-card:hover) {
 		box-shadow: 0px 4px var(--shadowColor);
 		transform: translateY(1em);
 	}
 
-	/* DISCARD PILE */
 	#discard_pile {
 		position: absolute;
 		left: 12em;
 		top: 7.4em;
 	}
+
 	#discard_pile :global(.card.top-card),
 	#discard_pile :global(.card.pile) {
 		position: absolute;
@@ -145,4 +154,3 @@
 		}
 	}
 </style>
-

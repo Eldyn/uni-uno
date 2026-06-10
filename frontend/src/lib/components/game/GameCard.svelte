@@ -70,17 +70,10 @@
 	class:card--hidden={isHidden}
 	role="button"
 	tabindex="0"
-	draggable="true"
+	draggable="false"
 	style={style || `left: calc(${index} * 2.2em + 1.1em)`}
 	onclick={() => onCardClick(card.id)}
 	onkeydown={(e) => e.key === "Enter" && onCardClick(card.id)}
-	ondragstart={(e) => onDragStart(e, card.id)}
-	ondragover={(e) => onDragOver(e, card.id)}
-	ondragleave={onDragLeave}
-	ondrop={(e) => onDrop(e, card.id)}
-	ondragend={onDragEnd}
-	ontouchstart={(e) => onTouchStart(e, card.id)}
-	ontouchend={onTouchEnd}
 >
 	<div class="bckg">
 		{#if turned}

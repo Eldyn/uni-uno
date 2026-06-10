@@ -1,94 +1,83 @@
 <script lang="ts">
 	import { storeGame } from "../../stores/game.svelte";
+	import { createCardBus } from "./card-bus.svelte";
 	import PlayerHand from "./PlayerHand.svelte";
+	import OpponentHand from "./OpponentHand.svelte";
 	import GamePiles from "./GamePiles.svelte";
-	import GameCard from "./GameCard.svelte";
 	import FlyingCardsOverlay from "./FlyingCardsOverlay.svelte";
 
-	let drawPileEl = $state<HTMLElement | null>(null);
-	let discardPileEl = $state<HTMLElement | null>(null);
-	let handEl = $state<HTMLElement | null>(null);
-	let opponentHandEls = $state<(HTMLElement | null)[]>([null, null, null]);
+	createCardBus();
 
-	let hiddenCardIds = $state<Set<number>>(new Set());
-	let playableCardIds = $state<Set<number>>(new Set());
+	let playableCardIds = $state(new Set<number>());
 
-	let hand = $derived(storeGame.localPlayer?.hand ?? []);
 	let opponents = $derived(
 		storeGame.state?.players.filter((p) => p.username !== storeGame.localPlayer?.username) ?? []
 	);
 
-	let leftPlayer = $derived(opponents[0]);
-	let topPlayer = $derived(opponents[1]);
-	let rightPlayer = $derived(opponents[2]);
+	const opponentLayouts = [
+		{
+			// Left player
+			gridArea: "2 / 1",
+			wrapperTransform: "translate(-5.5em, -2em)",
+			handTransform: "translate(-50%, -50%) rotate(90deg)",
+			labelPos: "top: 30%; right: -4.5em; transform: translateY(-50%);",
+			boxPos: "top: 40%; right: -3em; transform: translate(50%, -50%);"
+		},
+		{
+			// Top player
+			gridArea: "1 / 2",
+			wrapperTransform: "translateY(-2.5em)",
+			handTransform: "translate(-50%, -50%) scaleY(-1)",
+			labelPos: "bottom: -3em; left: 50%; transform: translateX(-50%);",
+			boxPos: "bottom: -1.2em; left: 50%; transform: translateX(-50%);"
+		},
+		{
+			// Right player
+			gridArea: "2 / 3",
+			wrapperTransform: "translate(5.5em, -2em)",
+			handTransform: "translate(-50%, -50%) rotate(-90deg)",
+			labelPos: "top: 30%; left: -4.5em; transform: translateY(-50%);",
+			boxPos: "top: 40%; left: -3em; transform: translate(-50%, -50%);"
+		}
+	] as const;
 </script>
 
-<FlyingCardsOverlay {drawPileEl} {discardPileEl} {handEl} {opponentHandEls} bind:hiddenCardIds />
+<!--
+    NOTE: FlyingCardsOverlay lives here, at GameBoard level, using the CardBus
+          context. It is intentionally a sibling of the grid, not inside it, so
+          its fixed-position clones are never clipped by the perspective transform.
+-->
+<FlyingCardsOverlay />
 
 <div class="game-field perspective">
-	<div id="player" style="position: relative; width: 100%; height: 100%;">
-		<div class="player-label">(You) {storeGame.localPlayer?.username || ""}</div>
-		<div class="box"></div>
-		<PlayerHand bind:handEl {hand} {hiddenCardIds} {playableCardIds} />
+	{#each opponentLayouts as layout, i}
+		<div
+			class="opponent-wrapper"
+			style="
+                grid-area: {layout.gridArea};
+                transform: {layout.wrapperTransform};
+            "
+		>
+			<OpponentHand
+				player={opponents[i] ?? null}
+				index={i}
+				handTransform={layout.handTransform}
+				labelPos={layout.labelPos}
+				boxPos={layout.boxPos}
+			/>
+		</div>
+	{/each}
+
+	<div class="piles-wrapper">
+		<GamePiles />
 	</div>
 
-	<GamePiles bind:drawPileEl bind:discardPileEl />
-
-	<div id="player_left" style="position: relative; width: 100%; height: 100%;">
-		<div class="player-label">{leftPlayer ? leftPlayer.username : "Waiting..."}</div>
-		<div class="box"></div>
-		<div
-			bind:this={opponentHandEls[0]}
-			class="player_hand"
-			style="
-				position: absolute; top: 45%; left: 50%;
-				transform: translate(-50%, -50%) rotate(90deg);
-				width: calc({leftPlayer?.card_count ?? 0} * 2.2em + 7.2em);
-				height: calc(var(--cardSize) * 1.5357);
-			"
-		>
-			{#each Array(leftPlayer?.card_count ?? 0) as _, n}
-				<GameCard card={{ id: -1, color: "black", value: "" }} index={n} turned={true} />
-			{/each}
+	<div id="player" class="local-player-wrapper">
+		<div class="player-label" style="top: -8em; left: 50%; transform: translateX(-50%);">
+			(You) {storeGame.localPlayer?.username ?? ""}
 		</div>
-	</div>
-
-	<div id="player_top" style="position: relative; width: 100%; height: 100%;">
-		<div class="player-label">{topPlayer ? topPlayer.username : "Waiting..."}</div>
-		<div class="box"></div>
-		<div
-			bind:this={opponentHandEls[1]}
-			class="player_hand"
-			style="
-				position: absolute; top: 30%; left: 50%;
-				transform: translate(-50%, -50%) scaleY(-1);
-				width: calc({topPlayer?.card_count ?? 0} * 2.2em + 7.2em);
-				height: calc(var(--cardSize) * 1.5357);
-			"
-		>
-			{#each Array(topPlayer?.card_count ?? 0) as _, n}
-				<GameCard card={{ id: -1, color: "black", value: "" }} index={n} turned={true} />
-			{/each}
-		</div>
-	</div>
-
-	<div id="player_right" style="position: relative; width: 100%; height: 100%;">
-		<div class="player-label">{rightPlayer ? rightPlayer.username : "Waiting..."}</div>
-		<div class="box"></div>
-		<div
-			bind:this={opponentHandEls[2]}
-			class="player_hand"
-			style="
-				position: absolute; top: 45%; left: 53%;
-				transform: translate(-50%, -50%) rotate(-90deg);
-				width: calc({rightPlayer?.card_count ?? 0} * 2.2em + 7.2em);
-				height: calc(var(--cardSize) * 1.5357);
-			"
-		>
-			{#each Array(rightPlayer?.card_count ?? 0) as _, n}
-				<GameCard card={{ id: -1, color: "black", value: "" }} index={n} turned={true} />
-			{/each}
-		</div>
+		<div class="box" style="top: -5.7em; left: 50%; transform: translateX(-50%);"></div>
+		<PlayerHand {playableCardIds} />
 	</div>
 </div>
 
@@ -118,26 +107,31 @@
 		grid-template-columns: var(--playerSpace) var(--fieldSize) var(--playerSpace);
 		grid-template-rows: var(--playerSpace) var(--fieldSize) var(--playerSpace);
 	}
+
 	.game-field.perspective {
 		transform: perspective(1200px) rotateX(10deg);
 	}
 
-	#player_top {
-        grid-area: 1 / 2;
-        transform: translateY(-2.5em); 
-    }
-    #player_left {
-        grid-area: 2 / 1;
-        transform: translate(-5.5em, -2em);
-    }
-    #player_right {
-        grid-area: 2 / 3;
-        transform: translate(5.5em, -2em);
-    }
-    #player {
-        grid-area: 3 / 2;
-        transform: translateY(-2.5em); 
-    }
+	.opponent-wrapper {
+		position: relative;
+		width: 100%;
+		height: 100%;
+	}
+
+	.piles-wrapper {
+		grid-area: 2 / 2;
+		position: relative;
+		width: 100%;
+		height: 100%;
+	}
+
+	.local-player-wrapper {
+		grid-area: 3 / 2;
+		position: relative;
+		width: 100%;
+		height: 100%;
+		transform: translateY(-2.5em);
+	}
 
 	.player-label {
 		position: absolute;
@@ -149,56 +143,12 @@
 		white-space: nowrap;
 		z-index: 110;
 	}
-	#player .player-label {
-		top: -8em;
-		left: 50%;
-		transform: translateX(-50%);
-	}
-	#player_top .player-label {
-		bottom: -3em;
-		left: 50%;
-		transform: translateX(-50%);
-	}
-	#player_left .player-label {
-		top: 30%;
-		right: -4.5em;
-		transform: translateY(-50%);
-	}
-	#player_right .player-label {
-		top: 30%;
-		left: -4.5em;
-		transform: translateY(-50%);
-	}
 
 	.box {
 		position: absolute;
 		width: 50px;
 		height: 50px;
-		background-color: #000000;
+		background-color: #000;
 		z-index: 100;
-	}
-	#player .box {
-		top: -5.7em;
-		left: 50%;
-		transform: translateX(-50%);
-	}
-	#player_top .box {
-		bottom: -1.2em;
-		left: 50%;
-		transform: translateX(-50%);
-	}
-	#player_left .box {
-		top: 40%;
-		right: -3em;
-		transform: translate(50%, -50%);
-	}
-	#player_right .box {
-		top: 40%;
-		left: -3em;
-		transform: translate(-50%, -50%);
-	}
-
-	.player_hand {
-		position: relative;
 	}
 </style>

@@ -1,187 +1,116 @@
 <script lang="ts">
-	import { storeGame } from "../../stores/game.svelte";
-	import { untrack } from "svelte";
+	import { dndzone, type DndEvent, SHADOW_ITEM_MARKER_PROPERTY_NAME } from "svelte-dnd-action";
+	import { storeGame, type Card } from "../../stores/game.svelte";
 	import GameCard from "./GameCard.svelte";
+	import { useCardBus } from "./card-bus.svelte";
 
-	let {
-		hand = [],
-		hiddenCardIds = new Set<number>(),
-		playableCardIds = new Set<number>(),
-		handEl = $bindable<HTMLElement | null>(null)
-	} = $props();
+	let { playableCardIds = new Set<number>() }: { playableCardIds?: Set<number> } = $props();
 
-	// ─────────────────────────────────────────────────────────────────────────
-	// CARD ORDER & DRAG STATE
-	// ─────────────────────────────────────────────────────────────────────────
+	const bus = useCardBus();
 
-	let cardOrder = $state<Map<number, number>>(new Map());
-	let draggedCardId = $state<number | null>(null);
-	let dragOverCardId = $state<number | null>(null);
-	let isDragging = $state(false);
+	let handEl = $state<HTMLElement | null>(null);
 
 	$effect(() => {
-		const currentHand = hand;
-		const currentIds = new Set(currentHand.map((c) => c.id));
-
-		untrack(() => {
-			const next = new Map(cardOrder);
-			let mapChanged = false;
-
-			for (const [id] of next) {
-				if (!currentIds.has(id)) {
-					next.delete(id);
-					mapChanged = true;
-				}
-			}
-
-			let maxOrd = next.size > 0 ? Math.max(...next.values()) : -1;
-
-			for (const c of currentHand) {
-				if (!next.has(c.id)) {
-					next.set(c.id, ++maxOrd);
-					mapChanged = true;
-				}
-			}
-
-			if (
-				mapChanged ||
-				next.size !== cardOrder.size ||
-				[...next].some(([k, v]) => cardOrder.get(k) !== v)
-			) {
-				cardOrder = next;
-			}
-		});
+		if (handEl) bus.register("hand-local", handEl);
+		return () => bus.unregister("hand-local");
 	});
 
-	let sortedHand = $derived(
-		[...hand].sort((a, b) => (cardOrder.get(a.id) ?? 0) - (cardOrder.get(b.id) ?? 0))
-	);
+	let hand = $derived(storeGame.localPlayer?.hand ?? []);
+	let items = $state<Card[]>([]);
+	let dragging = $state(false);
 
-	// ─────────────────────────────────────────────────────────────────────────
-	// DRAG E DROP
-	// ─────────────────────────────────────────────────────────────────────────
+	$effect(() => {
+		const current = hand;
+		if (dragging) return;
 
-	function onDragStart(e: DragEvent, cardId: number) {
-		draggedCardId = cardId;
-		isDragging = true;
-		e.dataTransfer?.setData("text/plain", String(cardId));
-	}
+		const currentIds = new Set(current.map((c) => c.id));
+		const itemIds = new Set(items.map((c) => c.id));
+		const incoming = current.filter((c) => !itemIds.has(c.id));
+		const surviving = items.filter((c) => currentIds.has(c.id));
 
-	function onDragOver(e: DragEvent, cardId: number) {
-		e.preventDefault();
-		if (draggedCardId !== cardId) dragOverCardId = cardId;
-	}
-
-	function onDragLeave() {
-		dragOverCardId = null;
-	}
-
-	function onDrop(e: DragEvent, targetId: number) {
-		e.preventDefault();
-		if (draggedCardId === null || draggedCardId === targetId) {
-			resetDrag();
-			return;
+		if (incoming.length > 0 || surviving.length !== items.length) {
+			items = [...surviving, ...incoming];
 		}
+	});
 
-		const from = cardOrder.get(draggedCardId) ?? 0;
-		const to = cardOrder.get(targetId) ?? 0;
-		const next = new Map(cardOrder);
-
-		if (from < to) {
-			for (const [id, o] of next) {
-				if (o > from && o <= to) next.set(id, o - 1);
-			}
-		} else {
-			for (const [id, o] of next) {
-				if (o < from && o >= to) next.set(id, o + 1);
-			}
-		}
-
-		next.set(draggedCardId, to);
-		cardOrder = next;
-		resetDrag();
+	function onConsider(e: CustomEvent<DndEvent<Card>>) {
+		dragging = true;
+		items = e.detail.items;
 	}
 
-	function onDragEnd() {
-		resetDrag();
+	function onFinalize(e: CustomEvent<DndEvent<Card>>) {
+		items = e.detail.items.filter((item) => !(SHADOW_ITEM_MARKER_PROPERTY_NAME in item));
+		dragging = false;
 	}
-
-	function resetDrag() {
-		draggedCardId = null;
-		dragOverCardId = null;
-		isDragging = false;
-	}
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// TOUCH REORDER
-	// ─────────────────────────────────────────────────────────────────────────
-
-	let touchStartX = $state(0);
-	let touchCardId = $state<number | null>(null);
-	let touchStartIdx = $state(0);
-
-	function onTouchStart(e: TouchEvent, cardId: number) {
-		touchCardId = cardId;
-		touchStartX = e.touches[0].clientX;
-		touchStartIdx = cardOrder.get(cardId) ?? 0;
-	}
-
-	function onTouchEnd(e: TouchEvent) {
-		if (touchCardId === null) return;
-
-		const delta = Math.round((e.changedTouches[0].clientX - touchStartX) / 50);
-
-		if (delta !== 0) {
-			const newOrd = Math.max(0, Math.min(hand.length - 1, touchStartIdx + delta));
-			const target = [...cardOrder].find(([, o]) => o === newOrd);
-			if (target) onDrop({ preventDefault: () => {} } as DragEvent, target[0]);
-		}
-
-		touchCardId = null;
-	}
-
-	// ─────────────────────────────────────────────────────────────────────────
-	// ACTIONS
-	// ─────────────────────────────────────────────────────────────────────────
 
 	function handleCardClick(cardId: number) {
-		if (!isDragging) storeGame.playCard(cardId);
+		if (!dragging) storeGame.playCard(cardId);
 	}
 </script>
 
+<!--
+    NOTE: The hand uses flexbox so svelte-dnd-action can measure real layout boxes.
+          With position:absolute every card stacks at the same origin — the library
+          can't tell which slot the pointer is over, so drops fail and the shadow
+          never appears.
+
+    NOTE: With flexbox each card is a normal flow item. We recover the overlapping
+          fan with a negative margin-left on every card (set in the style block
+          below). The card width (--cardSize = 5em) minus the desired step (2.2em)
+          gives us the overlap amount.
+-->
 <div
 	bind:this={handEl}
 	class="player_hand"
-	style="
-		position: absolute;
-		top: 20%; left: 50%;
-		transform: translate(-50%, -30%);
-		width: calc({sortedHand.length} * 2.2em + 7.2em);
-		height: calc(var(--cardSize) * 1.5357);
-	"
+	use:dndzone={{ items, flipDurationMs: 200, dropTargetStyle: {} }}
+	onconsider={onConsider}
+	onfinalize={onFinalize}
 >
-	{#each sortedHand as card, i (card.id)}
-		<GameCard
-			{card}
-			index={i}
-			isHidden={hiddenCardIds.has(card.id)}
-			isDragged={draggedCardId === card.id}
-			isDragTarget={dragOverCardId === card.id}
-			isPlayable={playableCardIds.has(card.id)}
-			onCardClick={handleCardClick}
-			{onDragStart}
-			{onDragOver}
-			{onDragLeave}
-			{onDrop}
-			{onDragEnd}
-			{onTouchStart}
-			{onTouchEnd}
-		/>
+	{#each items as card, i (card.id)}
+		<div class="card-slot" style="z-index: {i};">
+			<GameCard
+				{card}
+				isHidden={bus.hiddenCardIds.has(card.id)}
+				isPlayable={playableCardIds.has(card.id)}
+				onCardClick={handleCardClick}
+				style="position: relative; left: 0;"
+			/>
+		</div>
 	{/each}
 </div>
 
 <style>
 	.player_hand {
+		position: absolute;
+		top: 20%;
+		left: 50%;
+		transform: translate(-50%, -30%);
+
+		display: flex;
+		flex-direction: row;
+		align-items: flex-end;
+
+		overflow: visible;
+		height: calc(var(--cardSize) * 1.5357 + 1em);
+	}
+
+	.card-slot {
 		position: relative;
+		flex-shrink: 0;
+		width: 2.2em;
+		height: calc(var(--cardSize) * 1.5357);
+	}
+
+	.card-slot:hover {
+		z-index: 50 !important;
+	}
+
+	.card-slot:hover ~ .card-slot {
+		transform: translateX(1em);
+		transition: transform 150ms ease;
+	}
+
+	.card-slot {
+		transition: transform 150ms ease;
 	}
 </style>
