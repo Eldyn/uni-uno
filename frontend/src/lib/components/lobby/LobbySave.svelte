@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { type SavedMatch } from "../../stores/lobby.svelte";
-	import { ws } from "../../stores/ws.svelte";
+	import { ClientAction, ws } from "../../stores/ws.svelte";
 	import { storeToast } from "../../stores/toast.svelte";
 
 	let { save }: { save: SavedMatch } = $props();
 
 	async function deleteMatch() {
-		const response = await ws.emitAndWait("lobby_delete_saved_match", {
+		const response = await ws.emitAndWait(ClientAction.LobbyDeleteSavedMatch, {
 			match_id: save.match_id
 		});
 
@@ -134,7 +134,7 @@
 	}
 
 	.delete-btn:hover {
-		background: #ff3f31; 
+		background: #ff3f31;
 		opacity: 0.9;
 	}
 </style>

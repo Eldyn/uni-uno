@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { storeLobby } from "../../stores/lobby.svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
-	import { ws } from "../../stores/ws.svelte";
+	import { ClientAction, ws } from "../../stores/ws.svelte";
 	import LobbySettings from "./LobbySettings.svelte";
 	import LobbySave from "./LobbySave.svelte";
 
@@ -59,7 +59,7 @@
 			<button
 				class="join-button"
 				onclick={() => {
-					ws.emit("lobby_start_game");
+					ws.emit(ClientAction.LobbyStartMatch);
 				}}
 				disabled={!isHost || !startable}
 			>
@@ -257,14 +257,14 @@
 
 	.dropdown-summary {
 		cursor: pointer;
-		list-style: none; 
+		list-style: none;
 		display: flex;
 		align-items: center;
 		user-select: none;
 	}
 
 	.dropdown-summary::-webkit-details-marker {
-		display: none; 
+		display: none;
 	}
 
 	.dropdown-summary::before {
@@ -283,3 +283,4 @@
 		margin-top: 15px;
 	}
 </style>
+

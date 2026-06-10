@@ -1,3 +1,8 @@
+/**
+ * @file game_controller.cpp
+ * @brief Implementation of the GameController routing active transaction frames to running match engines.
+ */
+
 #include "controllers/game_controller.hpp"
 #include "common/ws.hpp"
 #include "logger.hpp"
@@ -5,25 +10,30 @@
 
 using json = nlohmann::json;
 
+/**
+ * @brief Constructs the GameController and binds the action router triggers to type-safe map strings.
+ * @param server Reference to the hosting asynchronous web server infrastructure.
+ * @param lobby_controller Reference to the central room lifecycle management engine.
+ */
 GameController::GameController(WebServer& server, LobbyController& lobby_controller)
     : action_router_(server.GetActionRouter()), lobby_controller_(lobby_controller) {
 
-    action_router_.On("game_play_card", [this](WsContext context, const json& message) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kGamePlayCard), [this](WsContext context, const json& message) {
         HandlePlayCard(context, message);
         return true;
     });
 
-    action_router_.On("game_draw_card", [this](WsContext context, const json& message) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kGameDrawCard), [this](WsContext context, const json& message) {
         HandleDrawCard(context, message);
         return true;
     });
 
-    action_router_.On("game_submit_input", [this](WsContext context, const json& message) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kGameSubmitInput), [this](WsContext context, const json& message) {
         HandleProvideInput(context, message);
         return true;
     });
 
-    action_router_.On("game_call_uno", [this](WsContext context, const json& message) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kGameCallUno), [this](WsContext context, const json& message) {
         HandleCallUno(context, message);
         return true;
     });
@@ -40,6 +50,11 @@ GameController::GameController(WebServer& server, LobbyController& lobby_control
     Logger::Info("[Game] GameController registered");
 }
 
+/**
+ * @brief Intercepts explicit match transaction inputs, routing candidate card identifiers to the engine.
+ * @param context Signaling packet metadata tracking incoming user sockets.
+ * @param message JSON input structure carrying data properties.
+ */
 void GameController::HandlePlayCard(WsContext context, const json& message) {
     Lobby* active_lobby = lobby_controller_.GetLobbyByCode(context.socket_data->lobby_code);
     if (!active_lobby || !active_lobby->match) {
@@ -57,15 +72,16 @@ void GameController::HandlePlayCard(WsContext context, const json& message) {
     }
 
     active_lobby->match->Tick();
-    
     ClearTurnTimer(active_lobby->id); 
-    
     OnTurnStarted(active_lobby);
-
-    // Broadcast the new board state
     BroadcastGameState(active_lobby);
 }
 
+/**
+ * @brief Signals the running match instance engine to allocate a fresh card to the requesting user.
+ * @param context Signaling packet metadata tracking incoming user sockets.
+ * @param message JSON input structure containing callback identifiers.
+ */
 void GameController::HandleDrawCard(WsContext context, const json& message) {
     Lobby* active_lobby = lobby_controller_.GetLobbyByCode(context.socket_data->lobby_code);
     if (!active_lobby || !active_lobby->match) {
@@ -82,12 +98,16 @@ void GameController::HandleDrawCard(WsContext context, const json& message) {
     }
 
     active_lobby->match->Tick();
-
     ClearTurnTimer(active_lobby->id);
     OnTurnStarted(active_lobby);
     BroadcastGameState(active_lobby);
 }
 
+/**
+ * @brief Forwards localized resolution responses (like color selections) down into pending effect queues.
+ * @param context Signaling packet metadata tracking incoming user sockets.
+ * @param message Input document carrying state selections.
+ */
 void GameController::HandleProvideInput(WsContext context, const json& message) {
     Lobby* active_lobby = lobby_controller_.GetLobbyByCode(context.socket_data->lobby_code);
     if (!active_lobby || !active_lobby->match) return;
@@ -101,11 +121,14 @@ void GameController::HandleProvideInput(WsContext context, const json& message) 
     BroadcastGameState(active_lobby);
 }
 
+/**
+ * @brief Serializes complete match configurations, sending unique filtered game boards down to each user.
+ * @param current_lobby Target room pointer whose context needs to be synchronized.
+ */
 void GameController::BroadcastGameState(Lobby* current_lobby) {
     if (!current_lobby || !current_lobby->match) return;
 
     bool is_game_over = current_lobby->match->IsGameOver();
-
     bool is_waiting_for_input = current_lobby->match->IsWaitingForInput();
     std::string pending_player_username = current_lobby->match->GetPendingPlayer();
     std::string required_input_type = current_lobby->match->GetPendingInputType();
@@ -113,7 +136,6 @@ void GameController::BroadcastGameState(Lobby* current_lobby) {
     json game_over_payload;
     if (is_game_over) {
         game_over_payload = ws::MakeResponse(ws::ServerAction::kGameOver);
-        
         game_over_payload["winner"] = current_lobby->match->GetWinner(); 
     }
 
@@ -145,6 +167,11 @@ void GameController::BroadcastGameState(Lobby* current_lobby) {
     }
 }
 
+/**
+ * @brief Flags a player's safety verification state within the game rule evaluation layers.
+ * @param context Signaling packet metadata tracking incoming user sockets.
+ * @param message Received payload data map document.
+ */
 void GameController::HandleCallUno(WsContext context, const json& message) {
     Lobby* active_lobby = lobby_controller_.GetLobbyByCode(context.socket_data->lobby_code);
     if (!active_lobby || !active_lobby->match) {
@@ -155,6 +182,10 @@ void GameController::HandleCallUno(WsContext context, const json& message) {
     BroadcastGameState(active_lobby);
 }
 
+/**
+ * @brief Sets turn constraints, routing automatic simulation threads on bot turns or player timeouts.
+ * @param active_lobby Target active game room layout evaluated.
+ */
 void GameController::OnTurnStarted(Lobby* active_lobby) {
     if (!active_lobby || !active_lobby->match || active_lobby->match->IsGameOver()) {
         return;
@@ -175,7 +206,6 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
             Lobby* verified_lobby = lobby_controller_.GetLobbyById(current_lobby_id);
             if (verified_lobby && verified_lobby->match) {
                 if (verified_lobby->match->GetCurrentPlayerUsername() == current_player_username) {
-                    
                     verified_lobby->match->TakeBotTurn();
                     OnTurnStarted(verified_lobby);
                     BroadcastGameState(verified_lobby);
@@ -196,10 +226,7 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
 
     if (active_lobby->settings.bot_mode == BotTakeoverMode::kPlayInstantly && !is_player_connected) {
         Logger::Info("[MATCH] Bot instant turn for: ", current_player_username);
-        
         active_lobby->match->TakeBotTurn();
-        
-        // Recursively evaluate the next turn (in case multiple players are disconnected)
         OnTurnStarted(active_lobby); 
         return;
     }
@@ -211,18 +238,11 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
 
         uint32_t current_lobby_id = active_lobby->id;
         SetTurnTimer(current_lobby_id, active_lobby->settings.turn_time_limit_ms, [this, current_lobby_id, current_player_username]() {
-            // NOTE: This lambda executes asynchronously in the future.
-            //       We must re-fetch the lobby to ensure it was not 
-            //       deleted while we waited.
             Lobby* verified_lobby = lobby_controller_.GetLobbyById(current_lobby_id);
-            
             if (verified_lobby && verified_lobby->match) {
-                // Ensure it is still the exact same player's turn (they didn't play at the last millisecond)
                 if (verified_lobby->match->GetCurrentPlayerUsername() == current_player_username) {
                     Logger::Info("[MATCH] Bot playing for AFK player: ", current_player_username);
-                    
                     verified_lobby->match->TakeBotTurn();
-                    
                     OnTurnStarted(verified_lobby);
                     BroadcastGameState(verified_lobby);
                 }
@@ -237,6 +257,12 @@ struct TurnTimerData {
     GameController* controller;
 };
 
+/**
+ * @brief Schedules a single-shot internal event loop timer to execute a deferred task.
+ * @param lobby_id Numerical identifier targeting a specific active room map.
+ * @param timeout_ms Length of duration in milliseconds before firing execution.
+ * @param callback Target functional callback block fired upon timeout completion.
+ */
 void GameController::SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::function<void()> callback) {
     ClearTurnTimer(lobby_id);
     struct us_loop_t* loop = (struct us_loop_t*) uWS::Loop::get();
@@ -253,7 +279,6 @@ void GameController::SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::functi
         auto* ctrl = data->controller;
         
         ctrl->active_turn_timers_.erase(l_id);
-        
         if (cb) cb();
         
         delete data;
@@ -264,6 +289,10 @@ void GameController::SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::functi
     active_turn_timers_[lobby_id] = timer;
 }
 
+/**
+ * @brief Disarms and frees loop memory allocations associated with an outstanding turn timer.
+ * @param lobby_id Target internal tracker key identifying the active timer slot.
+ */
 void GameController::ClearTurnTimer(uint32_t lobby_id) {
     auto timer_iterator = active_turn_timers_.find(lobby_id);
     if (timer_iterator != active_turn_timers_.end()) {
@@ -272,7 +301,6 @@ void GameController::ClearTurnTimer(uint32_t lobby_id) {
         
         delete data;
         us_timer_close(timer);
-        
         active_turn_timers_.erase(timer_iterator);
     }
 }

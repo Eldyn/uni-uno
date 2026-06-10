@@ -4,61 +4,42 @@
  */
 
 export const ClientAction = {
-    GameOverAcknowledge: "game_over_acknowledge",
     GamePlayCard: "game_play_card",
     GameDrawCard: "game_draw_card",
     GameSubmitInput: "game_submit_input",
     GameCallUno: "game_call_uno",
     GameExit: "game_exit",
-    LobbySavedGames: "lobby_saved_games",
-    LobbyResumeGame: "lobby_resume_game",
+
+    LobbyDeleteSavedMatch: "lobby_delete_saved_match",
+    LobbyListSavedMatches: "lobby_list_saved_matches",
+    LobbyResumeSavedMatch: "lobby_resume_saved_matches",
+
     LobbyList: "lobby_list",
     LobbyCreate: "lobby_create",
     LobbyJoin: "lobby_join",
     LobbyRejoin: "lobby_rejoin",
     LobbyLeave: "lobby_leave",
-    LobbyInvite: "lobby_invite",
     LobbyPromote: "lobby_promote",
     LobbyKick: "lobby_kick",
     LobbyUpdateSettings: "lobby_update_settings",
-    LobbyDeleteSavedMatch: "lobby_delete_saved_match",
+    LobbyStartMatch: "lobby_start_match",
+
     ChatSend: "chat_send"
 } as const;
 
 export const ServerAction = {
     Success: "success",
     Error: "error",
+
     GameStateUpdated: "game_state_updated",
-    SyncData: "sync_data",
+    GameOver: "game_over",
+
     LobbyEvicted: "lobby_evicted",
     LobbyList: "lobby_list",
     LobbyUpdated: "lobby_updated",
     LobbyJoined: "lobby_joined",
     LobbyLeft: "lobby_left",
-    InviteCreated: "invite_created",
-    PlayerJoined: "player_joined",
-    PlayerLeft: "player_left",
-    PlayerReady: "player_ready",
-    GameStarting: "game_starting",
-    RulesetSync: "ruleset_sync",
-    StateUpdate: "state_update",
-    CardRejected: "card_rejected",
-    CardDrawn: "card_drawn",
-    TurnChanged: "turn_changed",
-    ColorChanged: "color_changed",
-    UnoCallSuccess: "uno_call_success",
-    UnoCallFailed: "uno_call_failed",
-    UnoChallenged: "uno_challenged",
-    CardPlayed: "card_played",
-    PlayerDrewCard: "player_drew_card",
-    SkipApplied: "skip_applied",
-    ReverseApplied: "reverse_applied",
-    DrawStackApplied: "draw_stack_applied",
-    GameOver: "game_over",
-    RoundOver: "round_over",
-    InventorySync: "inventory_sync",
-    PurchaseConfirmed: "purchase_confirmed",
-    PurchaseFailed: "purchase_failed",
+
     ChatMessage: "chat_message"
 } as const;
 

@@ -1,3 +1,8 @@
+/**
+ * @file lobby_controller.cpp
+ * @brief Implementation of the LobbyController class managing websocket signaling and session lifecycles for game rooms.
+ */
+
 #include "common/lobby.hpp"
 #include "webserver.hpp"
 #include "websocket_context.hpp"
@@ -14,71 +19,72 @@
 using namespace std::chrono;
 using std::string, std::vector, std::runtime_error, std::memory_order_relaxed, std::transform, std::to_string; 
 
-//  Invite code alphabet — A-Z + 0-9 = 36 chars.
-//  6 characters → 36^6 = ~2.18 billion combinations.
-//  At one guess per second with no rate limiting that's 69 years to exhaust.
-//  In practice lobbies live for ~30 minutes, making exhaustion impossible.
 static constexpr char kCodeAlphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 static constexpr int  kCodeLen        = 6;
 static constexpr int  kAlphabetLen    = 36;   
 
+/**
+ * @brief Constructs the LobbyController instance and establishes central inbound routing maps.
+ * @param server Reference to the hosting asynchronous web server infrastructure.
+ */
 LobbyController::LobbyController(WebServer& server) : action_router_(server.GetActionRouter()), app_(server.GetApp()) {
-    action_router_.On("lobby_create", [this](WsContext ctx, const json& msg) {
+    
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyCreate), [this](WsContext ctx, const json& msg) {
         HandleCreate(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_join", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyJoin), [this](WsContext ctx, const json& msg) {
         HandleJoin(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_rejoin", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyRejoin), [this](WsContext ctx, const json& msg) {
         HandleRejoin(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_leave", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyLeave), [this](WsContext ctx, const json& msg) {
         HandleLeave(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_list", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyList), [this](WsContext ctx, const json& msg) {
         HandleList(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_kick", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyKick), [this](WsContext ctx, const json& msg) {
         HandleKick(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_promote", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyPromote), [this](WsContext ctx, const json& msg) {
         HandlePromote(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_list_saved_matches", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyListSavedMatches), [this](WsContext ctx, const json& msg) {
         HandleGetSavedMatchesList(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_delete_saved_match", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyDeleteSavedMatch), [this](WsContext ctx, const json& msg) {
         HandleDeleteSavedMatch(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_resume_saved_match", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyResumeSavedMatch), [this](WsContext ctx, const json& msg) {
         HandleResumeSavedMatch(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_update_settings", [this](WsContext ctx, const json& msg) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyUpdateSettings), [this](WsContext ctx, const json& msg) {
         HandleUpdateSettings(ctx, msg);
         return true;
     });
 
-    action_router_.On("lobby_start_game", [this](WsContext context, const nlohmann::json& message) {
+    action_router_.On(ws::kClientActionStr.at(ws::ClientAction::kLobbyStartMatch), [this](WsContext context, const nlohmann::json& message) {
         HandleStartGame(context, message);
         return true;
     });
@@ -147,6 +153,9 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
     Logger::Info("[Lobby] Registered — grace window: " + to_string(kReconnectGraceMs / 1000) + "s");
 }
 
+/**
+ * @brief Destructor that handles explicit system loop timer releases.
+ */
 LobbyController::~LobbyController() {
     if (eviction_timer_) {
         us_timer_close(eviction_timer_);
@@ -154,6 +163,10 @@ LobbyController::~LobbyController() {
     }
 }
 
+/**
+ * @brief Commits the structured snapshot of an ongoing match to the SQLite storage layer.
+ * @param lobby Reference to the target active lobby containing the current game match.
+ */
 void LobbyController::SaveMatchStateToDB(Lobby& lobby) {
     if (!lobby.match || lobby.match->IsGameOver()) return;
     if (!lobby.settings.save_state) return;
@@ -202,6 +215,10 @@ void LobbyController::SaveMatchStateToDB(Lobby& lobby) {
     }
 }
 
+/**
+ * @brief Validates remaining room configurations and cleans up abandoned empty environments.
+ * @param lobby Reference to the checked targeted room instance.
+ */
 void LobbyController::CheckMatchIntegrity(Lobby& lobby) {
     if (lobby.match && lobby.members.size() < 2) {
         Logger::Info("[Lobby] Match aborted for lobby ", lobby.id, " due to disconnections.");
@@ -216,12 +233,14 @@ void LobbyController::CheckMatchIntegrity(Lobby& lobby) {
         }
         
         lobby.match.reset();
-        
-        // NOTE: Because GameController's Turn Timer checks if (verified_lobby->match)`, it
-        //       will safely ignore the missing match and silently clean itself up next tick
     }
 }
 
+/**
+ * @brief Triggers immediately on connection open, restoring user binding back into their active room session context.
+ * @param ws Incoming pointer to the active raw client socket instance.
+ * @param sd Extracted metadata context state owned by the underlying connection.
+ */
 void LobbyController::OnOpen(AppWebSocket* ws, PerSocketData* sd) {
     Lobby* lobby = FindLobbyForUser(sd->username);
     if (!lobby) return;
@@ -241,6 +260,11 @@ void LobbyController::OnOpen(AppWebSocket* ws, PerSocketData* sd) {
     }
 }
 
+/**
+ * @brief Intercepts socket drop frames, setting up transient disconnection grace boundaries.
+ * @param ws Connection reference which dropped out of visibility frames.
+ * @param sd Socket data structure tracking current connection information.
+ */
 void LobbyController::OnClose(AppWebSocket* ws, PerSocketData* sd) {
     if (sd->lobby_code.empty()) return;
 
@@ -264,6 +288,11 @@ void LobbyController::OnClose(AppWebSocket* ws, PerSocketData* sd) {
     }
 }
 
+/**
+ * @brief Allocates structural memory maps for initializing a novel game instance channel.
+ * @param ctx Payload context wrapping request sockets and raw buffers.
+ * @param message Received raw JSON document mapping initialization preferences.
+ */
 void LobbyController::HandleCreate(WsContext ctx, const json& message) {
     const string& username = ctx.socket_data->username;
     const string request_id = ws::GetOr<string>(message, "request_id", "");
@@ -311,6 +340,11 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
     ctx.socket->send(resp.dump(), ctx.op_code);
 }
 
+/**
+ * @brief Attaches incoming network contexts to matching pre-configured room environments.
+ * @param ctx Payload context wrapping request sockets and raw buffers.
+ * @param message Received payload string mapping specific target identification tokens.
+ */
 void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     const string request_id = ws::GetOr<string>(message, "request_id", "");
     auto tryCode = ws::Get<string>(message, "code");
@@ -375,7 +409,6 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
                 member.is_connected = true;
                 member.is_bot = false;
                 
-                // Hijack the engine struct if a game is actively running
                 if (lobby.match) {
                     game::Player* engine_player = lobby.match->GetPlayer(old_bot_name);
                     if (engine_player) {
@@ -420,6 +453,11 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     }
 }
 
+/**
+ * @brief Resolves tracking references for re-hooking dropped sessions immediately without data loss.
+ * @param ctx Payload context wrapping request sockets and raw buffers.
+ * @param message Raw input structure indicating desired identity verification keys.
+ */
 void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
     const std::string request_id = ws::GetOr<string>(message, "request_id", "");
 
@@ -468,9 +506,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
 
         if (lobby.match) {
             auto game_resp = MakeResponse(ws::ServerAction::kGameStateUpdated);
-            
             game_resp["game_state"] = lobby.match->SerializePlayerState(username);
-            
             ctx.socket->send(game_resp.dump(), ctx.op_code);
         }
 
@@ -480,6 +516,11 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
     ws::SendError(ctx.socket, ctx.op_code, "No longer a member of this lobby", request_id);
 }
 
+/**
+ * @brief Cleanly unsubscribes channels when an explicit leave event is sent by a player.
+ * @param ctx Payload context wrapping request sockets and raw buffers.
+ * @param message JSON representation of the leave request payload.
+ */
 void LobbyController::HandleLeave(WsContext ctx, const json& message) {
     const string& username   = ctx.socket_data->username;
     const string& code       = ctx.socket_data->lobby_code;
@@ -500,9 +541,7 @@ void LobbyController::HandleLeave(WsContext ctx, const json& message) {
     uint32_t id  = lobby.id;
     bool was_host = (lobby.host == username);
 
-    // Pass true for explicit_action, pass request_id so they match their pending promise
     bool lobby_still_exists = RemoveMember(id, username, true, request_id);
-
 
     if (lobby_still_exists) {
         SyncBots(lobbies_.at(id));
@@ -519,11 +558,15 @@ void LobbyController::HandleLeave(WsContext ctx, const json& message) {
     }
 }
 
+/**
+ * @brief Returns a public directory of all active joinable lobbies.
+ * @param ctx Payload context wrapping request sockets and raw buffers.
+ * @param message JSON message block from the client requesting room states.
+ */
 void LobbyController::HandleList(WsContext ctx, const json& message) {
     json list = json::array();
     string request_id = ws::GetOr<string>(message, "request_id", "");
 
-    // BUG: Will hang the entire server if there are too many lobbies
     for (const auto& [id, lobby] : lobbies_) {
         if (!lobby.settings.is_public) continue;
         bool any_connected = std::ranges::any_of(lobby.members, &LobbyMember::is_connected);
@@ -533,7 +576,6 @@ void LobbyController::HandleList(WsContext ctx, const json& message) {
         });
 
         if (!any_connected) continue;
-        
         if (humans >= kMaxMembers) continue;
        
         list.push_back({
@@ -549,6 +591,11 @@ void LobbyController::HandleList(WsContext ctx, const json& message) {
     ctx.socket->send(resp.dump(), ctx.op_code);
 }
 
+/**
+ * @brief Transfers room ownership permissions to another human user in the lobby.
+ * @param ctx Payload context wrapping request sockets and raw buffers.
+ * @param message Payload specifying targeted user label parameters.
+ */
 void LobbyController::HandlePromote(WsContext ctx, const json& message) {
     const string& code       = ctx.socket_data->lobby_code;
     const string& request_id = ws::GetOr<string>(message, "request_id", "");
@@ -593,10 +640,13 @@ void LobbyController::HandlePromote(WsContext ctx, const json& message) {
 
     lobby.host = username;
     BroadcastUpdate(lobby);
-
-    // Optional: Send confirmation back to the host explicitly if required by front-end
 }
 
+/**
+ * @brief Evicts a target entity out of the active channel scope maps.
+ * @param ctx Payload context wrapping request sockets and raw buffers.
+ * @param message Input mapping parameters declaring execution constraints.
+ */
 void LobbyController::HandleKick(WsContext ctx, const json& message) {
     const string& code       = ctx.socket_data->lobby_code;
     const string& request_id = ws::GetOr<string>(message, "request_id", "");
@@ -641,20 +691,22 @@ void LobbyController::HandleKick(WsContext ctx, const json& message) {
 
     if (target_it->is_bot && lobby.settings.bot_count > 0) {
         lobby.settings.bot_count--;
-        Logger::Info("[Lobby] Host kicked a bot. New bot_count setting is ", lobby.settings.bot_count);
     }
 
     uint32_t lobby_id = lobby.id;
     bool lobby_still_exists = RemoveMember(lobby_id, username, false, request_id);
 
     if (lobby_still_exists) {
-        // NOTE: We sync bots in case a HUMAN was kicked and the bot_count demands a refill, if
-        //       a bot was kicked, we just decremented the count, so SyncBots won't respawn it.
         SyncBots(lobbies_.at(lobby_id));
         BroadcastUpdate(lobbies_.at(lobby_id));
     }
 }
 
+/**
+ * @brief Parses room modification payloads and adjusts internal structures on mutations.
+ * @param ctx Payload context wrapping request sockets and raw buffers.
+ * @param message Document declaration holding updated setting keys.
+ */
 void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
     const string& code       = ctx.socket_data->lobby_code;
     const string& request_id = ws::GetOr<string>(message, "request_id", "");
@@ -683,7 +735,6 @@ void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
     json original_settings = current_settings;
 
     current_settings.merge_patch(message); 
-
     lobby.settings = current_settings.get<LobbySettings>();
 
     if (current_settings != original_settings) {
@@ -701,6 +752,11 @@ void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
     }
 }
 
+/**
+ * @brief Queries database layers compiling historical session records for connected users.
+ * @param ctx Payload context wrapping request sockets and raw buffers.
+ * @param message Inbound payload message.
+ */
 void LobbyController::HandleGetSavedMatchesList(WsContext ctx, const json& message) {
     const string request_id = ws::GetOr<string>(message, "request_id", "");
     const string& username = ctx.socket_data->username;
@@ -767,18 +823,21 @@ void LobbyController::HandleGetSavedMatchesList(WsContext ctx, const json& messa
                     {"match_id", match_id},
                     {"saved_at", saved_at},
                     {"players", match_humans}
-                    // TODO: pass from the backend more data
                 });
             }
         }
     }
 
-    // TODO: instead of Success, use specifier kSavedMatchesList
     auto resp = MakeResponse(ws::ServerAction::kSuccess, request_id);
     resp["saved_matches"] = list; 
     ctx.socket->send(resp.dump(), ctx.op_code);
 }
 
+/**
+ * @brief Removes a saved historical game session completely from persistence tracking.
+ * @param context Payload context wrapping request sockets and raw buffers.
+ * @param message Structure holding the specific `match_id` string to purge.
+ */
 void LobbyController::HandleDeleteSavedMatch(WsContext context, const json& message) {
     const string& code = context.socket_data->lobby_code;
     const string request_id = ws::GetOr<string>(message, "request_id", "");
@@ -815,6 +874,11 @@ void LobbyController::HandleDeleteSavedMatch(WsContext context, const json& mess
     context.socket->send(response.dump(), context.op_code);
 }
 
+/**
+ * @brief Restores a previously saved match state from the DB and broadcasts it to participants.
+ * @param context Payload context wrapping request sockets and raw buffers.
+ * @param message Structure containing the `match_id` targeting the saved state.
+ */
 void LobbyController::HandleResumeSavedMatch(WsContext context, const json& message) {
     const string& code = context.socket_data->lobby_code;
     const string request_id = ws::GetOr<string>(message, "request_id", "");
@@ -843,8 +907,6 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
 
     std::string state_json_str = row->value().Get<std::string>("state_json");
     lobby.match = std::make_unique<game::MatchInstance>(json::parse(state_json_str), lobby.settings);
-    
-    // INFO: Retain the same DB ID so future saves overwrite this entry instead of duplicating!
     lobby.match->SetMatchId(match_id); 
 
     if (game_started_callback_) {
@@ -853,7 +915,6 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
 
     Logger::Info("[Lobby] Match successfully resumed by host in lobby ", lobby.id);
 
-    // 4. Blast the perfectly restored board state down to the clients
     for (const auto& lobby_member : lobby.members) {
         if (!lobby_member.is_connected || !lobby_member.socket) continue;
         
@@ -863,6 +924,11 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
     }
 }
 
+/**
+ * @brief Commits initialization arrays instantiating a fresh active MatchInstance environment.
+ * @param context Payload context wrapping request sockets and raw buffers.
+ * @param message Structured message parameter data from client frames.
+ */
 void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& message) {
     const string& code       = context.socket_data->lobby_code;
     const string& request_id = ws::GetOr<string>(message, "request_id", "");
@@ -874,7 +940,6 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
     }
 
     Lobby& lobby = lobbies_.at(it->second);
-
 
     if (lobby.host != context.socket_data->username) {
         ws::SendError(context.socket, context.op_code, "Only the host can start the game.", request_id);
@@ -913,11 +978,14 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
 
         nlohmann::json response_payload = ws::MakeResponse(ws::ServerAction::kGameStateUpdated);
         response_payload["game_state"] = lobby.match->SerializePlayerState(lobby_member.username);
-        
         lobby_member.socket->send(response_payload.dump(), uWS::OpCode::TEXT);
     }
 }
 
+/**
+ * @brief Helper parsing cryptographic entropy arrays to output a random unique string identifier.
+ * @return string Cryptographically randomized alphanumeric joining token.
+ */
 string LobbyController::GenerateInviteCode() {
     uint8_t raw[kCodeLen];
     if (RAND_bytes(raw, kCodeLen) != 1)
@@ -929,6 +997,11 @@ string LobbyController::GenerateInviteCode() {
     return code;
 }
 
+/**
+ * @brief Encodes the current room roster status flags into a compact JSON array template.
+ * @param lobby The targeted room reference evaluated.
+ * @return json The serialized list array.
+ */
 json LobbyController::MemberListJson(const Lobby& lobby) {
     json arr = json::array();
     for (const auto& m : lobby.members) {
@@ -942,6 +1015,10 @@ json LobbyController::MemberListJson(const Lobby& lobby) {
     return arr;
 }
 
+/**
+ * @brief Blasts generalized configuration status changes down to all users currently subscribed to the room thread.
+ * @param lobby Targeted state structure tracking information.
+ */
 void LobbyController::BroadcastUpdate(const Lobby& lobby) const {
     auto notification = MakeResponse(ws::ServerAction::kLobbyUpdated);
     notification["lobby"] = json{
@@ -955,6 +1032,14 @@ void LobbyController::BroadcastUpdate(const Lobby& lobby) const {
     app_.publish("lobby_" + lobby.invite_code, notification.dump(), uWS::OpCode::TEXT);
 }
 
+/**
+ * @brief Removes an active member and handles hot-swapping logic or graceful database saving.
+ * @param lobby_id Unique internal numerical tracker identifying the instance folder.
+ * @param username String literal targeting unique tracking tag of the client entity.
+ * @param explicit_leave True if the action represents an intentional exit command.
+ * @param request_id Contextual callback tracker for matching active frontend promises.
+ * @return true If the lobby survived the removal mutation.
+ */
 bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bool explicit_leave, const string& request_id) {
     auto it = lobbies_.find(lobby_id);
     if (it == lobbies_.end()) return false;
@@ -979,66 +1064,61 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
             member_it->socket->send(response.dump(), uWS::OpCode::TEXT);
         }
 
-    if (lobby.match) {
-        std::string old_name = member_it->username;
-        bool was_their_turn = (lobby.match->GetCurrentPlayerUsername() == old_name);
+        if (lobby.match) {
+            std::string old_name = member_it->username;
+            bool was_their_turn = (lobby.match->GetCurrentPlayerUsername() == old_name);
 
-        if (lobby.settings.quit_deletes_match) {
-            Logger::Info("[Match] Human '", old_name, "' quit. Aborting and saving game.");
-            SaveMatchStateToDB(lobby);
-            
-            json game_over_payload = ws::MakeResponse(ws::ServerAction::kGameOver);
-            game_over_payload["winner"] = ""; 
-            game_over_payload["reason"] = "A player left. The game state has been safely saved.";
-            
-            for (const auto& m : lobby.members) {
-                if (m.is_connected && m.socket && m.username != old_name) {
-                    m.socket->send(game_over_payload.dump(), uWS::OpCode::TEXT);
+            if (lobby.settings.quit_deletes_match) {
+                Logger::Info("[Match] Human '", old_name, "' quit. Aborting and saving game.");
+                SaveMatchStateToDB(lobby);
+                
+                json game_over_payload = ws::MakeResponse(ws::ServerAction::kGameOver);
+                game_over_payload["winner"] = ""; 
+                game_over_payload["reason"] = "A player left. The game state has been safely saved.";
+                
+                for (const auto& m : lobby.members) {
+                    if (m.is_connected && m.socket && m.username != old_name) {
+                        m.socket->send(game_over_payload.dump(), uWS::OpCode::TEXT);
+                    }
+                }
+                
+                lobby.match.reset();
+                lobby.members.erase(member_it); 
+            } else if (lobby.settings.allow_bot_replacement) {
+                static int bot_id = 1;
+                std::string new_bot_name = "Bot_" + std::to_string(bot_id++);
+
+                member_it->username = new_bot_name;
+                member_it->is_bot = true;
+                member_it->is_connected = true;
+
+                game::Player* engine_player = lobby.match->GetPlayer(old_name);
+                if (engine_player) {
+                    engine_player->username = new_bot_name;
+                    engine_player->is_bot = true;
+                }
+
+                Logger::Info("[Match] Human '", old_name, "' evicted mid-game. Replaced by ", new_bot_name);
+
+                if (was_their_turn && player_replaced_callback_) {
+                    player_replaced_callback_(&lobby);
+                }
+            } else {
+                lobby.match->RemovePlayerMidGame(old_name);
+                lobby.members.erase(member_it);
+                Logger::Info("[Match] Human '", old_name, "' evicted mid-game. Dropped from engine.");
+
+                if (was_their_turn && player_replaced_callback_) {
+                    player_replaced_callback_(&lobby);
                 }
             }
-            
-            lobby.match.reset();
-            lobby.members.erase(member_it); // Ensure we drop them from the lobby
-        } else if (lobby.settings.allow_bot_replacement) {
-            static int bot_id = 1;
-            std::string new_bot_name = "Bot_" + std::to_string(bot_id++);
-
-            member_it->username = new_bot_name;
-            member_it->is_bot = true;
-            member_it->is_connected = true;
-
-            game::Player* engine_player = lobby.match->GetPlayer(old_name);
-            if (engine_player) {
-                engine_player->username = new_bot_name;
-                engine_player->is_bot = true;
-            }
-
-            Logger::Info("[Match] Human '", old_name, "' evicted mid-game. Replaced by ", new_bot_name);
-
-            if (was_their_turn && player_replaced_callback_) {
-                player_replaced_callback_(&lobby);
-            }
         } else {
-            lobby.match->RemovePlayerMidGame(old_name);
             lobby.members.erase(member_it);
-            Logger::Info("[Match] Human '", old_name, "' evicted mid-game. Dropped from engine.");
-
-            if (was_their_turn && player_replaced_callback_) {
-                // This callback fires OnTurnStarted in the GameController.
-                // Because we adjusted the turn index mathematically, this natively 
-                // starts the timer for the *next* player perfectly!
-                player_replaced_callback_(&lobby);
-            }
         }
-    } else {
-        lobby.members.erase(member_it);
-    }
 
         CheckMatchIntegrity(lobby);
     }
 
-    // INFO: Save state when someone leaves. This may need to be somewhere else since we 
-    //       want to save only when the last player quits, so they have the save state.
     SaveMatchStateToDB(lobby);
 
     bool has_humans = std::ranges::any_of(lobby.members, [](const LobbyMember& m) {
@@ -1054,6 +1134,11 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
     return true;
 }
 
+/**
+ * @brief Scans active registries matching connected users back into their hosted environment pointer.
+ * @param username Unique string tracking key mapping current entity identity.
+ * @return Lobby* Pointer to target lobby framework, or nullptr on map miss.
+ */
 Lobby* LobbyController::FindLobbyForUser(const string& username) {
     for (auto& [id, lobby] : lobbies_) {
         if (std::ranges::contains(lobby.members, username, &LobbyMember::username)) {
@@ -1063,6 +1148,10 @@ Lobby* LobbyController::FindLobbyForUser(const string& username) {
     return nullptr;
 }
 
+/**
+ * @brief Re-evaluates configuration limits, adding or purging bot instances until matching thresholds are synchronized.
+ * @param lobby Active room reference requiring bot balancing.
+ */
 void LobbyController::SyncBots(Lobby& lobby) {
     if (lobby.match) return;
     int human_count = 0;
@@ -1080,7 +1169,6 @@ void LobbyController::SyncBots(Lobby& lobby) {
 
     while (bot_count < desired_bots) {
         static int bot_id = 1;
-        // TODO: Random bot names
         std::string bot_name = "Bot_" + std::to_string(bot_id++);
         
         LobbyMember bot = {bot_name, nullptr, true, true};
@@ -1089,7 +1177,6 @@ void LobbyController::SyncBots(Lobby& lobby) {
         bot_count++;
     }
 
-    // INFO: Remove excess bots (e.g. if the host lowered the bot count)
     while (bot_count > desired_bots) {
         for (auto it = lobby.members.rbegin(); it != lobby.members.rend(); ++it) {
             if (it->is_bot) {

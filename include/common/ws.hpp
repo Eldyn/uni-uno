@@ -9,164 +9,127 @@
 
 namespace ws {
     enum class ServerAction {
-        kSuccess,           // Generic Success
-                            
-        kQueried,           // Send queried buttonTest information
-        kSyncCount,         // Sync buttonTest information
-                            
-        kSyncData,          // username + room assigned after join
-        kError,             // generic error with code + reason
+        kSuccess,           ///< Generic Success + arbitrary data.
+        kError,             ///< Generic Error + reason + arbitrary data.
     
-        kLobbyList,         // list of open lobbies
-        kLobbyUpdated,      // a lobby's state changed (player joined/left, settings changed)
-        kLobbyJoined,       // you successfully joined a lobby
-        kLobbyLeft,         // you or someone else left the lobby
-        kInviteCreated,     // server generated an invite link token
-        kLobbyStartedGame,  // server started the game
-        kLobbyEvicted,      // server evicted the lobby (no players are connected/host left)
+        kLobbyList,         ///< Sends out a list of publicly available lobbies.
+        kLobbyUpdated,      ///< broadcast: lobby state changed.
+        kLobbyJoined,       ///< The receiver joined the lobby successfully.
+        kLobbyLeft,         ///< The receiver left the lobby sucessfully,
+        kLobbyEvicted,      ///< Lobby Evicted: no humans were left in the lobby so the server deleted it.
     
-        kGameStateUpdate,       // full game state (your hand, top card, turn, scores)
-        kGameCardRejected,      // your play_card was invalid — includes reason
-        kGameCardDrawn,         // you drew a card (private — sent only to you)
-        kGameTurnChanged,       // whose turn it is now
-        kGameColorChanged,      // active colour changed (after wild)
-        kGameUnoCallSuccess,    // a UNO call was valid
-        kGameUnoCallFailed,     // a UNO call was invalid (penalised)
-        kGameUnoChallenged,     // someone challenged your +4
-    
-        kGameStateUpdated,      // broadcast: game state changed.
-        kGameCardPlayed,        // broadcast: who played what (no hand info)
-        kGamePlayerDrew,        // broadcast: a player drew (count only, not what)
-        kPlayerJoined,
-        kPlayerLeft,
-        kPlayerReady,
-        kGameStarting,
-        kRulesetSync,
-        kGameSkipApplied,
-        kGameReverseApplied,
-        kGameDrawStackApplied,
-        kGameOver,
-        kGameRoundOver,
+        kGameStateUpdated,  ///< broadcast: game state changed.
+        kGameOver,          ///< broadcast: game ended.
 
-        kInventorySync,
-        kPurchaseConfirmed,
-        kPurchaseFailed,
-        kChatMessage,
+        kChatMessage,       ///< broadcast: message from a client.
     };
 
     enum class ClientAction {
-        kLobbyList,         // request current lobby list
-        kLobbyCreate,       // create a new lobby with settings
-        kLobbyJoin,         // join by lobby id
-        kLobbyLeave,        // leave current lobby
-        kLobbyInvite,       // generate an invite link for current lobby
-        kLobbySetRuleset,   // host changes ruleset before game starts
-        kLobbySetSkin,      // player picks a card skin for this match
-        kLobbyStartGame,    // host started the game
-        kReady,             // player toggles ready state
+        kLobbyStartMatch,        ///< Request to start the match 
+        kLobbyList,             ///< Request to receive a list of publicly available lobbies.
+        kLobbyCreate,           ///< Request to create a lobby with the provided settings.
+        kLobbyRejoin,           ///< Request to rejoin a lobby with the provided lobby code.
+        kLobbyJoin,             ///< Request to join a lobby with the provided lobby code.
+        kLobbyLeave,            ///< Request to leave the lobby.
+        kLobbyUpdateSettings,   ///< Request to update the lobby's settings.
+        kLobbyDeleteSavedMatch, ///< Request to delete a saved match.
+        kLobbyListSavedMatches, ///< Request to receive a list of saved matches with the 
+                                ///< provided player list.
+        kLobbyResumeSavedMatch, ///< Request to resume the saved match with the provided match id.
+        kLobbyPromote,          ///< Request to promote to host the provided user.
+        kLobbyKick,             ///< Request to kick out the provided user.
     
-        kPlayCard,          // play a card from hand
-        kDrawCard,          // draw from deck
-        kCallUno,           // declare UNO
-        kChallengeUno,      // challenge someone who forgot to call UNO
-        kChallengePlusFour, // challenge a +4 (claim it was playable)
-        kChooseColor,       // after playing a wild — declare colour
-        kAckGameOver,       // client acknowledges the game over screen
+        kGameSubmitInput,       ///< Request to send input for a generic Effect requiring it.
+        kGamePlayCard,          ///< Request to play a card with the provided id.
+        kGameDrawCard,          ///< Request to draw a card from the draw pile.
+        kGameCallUno,           ///< Request to declare UNO.
+        kGameExit,              ///< Request to exit the game.
     
-        kStorePurchase,     // buy a skin or deck
-        kInventoryRequest,  // fetch owned items
-    
-        kChatSend,          // send a chat message
+        kChatSend,              ///< Request to send a chat message.
     };
     
-inline const std::unordered_map<ServerAction, std::string> kServerActionStr {
-        { ServerAction::kSuccess,              "success"                 },
-        { ServerAction::kQueried,              "queried"                 },
-        { ServerAction::kSyncCount,            "sync_count"              },
-        { ServerAction::kSyncData,             "sync_data"               },
-        { ServerAction::kError,                "error"                   },
-        { ServerAction::kLobbyList,            "lobby_list"              },
-        { ServerAction::kLobbyEvicted,         "lobby_evicted"           },
-        { ServerAction::kLobbyUpdated,         "lobby_updated"           },
-        { ServerAction::kLobbyJoined,          "lobby_joined"            },
-        { ServerAction::kLobbyLeft,            "lobby_left"              },
-        { ServerAction::kInviteCreated,        "invite_created"          },
-        { ServerAction::kPlayerJoined,         "player_joined"           },
-        { ServerAction::kPlayerLeft,           "player_left"             },
-        { ServerAction::kPlayerReady,          "player_ready"            },
-        { ServerAction::kGameStarting,         "game_starting"           },
-        { ServerAction::kRulesetSync,          "ruleset_sync"            },
+    inline const std::unordered_map<ServerAction, std::string> kServerActionStr {
+        { ServerAction::kSuccess,          "success"            },
+        { ServerAction::kError,            "error"              },
+        { ServerAction::kLobbyList,        "lobby_list"         },
+        { ServerAction::kLobbyEvicted,     "lobby_evicted"      },
+        { ServerAction::kLobbyUpdated,     "lobby_updated"      },
+        { ServerAction::kLobbyJoined,      "lobby_joined"       },
+        { ServerAction::kLobbyLeft,        "lobby_left"         },
         
-        // --- The Game Prefixed String Maps ---
-        { ServerAction::kGameStateUpdated,     "game_state_updated"      },
-        { ServerAction::kGameCardRejected,     "game_card_rejected"      },
-        { ServerAction::kGameCardDrawn,        "game_card_drawn"         },
-        { ServerAction::kGameTurnChanged,      "game_turn_changed"       },
-        { ServerAction::kGameColorChanged,     "game_color_changed"      },
-        { ServerAction::kGameUnoCallSuccess,   "game_uno_call_success"   },
-        { ServerAction::kGameUnoCallFailed,    "game_uno_call_failed"    },
-        { ServerAction::kGameUnoChallenged,    "game_uno_challenged"     },
-        { ServerAction::kGameCardPlayed,       "game_card_played"        },
-        { ServerAction::kGamePlayerDrew,       "game_player_drew"        },
-        { ServerAction::kGameSkipApplied,      "game_skip_applied"       },
-        { ServerAction::kGameReverseApplied,   "game_reverse_applied"    },
-        { ServerAction::kGameDrawStackApplied, "game_draw_stack_applied" },
-        { ServerAction::kGameOver,             "game_over"               },
-        { ServerAction::kGameRoundOver,        "game_round_over"         },
+        { ServerAction::kGameStateUpdated, "game_state_updated" },
+        { ServerAction::kGameOver,         "game_over"          },
         
-        { ServerAction::kInventorySync,        "inventory_sync"          },
-        { ServerAction::kPurchaseConfirmed,    "purchase_confirmed"      },
-        { ServerAction::kPurchaseFailed,       "purchase_failed"         },
-        { ServerAction::kChatMessage,          "chat_message"            },
+        { ServerAction::kChatMessage,      "chat_message"       },
     };
 
     inline const std::unordered_map<ClientAction, std::string> kClientActionStr {
-        { ClientAction::kLobbyList,         "lobby_list"          },
-        { ClientAction::kLobbyCreate,       "lobby_create"        },
-        { ClientAction::kLobbyJoin,         "lobby_join"          },
-        { ClientAction::kLobbyLeave,        "lobby_leave"         },
-        { ClientAction::kLobbyInvite,       "lobby_invite"        },
-        { ClientAction::kLobbyStartGame,    "lobby_start_game"    },
-        { ClientAction::kLobbySetRuleset,   "lobby_set_ruleset"   },
-        { ClientAction::kLobbySetSkin,      "lobby_set_skin"      },
-        { ClientAction::kReady,             "ready"               },
-        { ClientAction::kPlayCard,          "play_card"           },
-        { ClientAction::kDrawCard,          "draw_card"           },
-        { ClientAction::kCallUno,           "call_uno"            },
-        { ClientAction::kChallengeUno,      "challenge_uno"       },
-        { ClientAction::kChallengePlusFour, "challenge_plus_four" },
-        { ClientAction::kChooseColor,       "choose_color"        },
-        { ClientAction::kAckGameOver,       "ack_game_over"       },
-        { ClientAction::kStorePurchase,     "store_purchase"      },
-        { ClientAction::kInventoryRequest,  "inventory_request"   },
-        { ClientAction::kChatSend,          "chat_send"           },
+        { ClientAction::kLobbyList,              "lobby_list"               },
+        { ClientAction::kLobbyCreate,            "lobby_create"             },
+        { ClientAction::kLobbyJoin,              "lobby_join"               },
+        { ClientAction::kLobbyLeave,             "lobby_leave"              },
+
+        { ClientAction::kGamePlayCard,           "play_card"                },
+        { ClientAction::kGameDrawCard,           "draw_card"                },
+        { ClientAction::kGameCallUno,            "call_uno"                 },
+
+        { ClientAction::kChatSend,               "chat_send"                },
+
+        { ClientAction::kLobbyList,              "lobby_list"               },
+        { ClientAction::kLobbyStartMatch,        "lobby_start_match"        },
+        { ClientAction::kLobbyCreate,            "lobby_create"             },
+        { ClientAction::kLobbyRejoin,            "lobby_rejoin"             },
+        { ClientAction::kLobbyJoin,              "lobby_join"               },
+        { ClientAction::kLobbyLeave,             "lobby_leave"              },
+        { ClientAction::kLobbyUpdateSettings,    "lobby_update_settings"    },
+        { ClientAction::kLobbyDeleteSavedMatch,  "lobby_delete_saved_match" },
+        { ClientAction::kLobbyListSavedMatches,  "lobby_list_saved_matches" },
+        { ClientAction::kLobbyResumeSavedMatch,  "lobby_resume_saved_match" },
+        { ClientAction::kLobbyPromote,           "lobby_promote"            },
+        { ClientAction::kLobbyKick,              "lobby_kick"               },
+    
+        { ClientAction::kGameSubmitInput,        "game_submit_input"        },
+        { ClientAction::kGamePlayCard,           "game_play_card"           },
+        { ClientAction::kGameDrawCard,           "game_draw_card"           },
+        { ClientAction::kGameCallUno,            "game_call_uno"            },
+        { ClientAction::kGameExit,               "game_exit"                },
+    
+        { ClientAction::kChatSend,               "chat_send"                },
     };
     
     
-    // Reverse lookup — used in ActionRouter registration
     inline const std::unordered_map<std::string, ClientAction> kStrClientAction {
-        { "lobby_list",          ClientAction::kLobbyList         },
-        { "lobby_create",        ClientAction::kLobbyCreate       },
-        { "lobby_join",          ClientAction::kLobbyJoin         },
-        { "lobby_leave",         ClientAction::kLobbyLeave        },
-        { "lobby_invite",        ClientAction::kLobbyInvite       },
-        { "lobby_set_ruleset",   ClientAction::kLobbySetRuleset   },
-        { "lobby_set_skin",      ClientAction::kLobbySetSkin      },
-        { "game_play_card",      ClientAction::kPlayCard          },
-        { "game_draw_card",      ClientAction::kDrawCard          },
-        { "game_call_uno",       ClientAction::kCallUno           },
-        { "game_submit_input",   ClientAction::kChooseColor       },
-        { "ready",               ClientAction::kReady             },
-        { "play_card",           ClientAction::kPlayCard          },
-        { "draw_card",           ClientAction::kDrawCard          },
-        { "call_uno",            ClientAction::kCallUno           },
-        { "challenge_uno",       ClientAction::kChallengeUno      },
-        { "challenge_plus_four", ClientAction::kChallengePlusFour },
-        { "choose_color",        ClientAction::kChooseColor       },
-        { "ack_game_over",       ClientAction::kAckGameOver       },
-        { "store_purchase",      ClientAction::kStorePurchase     },
-        { "inventory_request",   ClientAction::kInventoryRequest  },
-        { "chat_send",           ClientAction::kChatSend          },
+        { "lobby_list", ClientAction::kLobbyList                            },
+        { "lobby_start_match", ClientAction::kLobbyStartMatch               },
+        { "lobby_create", ClientAction::kLobbyCreate                        },
+        { "lobby_join", ClientAction::kLobbyJoin                            },
+        { "lobby_leave", ClientAction::kLobbyLeave                          },
+
+        { "play_card", ClientAction::kGamePlayCard                          },
+        { "draw_card", ClientAction::kGameDrawCard                          },
+        { "call_uno", ClientAction::kGameCallUno                            },
+
+        { "chat_send", ClientAction::kChatSend                              },
+
+        { "lobby_list", ClientAction::kLobbyList                            },
+        { "lobby_create", ClientAction::kLobbyCreate                        },
+        { "lobby_rejoin", ClientAction::kLobbyRejoin                        },
+        { "lobby_join", ClientAction::kLobbyJoin                            },
+        { "lobby_leave", ClientAction::kLobbyLeave                          },
+        { "lobby_update_settings", ClientAction::kLobbyUpdateSettings       },
+        { "lobby_delete_saved_match", ClientAction::kLobbyDeleteSavedMatch  },
+        { "lobby_list_saved_matches", ClientAction::kLobbyListSavedMatches  },
+        { "lobby_resume_saved_match", ClientAction::kLobbyResumeSavedMatch  },
+        { "lobby_promote", ClientAction::kLobbyPromote                      },
+        { "lobby_kick", ClientAction::kLobbyKick                            },
+    
+        { "game_submit_input", ClientAction::kGameSubmitInput               },
+        { "game_play_card", ClientAction::kGamePlayCard                     },
+        { "game_draw_card", ClientAction::kGameDrawCard                     },
+        { "game_call_uno", ClientAction::kGameCallUno                       },
+        { "game_exit", ClientAction::kGameExit                              },
+    
+        { "chat_send", ClientAction::kChatSend                              },
     };
 
     /**
