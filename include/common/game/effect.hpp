@@ -17,7 +17,10 @@ namespace game {
     };
 
     enum class EffectType {
-        kAdvanceTurn, kDraw, kSkip, kPlayCard, kDecideDrawnCard, kChooseColor, kReverse, kCustom
+        kAdvanceTurn, kDraw, kSkip, kPlayCard, kDecideDrawnCard, kChooseColor, kReverse, 
+        kDecideSwapTarget, kPassHands,
+
+        kCustom,
     };
 
     class Effect {
