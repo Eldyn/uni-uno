@@ -108,6 +108,6 @@ namespace game {
         "Resistance Generals", "Rezzus", "Technoblade", "Technoshop", 
         "The Lost Adventurer", "Warren", "Worker Emma", "Dean", "Garrett", "Hannah", "Allie", 
         "Tucker", "jhon", "Arrodes", "Klein Moretti", "Sauron Einhorn Medici", "Eldyn THE GOAT", 
-        "<script>console.log('no XSS!')</script>"
+        "<script>console.log('no XSS!')</script>", "Birdie"
     };
 }
