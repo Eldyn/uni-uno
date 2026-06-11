@@ -8,6 +8,7 @@
 #include "websocket_context.hpp"
 #include <WebSocketProtocol.h>
 #include <controllers/lobby_controller.hpp>
+#include <common/bot_names.hpp>
 #include <common/ws.hpp>
 #include <logger.hpp>
 #include <openssl/rand.h>
@@ -15,6 +16,8 @@
 #include <chrono>
 #include <stdexcept>
 #include <string>
+#include <numeric>    
+#include <random>
 
 using namespace std::chrono;
 using std::string, std::vector, std::runtime_error, std::memory_order_relaxed, std::transform, std::to_string; 
@@ -1168,14 +1171,38 @@ void LobbyController::SyncBots(Lobby& lobby) {
     }
 
     while (bot_count < desired_bots) {
-        static int bot_id = 1;
-        std::string bot_name = "Bot_" + std::to_string(bot_id++);
+    static std::vector<size_t> available_indices;
+    static size_t fallback_index = 0;
+    static bool is_initialized = false;
+
+    if (!is_initialized) {
+        for (size_t i = 0; i < game::kReservedBotNames.size(); ++i) {
+            available_indices.push_back(i);
+        }
         
-        LobbyMember bot = {bot_name, nullptr, true, true};
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(available_indices.begin(), available_indices.end(), g);
         
-        lobby.members.push_back(bot);
-        bot_count++;
+        is_initialized = true;
     }
+
+    std::string bot_name;
+
+    if (!available_indices.empty()) {
+        size_t random_index = available_indices.back();
+        available_indices.pop_back(); 
+        
+        bot_name = game::kReservedBotNames[random_index];
+    } else {
+        bot_name = "Bot_" + std::to_string(fallback_index++);
+    }
+
+    LobbyMember bot{bot_name, nullptr, true, true};
+
+    lobby.members.push_back(bot);
+    bot_count++;
+}
 
     while (bot_count > desired_bots) {
         for (auto it = lobby.members.rbegin(); it != lobby.members.rend(); ++it) {

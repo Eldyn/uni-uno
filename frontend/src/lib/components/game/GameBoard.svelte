@@ -20,8 +20,16 @@
 			gridArea: "2 / 1",
 			wrapperTransform: "translate(-5.5em, -2em)",
 			handTransform: "translate(-50%, -50%) rotate(90deg)",
-			labelPos: "top: 30%; right: -4.5em; transform: translateY(-50%);",
+			labelPos: "top: 30%; right: -4.8em; transform: translateY(-50%);",
 			boxPos: "top: 40%; right: -3em; transform: translate(50%, -50%);"
+		},
+		{
+			// Right player
+			gridArea: "2 / 3",
+			wrapperTransform: "translate(5.5em, -2em)",
+			handTransform: "translate(-50%, -50%) rotate(-90deg)",
+			labelPos: "top: 30%; left: -4.8em; transform: translateY(-50%);",
+			boxPos: "top: 40%; left: -3em; transform: translate(-50%, -50%);"
 		},
 		{
 			// Top player
@@ -30,14 +38,6 @@
 			handTransform: "translate(-50%, -50%) scaleY(-1)",
 			labelPos: "bottom: -3em; left: 50%; transform: translateX(-50%);",
 			boxPos: "bottom: -1.2em; left: 50%; transform: translateX(-50%);"
-		},
-		{
-			// Right player
-			gridArea: "2 / 3",
-			wrapperTransform: "translate(5.5em, -2em)",
-			handTransform: "translate(-50%, -50%) rotate(-90deg)",
-			labelPos: "top: 30%; left: -4.5em; transform: translateY(-50%);",
-			boxPos: "top: 40%; left: -3em; transform: translate(-50%, -50%);"
 		}
 	] as const;
 </script>
