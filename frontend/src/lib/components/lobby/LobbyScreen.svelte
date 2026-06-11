@@ -13,7 +13,7 @@
 	let showInviteCode = $state(false);
 	let activeMenu = $state<string | null>(null);
 
-	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"]; 
+	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"];
 	const startText = "START!";
 
 	function toggleMenu(username: string, event: Event) {
@@ -36,7 +36,7 @@
 	function saveName() {
 		isEditingName = false;
 		const trimmed = editedName.trim();
-		if (trimmed && trimmed !== storeLobby.current?.name && trimmed.length <= 32) {
+		if (trimmed && trimmed !== storeLobby.current?.name && trimmed.length <= 22) {
 			storeLobby.updateSettings({ name: trimmed });
 		}
 	}
@@ -51,15 +51,11 @@
 					bind:value={editedName}
 					onblur={saveName}
 					onkeydown={(e) => e.key === "Enter" && saveName()}
-					maxlength="32"
+					maxlength="22"
 					autofocus
 				/>
 			{:else}
-				<span
-					class="lobby-title"
-					class:editable={isHost}
-					onclick={startEditing}
-				>
+				<span class="lobby-title" class:editable={isHost} onclick={startEditing}>
 					{storeLobby.current?.name}
 				</span>
 			{/if}
@@ -98,39 +94,55 @@
 			<ul class="members">
 				{#each storeLobby.current?.members ?? [] as member, i}
 					<li class="member">
-						<!-- AVATAR GIGANTE 128PX -->
-						<div 
-							class="member-avatar" 
+						<div
+							class="member-avatar"
 							style="--mask-color: {member.is_bot ? '#666' : PLAYER_COLORS[i % 4]};"
 						></div>
 
 						<div class="member-info-group">
 							<div class="member-details">
 								<div class="name-row">
-									<!-- ICONE PRIMA DEL NOME E PIÙ GRANDI -->
 									{#if member.is_bot}
 										<span class="status-icon" style="color: lightblue"> 󱚣 </span>
 									{:else}
-										<span class="status-icon" class:on={member.is_connected} class:off={!member.is_connected}>
+										<span
+											class="status-icon"
+											class:on={member.is_connected}
+											class:off={!member.is_connected}
+										>
 											{member.is_connected ? "" : ""}
 										</span>
 									{/if}
 
 									<span class="member-name">{member.username}</span>
-									
+
 									{#if member.is_host}<span style="color: gold; font-size: 1.5rem;"> 󱟜 </span>{/if}
 								</div>
 							</div>
 
 							{#if isHost && !member.is_host}
 								<div class="menu-wrapper">
-									<button class="dots-button" onclick={(e) => toggleMenu(member.username, e)}>⋮</button>
+									<button class="dots-button" onclick={(e) => toggleMenu(member.username, e)}
+										>⋮</button
+									>
 									{#if activeMenu === member.username}
 										<div class="dropdown-menu">
-											<button class="dropdown-item" onclick={() => { storeLobby.promote(member.username); activeMenu = null; }}>
+											<button
+												class="dropdown-item"
+												onclick={() => {
+													storeLobby.promote(member.username);
+													activeMenu = null;
+												}}
+											>
 												<span style="color: lightgoldenrodyellow">Promote</span>
 											</button>
-											<button class="dropdown-item" onclick={() => { storeLobby.kick(member.username); activeMenu = null; }}>
+											<button
+												class="dropdown-item"
+												onclick={() => {
+													storeLobby.kick(member.username);
+													activeMenu = null;
+												}}
+											>
 												<span style="color: lightsalmon">Kick</span>
 											</button>
 										</div>
@@ -171,41 +183,57 @@
 
 <style>
 	.lobby-layout {
-		margin: 24px;
-		min-height: calc(100vh - 48px);
-		background: var(--bg);
+		position: fixed;
+		inset: 0;
+		background-image: url("/assets/bg_full.png");
+		background-size: cover;
+		background-position: center;
+		padding: 24px;
 		display: flex;
 		justify-content: space-between;
 		gap: 60px;
-		position: relative;
+		overflow-y: auto;
 	}
 
-	.left-panel { display: flex; flex-direction: column; gap: 32px; flex: 1; }
+	.left-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 32px;
+		flex: 1;
+	}
 
 	/* AVATAR GIGANTI */
 	.member-avatar {
 		width: 128px;
 		height: 128px;
 		background-color: var(--mask-color);
-		-webkit-mask-image: url('/assets/base_player.gif');
+		-webkit-mask-image: url("/assets/base_player.gif");
 		-webkit-mask-size: contain;
 		-webkit-mask-repeat: no-repeat;
 		-webkit-mask-position: center;
-		mask-image: url('/assets/base_player.gif');
+		mask-image: url("/assets/base_player.gif");
 		mask-size: contain;
 		mask-repeat: no-repeat;
 		mask-position: center;
 		flex-shrink: 0;
 	}
 
-	.member-info-group { display: flex; align-items: center; gap: 20px; }
-	.member-name { font-size: 2rem; font-weight: bold; }
-	
-	.name-row { 
-		display: flex; 
-		align-items: center; 
-		gap: 15px; 
-		font-family: var(--mono); 
+	.member-info-group {
+		display: flex;
+		align-items: center;
+		gap: 20px;
+	}
+	.member-name {
+		font-size: 2rem;
+		font-weight: bold;
+	}
+
+	.name-row {
+		display: flex;
+		align-items: center;
+		gap: 15px;
+		font-family: "Pixel";
+		color: white;
 	}
 
 	/* ICONA STATO PIÙ GRANDE */
@@ -215,17 +243,55 @@
 		align-items: center;
 		justify-content: center;
 		min-width: 40px;
+		font-family: var(--mono);
 	}
 
-	.header-controls { display: flex; align-items: center; gap: 20px; }
-	.invite-container { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.2); padding: 8px 16px; border-radius: 8px; }
-	.invite-badge { font-family: var(--mono); width: 100px; text-align: center; font-size: 1.2rem; color: var(--text); }
-	.toggle-code-btn { background: none; border: none; cursor: pointer; color: white; font-size: 1.5rem; font-family: var(--mono); }
-	
-	.saved-matches-mini { position: relative; user-select: none; }
-	.dropdown-summary { list-style: none; cursor: pointer; background: var(--bg); padding: 10px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-weight: bold; }
-	.dropdown-summary::-webkit-details-marker { display: none; }
-	
+	.header-controls {
+		display: flex;
+		align-items: center;
+		gap: 20px;
+	}
+	.invite-container {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		background: rgb(0, 0, 0);
+		padding: 8px 16px;
+		border-radius: 8px;
+	}
+	.invite-badge {
+		font-family: var(--mono);
+		width: 100px;
+		text-align: center;
+		font-size: 1.2rem;
+		color: var(--text);
+	}
+	.toggle-code-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		color: white;
+		font-size: 1.5rem;
+		font-family: var(--mono);
+	}
+
+	.saved-matches-mini {
+		position: relative;
+		user-select: none;
+	}
+	.dropdown-summary {
+		list-style: none;
+		cursor: pointer;
+		background: var(--bg);
+		padding: 10px 20px;
+		border-radius: 8px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		font-weight: bold;
+	}
+	.dropdown-summary::-webkit-details-marker {
+		display: none;
+	}
+
 	.dropdown-content-wrapper {
 		position: absolute;
 		top: calc(100% + 10px);
@@ -235,15 +301,44 @@
 		border: 2px solid #333;
 		border-radius: 10px;
 		width: 350px;
-		box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 	}
-	.saved-matches-list { list-style: none; padding: 10px; margin: 0; max-height: 400px; overflow-y: auto; }
+	.saved-matches-list {
+		list-style: none;
+		padding: 10px;
+		margin: 0;
+		max-height: 400px;
+		overflow-y: auto;
+	}
 
-	.right-panel { display: flex; flex-direction: column; width: 450px; flex-shrink: 0; align-self: center; }
-	.settings-container { display: flex; flex-direction: column; gap: 24px; }
+	.right-panel {
+		display: flex;
+		flex-direction: column;
+		width: 450px;
+		flex-shrink: 0;
+		align-self: center;
+	}
+	.settings-container {
+		display: flex;
+		flex-direction: column;
+		gap: 24px;
+	}
 
-	.start-container { display: flex; justify-content: center; margin-top: 40px; }
-	.start-button { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; height: 100px; width: 100%; }
+	.start-container {
+		display: flex;
+		justify-content: center;
+		margin-top: 40px;
+	}
+	.start-button {
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 100px;
+		width: 100%;
+	}
 
 	.leave-button-fixed {
 		position: fixed;
@@ -262,11 +357,27 @@
 		transition: all 0.1s;
 		z-index: 1000;
 	}
-	.leave-button-fixed:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0px #1a1a1a; }
-	.leave-button-fixed:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #1a1a1a; }
-	.exit-icon { width: 36px; height: 36px; }
+	.leave-button-fixed:hover {
+		transform: translate(-2px, -2px);
+		box-shadow: 8px 8px 0px #1a1a1a;
+	}
+	.leave-button-fixed:active {
+		transform: translate(4px, 4px);
+		box-shadow: 0px 0px 0px #1a1a1a;
+	}
+	.exit-icon {
+		width: 36px;
+		height: 36px;
+	}
 
-	.animated-text { display: flex; gap: 5px; font-family: "FatPixel"; font-size: 1.8rem; color: white; letter-spacing: 6px; }
+	.animated-text {
+		display: flex;
+		gap: 5px;
+		font-family: "FatPixel";
+		font-size: 1.8rem;
+		color: white;
+		letter-spacing: 6px;
+	}
 	.letter {
 		display: inline-block;
 		-webkit-text-stroke: 1.5px #1a1a1a;
@@ -274,17 +385,104 @@
 		animation-delay: calc(var(--i) * 0.1s);
 	}
 	@keyframes waveBounce {
-		0%, 100% { transform: translateY(0); text-shadow: 2px 2px 0px #1a1a1a; }
-		50% { transform: translateY(-15px); text-shadow: 2px 15px 0px #1a1a1a; }
+		0%,
+		100% {
+			transform: translateY(0);
+			text-shadow: 2px 2px 0px #1a1a1a;
+		}
+		50% {
+			transform: translateY(-15px);
+			text-shadow: 2px 15px 0px #1a1a1a;
+		}
 	}
 
-	.members { list-style: none; padding: 0; margin: 0; }
-	.member { display: flex; align-items: center; gap: 30px; margin-bottom: 30px; }
-	.dots-button { background: none; border: none; font-size: 2.5rem; cursor: pointer; color: white; }
-	.dropdown-menu { position: absolute; background: #222; border: 2px solid #444; border-radius: 8px; z-index: 100; min-width: 140px; }
-	.dropdown-item { width: 100%; padding: 12px; background: none; border: none; color: white; text-align: left; cursor: pointer; font-weight: bold; }
-	
-	.off { color: #ff6b6b; }
-	.on { color: #51cf66; }
-	.name-input, .lobby-title { font-family: "FatPixel"; font-size: 2.2rem; color: white; background: none; border: none; outline: none; }
+	.members {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.member {
+		display: flex;
+		align-items: center;
+		gap: 30px;
+		margin-bottom: 30px;
+	}
+
+	.dots-button {
+		background: var(--bg); /* Sfondo scuro semitrasparente */
+		border: 2px solid var(--border); /* Bordo coerente con il resto */
+		width: 22px; /* Larghezza fissa per renderlo quadrato */
+		height: 42px; /* Altezza fissa */
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 1.8rem; /* Dimensione dei puntini */
+		cursor: pointer;
+		color: white;
+		transition: all 0.2s;
+		line-height: 0;
+		padding-bottom: 2px; /* Aggiustamento ottico per centrare i puntini verticalmente */
+	}
+
+	.dots-button:hover {
+		background: var(--bg); /* Cambia colore quando ci passi sopra */
+		border-color: white;
+	}
+
+	/* Assicurati che il wrapper sia relativo per posizionare il menu correttamente */
+	.menu-wrapper {
+		position: relative;
+	}
+
+	.dropdown-menu {
+		position: absolute;
+		background: var(--bg);
+		border: 2px solid #444;
+		border-radius: 8px;
+		z-index: 100;
+		min-width: 140px;
+	}
+
+	/* Stile base dell'item */
+	.dropdown-item {
+		width: 100%;
+		padding: 12px;
+		background: none;
+		border: none;
+		color: white;
+		text-align: left;
+		cursor: pointer;
+		font-weight: bold;
+		transition:
+			background 0.2s,
+			filter 0.2s; /* Transizione fluida */
+	}
+
+	/* EFFETTO ILLUMINAZIONE AL PASSAGGIO */
+	.dropdown-item:hover {
+		background: rgba(255, 255, 255, 0.1); /* Sfondo leggermente più chiaro */
+		filter: brightness(1.4); /* Aumenta la luminosità del testo (Promote/Kick) */
+	}
+
+	/* Opzionale: un piccolo bordo a sinistra quando passi sopra */
+	.dropdown-item:hover {
+		box-shadow: inset 4px 0 0 var(--accent);
+	}
+
+	.off {
+		color: #ff6b6b;
+	}
+	.on {
+		color: #51cf66;
+	}
+	.lobby-title,
+	.name-input {
+		font-family: "FatPixel";
+		font-size: 1.5rem; /* Ridotto da 2.2rem */
+		color: white;
+		background: none;
+		border: none;
+		outline: none;
+		text-shadow: 2px 2px 0px #000;
+	}
 </style>

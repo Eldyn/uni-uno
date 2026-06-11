@@ -101,7 +101,7 @@
 	.lobbies-screen {
 		position: fixed;
 		inset: 0;
-		background-image: url("/assets/bg_main.png");
+		background-image: url("/assets/bg_full.png");
 		background-size: cover;
 		z-index: 0;
 		display: flex;
