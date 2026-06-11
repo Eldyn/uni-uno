@@ -9,11 +9,9 @@
 	createCardBus();
 
 	let playableCardIds = $state(new Set<number>());
-
 	let opponents = $derived(
 		storeGame.state?.players.filter((p) => p.username !== storeGame.localPlayer?.username) ?? []
 	);
-
 	const opponentLayouts = [
 		{
 			// Left player
@@ -42,11 +40,6 @@
 	] as const;
 </script>
 
-<!--
-    NOTE: FlyingCardsOverlay lives here, at GameBoard level, using the CardBus
-          context. It is intentionally a sibling of the grid, not inside it, so
-          its fixed-position clones are never clipped by the perspective transform.
--->
 <FlyingCardsOverlay />
 
 <div class="game-field perspective">
@@ -76,7 +69,11 @@
 		<div class="player-label" style="top: -8em; left: 50%; transform: translateX(-50%);">
 			(You) {storeGame.localPlayer?.username ?? ""}
 		</div>
-		<div class="box" style="top: -5.7em; left: 50%; transform: translateX(-50%);"></div>
+		<div 
+			class="box" 
+			class:is-turn={storeGame.state?.current_turn === storeGame.localPlayer?.username}
+			style="top: -5.7em; left: 50%; transform: translateX(-50%);"
+		></div>
 		<PlayerHand {playableCardIds} />
 	</div>
 </div>
@@ -152,5 +149,11 @@
 		height: 50px;
 		background-color: #000;
 		z-index: 100;
+		transition: box-shadow 0.3s ease, background-color 0.3s ease;
+	}
+	
+	.box.is-turn {
+		background-color: #ffd700;
+		box-shadow: 0 0 20px 6px rgba(255, 215, 0, 0.75);
 	}
 </style>

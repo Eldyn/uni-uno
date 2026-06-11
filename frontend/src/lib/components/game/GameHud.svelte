@@ -9,8 +9,6 @@
 
 {#if storeGame.state && !storeGame.actionRequired}
 	<div class="hud-container">
-		<span>Current Turn: {storeGame.state.current_turn}</span>
-
 		<span
 			class="timer"
 			style="background: {storeGame.turnTimeRemaining <= 5 ? '#dc251c' : '#333'};"

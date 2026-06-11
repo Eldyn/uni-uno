@@ -2,7 +2,8 @@
 	import { onMount } from "svelte";
 	import GameCard from "./GameCard.svelte";
 	import { useCardBus, type ElementRole } from "./card-bus.svelte";
-	import type { GamePlayer } from "../../stores/game.svelte";
+	// Importato storeGame per leggere il turno attuale
+	import { storeGame, type GamePlayer } from "../../stores/game.svelte";
 
 	let {
 		player,
@@ -25,7 +26,6 @@
 	const role: ElementRole = `hand-opponent-${index}`;
 
 	let handEl = $state<HTMLElement | null>(null);
-
 	$effect(() => {
 		if (handEl) {
 			bus.register(role, handEl);
@@ -38,7 +38,11 @@
 </script>
 
 <div class="opponent-slot">
-	<div class="box" style={boxPos}>
+	<div 
+		class="box" 
+		class:is-turn={player && storeGame.state?.current_turn === player.username}
+		style={boxPos}
+	>
 		<div class="player-label" class:is-top={index === 2}>
 			{player ? player.username : "Waiting..."}
 		</div>
@@ -72,6 +76,12 @@
 		height: 50px;
 		background-color: #000;
 		z-index: 100;
+		transition: box-shadow 0.3s ease, background-color 0.3s ease;
+	}
+
+	.box.is-turn {
+		background-color: #ffd700;
+		box-shadow: 0 0 20px 6px rgba(255, 215, 0, 0.75);
 	}
 
 	.player-label {
@@ -85,12 +95,9 @@
 		font-size: 0.95em;
 		letter-spacing: 0.04em;
 		z-index: 110;
-
-		/* Di base (Left e Right player): posizionato SOPRA la box */
 		bottom: calc(100% + 0.4em);
 	}
 
-	/* Per il top player (index 2): posizionato SOTTO la box */
 	.player-label.is-top {
 		bottom: auto;
 		top: calc(100% + 0.4em);
