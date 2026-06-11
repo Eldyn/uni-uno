@@ -49,11 +49,12 @@
 		justify-content: center;
 		min-height: 100vh;
 		padding: 20px;
+		font-family: "Pixel";
 	}
 
 	.auth-container {
 		width: 100%;
-		max-width: 400px;
+		max-width: 600px;
 		background: var(--bg);
 		border: 1px solid var(--border);
 		border-radius: 8px;
@@ -74,7 +75,9 @@
 		background: none;
 		border: none;
 		font-size: 16px;
+		font-family: "Pixel";
 		font-weight: 500;
+		letter-spacing: 1px; 
 		color: var(--text);
 		cursor: pointer;
 		border-bottom: 2px solid transparent;

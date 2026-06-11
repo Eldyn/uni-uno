@@ -27,7 +27,6 @@
 </script>
 
 <form onsubmit={handleSubmit} class="auth-form">
-	<h2>Login</h2>
 
 	<FormInput
 		id="login-email"
@@ -60,19 +59,14 @@
 		gap: 16px;
 	}
 
-	h2 {
-		margin: 0 0 16px;
-		font-size: 20px;
-		color: var(--text-h);
-	}
-
 	.submit-button {
 		padding: 10px 16px;
 		background: var(--accent);
 		color: white;
 		border: none;
 		border-radius: 6px;
-		font-size: 14px;
+		font-family: 'FatPixel';
+		font-size: 10px;
 		font-weight: 500;
 		cursor: pointer;
 		transition: opacity 0.2s;
