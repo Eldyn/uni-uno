@@ -22,7 +22,7 @@ namespace game {
         }
     };
 
-    static RuleRegistrar registrar("seven_zero", []() { 
+   static RuleRegistrar registrar("seven_zero", []() { 
         return std::make_unique<SevenZeroRule>(); 
     });
 }

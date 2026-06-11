@@ -5,11 +5,16 @@
 namespace game {
 
     void StandardRule::ValidatePlay(GameState* state, CardPlayedEvent& event) {
+        if (event.is_out_of_turn) {
+            event.is_valid_play = false;
+            return;
+        }
+
         Color played_color = GetColor(event.played_card);
         Value played_value = GetValue(event.played_card);
     
         if (played_color == Color::kWild) {
-            return; // It remains valid. We are done!
+            return;
         }
     
         // NOTE: We check active_color since the top card might be a Wild.

@@ -193,13 +193,13 @@ namespace game {
         Player* current_player = GetPlayer(username);
         if (!current_player) return false;
 
-        if (GetCurrentPlayerUsername() != username) return false;
+        bool is_out_of_turn = (GetCurrentPlayerUsername() != username);
      
         auto card_iterator = std::ranges::find(current_player->hand, card_id, GetId);
         if (card_iterator == current_player->hand.end()) return false;
 
         CompactCard played_card = *card_iterator;
-        CardPlayedEvent play_event = { username, played_card, true, false };
+        CardPlayedEvent play_event = { username, played_card, !is_out_of_turn, false, is_out_of_turn };
 
         for (auto& rule : active_rules_) {
             rule->ValidatePlay(&state_, play_event);
@@ -220,6 +220,8 @@ namespace game {
             session_stats_[username].color_counts[static_cast<int>(c)]++;
             session_stats_[username].value_counts[static_cast<int>(v)]++;
         // }
+
+        play_event.is_handled = false;
 
         for (auto& rule : active_rules_) {
             rule->OnCardPlayed(&state_, play_event);

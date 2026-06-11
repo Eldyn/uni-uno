@@ -54,17 +54,6 @@ AuthController::AuthController(HttpRouter& router) {
     });
 }
 
-//  ReadBody  —  async body accumulation helper
-//
-//  uWS delivers HTTP bodies in chunks via an onData callback.  The bool
-//  `isLast` tells us when the final chunk has arrived.  We accumulate all
-//  chunks into a single std::string, then invoke the caller's callback.
-//
-//  The shared_ptr<bool> `is_alive` pattern is the standard uWS idiom for
-//  detecting an aborted connection mid-read: the onAborted callback flips
-//  the flag to false, so the onData callback can bail out safely without
-//  touching a dangling `res` pointer.
-
 void AuthController::HandleRegister(AppResponse* res, AppRequest* /*req*/) {
     http::ReadBody(res, kMaxBodyBytes, [res](const std::string& body) { 
         json data;
@@ -168,9 +157,6 @@ void AuthController::HandleRegister(AppResponse* res, AppRequest* /*req*/) {
     });
 }
 
-// ---------------------------------------------------------------------------
-//  HandleLogin
-// ---------------------------------------------------------------------------
 void AuthController::HandleLogin(AppResponse* response, AppRequest* /*req*/) {
     http::ReadBody(response, kMaxBodyBytes, [response](const std::string& body) {
         json data;

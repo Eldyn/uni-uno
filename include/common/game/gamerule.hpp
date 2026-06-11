@@ -10,8 +10,8 @@ namespace game {
         CompactCard played_card;
 
         bool is_valid_play = true; 
-
         bool is_handled = false;
+        bool is_out_of_turn = false;
     };
     
     class GameRule {
