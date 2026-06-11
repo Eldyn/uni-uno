@@ -47,25 +47,31 @@ namespace game {
     };
 
     /**
-     * @brief Estrae il colore da una carta compatta.
+     * @brief Estrae il colore da una carta compatta (Primi 8 bit).
      * @param c La carta compatta da analizzare.
      * @return Color Il colore decodificato dalla carta.
      */
-    inline Color GetColor(CompactCard c);
+    inline Color GetColor(CompactCard c) {
+        return static_cast<Color>((c >> 24) & 0xFF);
+    }
 
     /**
-     * @brief Estrae il valore o l'azione da una carta compatta.
+     * @brief Estrae il valore o l'azione da una carta compatta (Secondi 8 bit).
      * @param c La carta compatta da analizzare.
      * @return Value Il valore decodificato dalla carta.
      */
-    inline Value GetValue(CompactCard c);
+    inline Value GetValue(CompactCard c) {
+        return static_cast<Value>((c >> 16) & 0xFF);
+    }
 
     /**
-     * @brief Estrae l'identificativo univoco a 16-bit della carta.
+     * @brief Estrae l'identificativo univoco a 16-bit della carta (Ultimi 16 bit).
      * @param c La carta compatta da analizzare.
      * @return uint16_t L'ID univoco.
      */
-    inline uint16_t GetId(CompactCard c);
+    inline uint16_t GetId(CompactCard c) {
+        return static_cast<uint16_t>(c & 0xFFFF);
+    }
 
     /**
      * @brief Crea una nuova CompactCard assemblando colore, valore e ID.
@@ -74,6 +80,10 @@ namespace game {
      * @param id L'identificativo univoco.
      * @return CompactCard La carta impacchettata in un intero a 32-bit.
      */
-    inline CompactCard MakeCard(Color c, Value v, uint16_t id);
+    inline CompactCard MakeCard(Color c, Value v, uint16_t id) {
+        return (static_cast<CompactCard>(c) << 24) | 
+               (static_cast<CompactCard>(v) << 16) | 
+               (static_cast<CompactCard>(id) & 0xFFFF);
+    }
 
 }  // namespace game
