@@ -107,6 +107,7 @@ namespace game {
         "Minikloon", "Nitroholic_", "Potato King", "Raffle Box", "Relenter", 
         "Resistance Generals", "Rezzus", "Technoblade", "Technoshop", 
         "The Lost Adventurer", "Warren", "Worker Emma", "Dean", "Garrett", "Hannah", "Allie", 
-        "Tucker", "jhon" 
+        "Tucker", "jhon", "Arrodes", "Klein Moretti", "Sauron Einhorn Medici", "Eldyn THE GOAT", 
+        "<script>console.log('no XSS!')</script>"
     };
 }
