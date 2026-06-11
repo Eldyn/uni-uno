@@ -7,8 +7,8 @@
 	import { onMount } from "svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
 	import { storeLobby } from "../../stores/lobby.svelte";
+	import { storeNavigation } from "../../stores/navigation.svelte";
 
-	let currentView = $state<"lobbies" | "settings">("lobbies");
 	let showCreateForm = $state(false);
 	let showJoinForm = $state(false);
 	let refreshing = $state(false);
@@ -27,65 +27,55 @@
 <div class="lobbies-screen">
 	<div class="lobbies-header">
 		<div class="header-content">
-			<h1>{currentView === "lobbies" ? "Lobbies" : "Impostazioni Utente"}</h1>
+			<p>Lobbies</p>
 			<p class="user-info">Welcome <span class="mono">{storeAuth.username}</span></p>
 		</div>
 		<div class="header-actions">
-			{#if currentView === "lobbies"}
-				<button type="button" class="settings-button" onclick={() => (currentView = "settings")}
-					>⚙ Settings</button
-				>
-			{:else}
-				<button type="button" class="settings-button" onclick={() => (currentView = "lobbies")}
-					>← Torna alle Lobbies</button
-				>
-			{/if}
+			<button type="button" class="settings-button" onclick={() => storeNavigation.goto("main")}
+				>Back</button
+			>
 			<button type="button" class="logout-button" onclick={() => storeAuth.logout()}>Logout</button>
 		</div>
 	</div>
 
 	<div class="lobbies-content">
-		{#if currentView === "lobbies"}
-			<div class="controls">
-				<button type="button" class="refresh-button" onclick={handleRefresh} disabled={refreshing}>
-					{refreshing ? "⟳ Refreshing..." : "⟳ Refresh"}
-				</button>
-				<button
-					type="button"
-					class="refresh-button"
-					onclick={() => (showCreateForm = !showCreateForm)}
-					disabled={storeLobby.isInLobby}
-				>
-					{showCreateForm ? "✕ Cancel" : "+ Create Lobby"}
-				</button>
-				<button
-					type="button"
-					class="refresh-button"
-					onclick={() => (showJoinForm = !showJoinForm)}
-					disabled={storeLobby.isInLobby}
-				>
-					{showJoinForm ? "✕ Cancel" : "+ Join Lobby"}
-				</button>
+		<div class="controls">
+			<button type="button" class="refresh-button" onclick={handleRefresh} disabled={refreshing}>
+				{refreshing ? "⟳ Refreshing..." : "⟳ Refresh"}
+			</button>
+			<button
+				type="button"
+				class="refresh-button"
+				onclick={() => (showCreateForm = !showCreateForm)}
+				disabled={storeLobby.isInLobby}
+			>
+				{showCreateForm ? "✕ Cancel" : "+ Create Lobby"}
+			</button>
+			<button
+				type="button"
+				class="refresh-button"
+				onclick={() => (showJoinForm = !showJoinForm)}
+				disabled={storeLobby.isInLobby}
+			>
+				{showJoinForm ? "✕ Cancel" : "+ Join Lobby"}
+			</button>
+		</div>
+
+		{#if showCreateForm}
+			<div class="create-form-container">
+				<LobbyCreateForm />
 			</div>
-
-			{#if showCreateForm}
-				<div class="create-form-container">
-					<LobbyCreateForm />
-				</div>
-			{/if}
-
-			{#if showJoinForm}
-				<div class="create-form-container">
-					<LobbyJoinForm />
-				</div>
-			{/if}
-
-			<div class="lobbies-container">
-				<LobbyList lobbies={storeLobby.available} isLoading={storeLobby.isLoadingList} />
-			</div>
-		{:else}
-			<UserSettingsForm />
 		{/if}
+
+		{#if showJoinForm}
+			<div class="create-form-container">
+				<LobbyJoinForm />
+			</div>
+		{/if}
+
+		<div class="lobbies-container">
+			<LobbyList lobbies={storeLobby.available} isLoading={storeLobby.isLoadingList} />
+		</div>
 	</div>
 </div>
 

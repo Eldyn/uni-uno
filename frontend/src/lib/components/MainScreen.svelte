@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { storeNavigation } from "../stores/navigation.svelte";
+	import { storeAuth } from "../stores/auth.svelte";
 	import GameCard from "./game/GameCard.svelte";
 
 	const standardColors = ["red", "yellow", "blue", "green"];
@@ -101,7 +102,13 @@
 	</header>
 
 	<main class="button-container">
-		<button onclick={() => storeNavigation.goto("auth")}> Login </button>
+		{#if !storeAuth.isLoggedIn}
+			<button onclick={() => storeNavigation.goto("auth")}> Login </button>
+		{:else}
+			<button onclick={() => storeNavigation.goto("lobbies")}> Browse Lobbies </button>
+			<button onclick={() => storeNavigation.goto("stats")}> Stats </button>
+			<button onclick={() => storeNavigation.goto("settings")}> Settings </button>
+		{/if}
 	</main>
 </div>
 
