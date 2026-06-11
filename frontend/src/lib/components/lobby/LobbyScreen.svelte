@@ -25,8 +25,6 @@
 	}
 </script>
 
-<link rel="preload" href="fonts/JetBrainsMono.woff2" as="font" type="font/woff2" />
-
 <div class="lobby-screen">
 	<div class="lobby-header">
 		<div class="title-container">
@@ -147,7 +145,8 @@
 
 	.lobby-title {
 		margin: 0;
-		font-size: 2rem;
+		font-size: 1rem;
+		font-family: "FatPixel";
 		color: white;
 	}
 
@@ -162,8 +161,8 @@
 	}
 
 	.name-input {
-		font-family: inherit;
-		font-size: 2rem;
+		font-family: "FatPixel";
+		font-size: 1rem;
 		background: none;
 		border: none;
 		border-radius: none;
@@ -283,4 +282,3 @@
 		margin-top: 15px;
 	}
 </style>
-

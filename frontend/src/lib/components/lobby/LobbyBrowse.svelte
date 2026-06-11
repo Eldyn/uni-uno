@@ -28,7 +28,7 @@
 	<div class="lobbies-header">
 		<div class="header-content">
 			<h1>{currentView === "lobbies" ? "Lobbies" : "Impostazioni Utente"}</h1>
-			<p class="user-info">Welcome, {storeAuth.username}</p>
+			<p class="user-info">Welcome <span class="mono">{storeAuth.username}</span></p>
 		</div>
 		<div class="header-actions">
 			{#if currentView === "lobbies"}
