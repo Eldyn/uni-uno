@@ -87,6 +87,8 @@
 		padding: 0;
 		overflow: hidden;
 		background-color: transparent;
+		-webkit-user-select: none;
+        user-select: none;
 	}
 
 	:root {
