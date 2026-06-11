@@ -37,7 +37,7 @@
 		width: 100%;
 		text-align: center;
 	}
-	.empty-text { font-size: 18px; color: var(--text); opacity: 0.7; }
+	.empty-text { font-size: 18px; color: white; opacity: 0.7; }
 	.lobbies-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

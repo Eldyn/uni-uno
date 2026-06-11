@@ -56,47 +56,6 @@
 		font-smooth: never;
 	}
 
-	.background-overlay {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		z-index: 0;
-		pointer-events: none;
-		perspective: 1200px;
-	}
-
-	.bg-card-wrapper {
-		position: absolute;
-		top: -180px;
-		width: 5em;
-		height: 7.68em;
-		opacity: 0;
-		animation: fallAndFade var(--duration) linear var(--delay) infinite;
-	}
-
-	.card-3d-inner {
-		position: relative;
-		width: 100%;
-		height: 100%;
-		transform-style: preserve-3d;
-		animation: spin3D var(--duration) linear var(--delay) infinite;
-	}
-
-	.card-side {
-		position: absolute;
-		inset: 0;
-		backface-visibility: hidden;
-		-webkit-backface-visibility: hidden;
-	}
-
-	.card-front {
-		transform: rotateY(0deg) translateZ(1px);
-	}
-	.card-back {
-		transform: rotateY(180deg) translateZ(1px);
-	}
 
 	@keyframes fallAndFade {
 		0% {

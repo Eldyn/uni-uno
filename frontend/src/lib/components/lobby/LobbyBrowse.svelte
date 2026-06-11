@@ -45,6 +45,12 @@
 	<div class="main-layout">
 		<!-- PARTE SINISTRA: LISTA -->
 		<section class="lobbies-section">
+			<!-- Area della lista (sopra) -->
+			<div class="lobbies-scroll-area">
+				<LobbyList lobbies={storeLobby.available} isLoading={storeLobby.isLoadingList} />
+			</div>
+
+			<!-- Tasto Refresh (spostato in basso) -->
 			<div class="controls">
 				<button
 					type="button"
@@ -54,10 +60,6 @@
 				>
 					{refreshing ? "⟳ Refreshing..." : "⟳ Refresh"}
 				</button>
-			</div>
-
-			<div class="lobbies-scroll-area">
-				<LobbyList lobbies={storeLobby.available} isLoading={storeLobby.isLoadingList} />
 			</div>
 		</section>
 
@@ -89,7 +91,7 @@
 </div>
 
 <style>
-	/* --- SETUP GENERALE --- */
+	/* --- SETUP GENERALE (NO SCROLL) --- */
 	:global(body) {
 		margin: 0;
 		overflow: hidden;
@@ -97,11 +99,15 @@
 	}
 
 	.lobbies-screen {
+		position: fixed;
+		inset: 0;
+		background-image: url("/assets/bg_main.png");
+		background-size: cover;
+		z-index: 0;
 		display: flex;
 		flex-direction: column;
 		height: 100vh;
 		width: 100vw;
-		background: var(--bg);
 	}
 
 	/* --- HEADER --- */
@@ -159,14 +165,14 @@
 	}
 
 	.pixel-btn.logout {
-		background: #e91e63; /* Esempio: un tocco di colore diverso per logout */
+		background: #e91e63;
 	}
 
 	/* --- SIDEBAR --- */
 	.sidebar-form-box {
 		width: 100%;
 		padding: 45px 20px;
-		background: rgba(0, 0, 0, 0.2);
+		background: rgb(20, 20, 20);
 		border-bottom: 2px solid var(--border);
 		display: flex;
 		justify-content: center;
@@ -201,14 +207,14 @@
 
 	.sidebar {
 		width: 400px;
-		background: var(--accent-bg);
+		background: var(--bg);
 		border-left: 2px solid var(--border);
 		display: flex;
 		flex-direction: column;
 	}
 
 	.sidebar-content {
-		padding: 40px 25px; /* Spazio aumentato per staccare dal titolo */
+		padding: 40px 25px;
 	}
 
 	.sidebar-divider {
@@ -233,8 +239,12 @@
 		gap: 12px;
 		justify-content: flex-end;
 	}
+
+	/* MODIFICATO PER STARE IN BASSO */
 	.controls {
-		margin-bottom: 20px;
+		margin-top: 20px;
+		display: flex;
+		justify-content: flex-start;
 	}
 
 	/* --- RESPONSIVE --- */
