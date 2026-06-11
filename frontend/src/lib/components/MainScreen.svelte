@@ -202,7 +202,7 @@
 
 	.logo-text {
 		font-family: "FatPixel", sans-serif;
-		font-size: 6rem;
+		font-size: 600%;
 		color: #ffffff;
 		margin: 0;
 		text-align: center;
