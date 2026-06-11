@@ -101,6 +101,7 @@
 		border-radius: 6px;
 		font-size: 14px;
 		font-weight: 500;
+		font-family: 'Pixel';
 		cursor: pointer;
 		transition: opacity 0.2s;
 	}

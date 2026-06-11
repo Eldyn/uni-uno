@@ -8,8 +8,6 @@
 	import { storeLobby } from "../../stores/lobby.svelte";
 	import { storeNavigation } from "../../stores/navigation.svelte";
 
-	let showCreateForm = $state(false);
-	let showJoinForm = $state(false);
 	let refreshing = $state(false);
 
 	onMount(() => {
@@ -24,159 +22,240 @@
 </script>
 
 <div class="lobbies-screen">
-	<div class="lobbies-header">
-		<div class="header-content">
-			<p>Lobbies</p>
+	<!-- HEADER PRINCIPALE -->
+	<header class="lobbies-header">
+		<div class="header-left">
 			<p class="user-info">Welcome <span class="mono">{storeAuth.username}</span></p>
 		</div>
+
+		<div class="main-title-container">
+			<h1 class="main-title-text">Lobbies</h1>
+		</div>
+
 		<div class="header-actions">
-			<button type="button" class="settings-button" onclick={() => storeNavigation.goto("main")}
-				>Back</button
-			>
-			<button type="button" class="logout-button" onclick={() => storeAuth.logout()}>Logout</button>
-		</div>
-	</div>
-
-	<div class="lobbies-content">
-		<div class="controls">
-			<button type="button" class="refresh-button" onclick={handleRefresh} disabled={refreshing}>
-				{refreshing ? "⟳ Refreshing..." : "⟳ Refresh"}
+			<button type="button" class="pixel-btn" onclick={() => storeNavigation.goto("main")}>
+				Back
 			</button>
-			<button
-				type="button"
-				class="refresh-button"
-				onclick={() => (showCreateForm = !showCreateForm)}
-				disabled={storeLobby.isInLobby}
-			>
-				{showCreateForm ? "✕ Cancel" : "+ Create Lobby"}
-			</button>
-			<button
-				type="button"
-				class="refresh-button"
-				onclick={() => (showJoinForm = !showJoinForm)}
-				disabled={storeLobby.isInLobby}
-			>
-				{showJoinForm ? "✕ Cancel" : "+ Join Lobby"}
+			<button type="button" class="pixel-btn logout" onclick={() => storeAuth.logout()}>
+				Logout
 			</button>
 		</div>
+	</header>
 
-		{#if showCreateForm}
-			<div class="create-form-container">
-				<LobbyCreateForm />
+	<div class="main-layout">
+		<!-- PARTE SINISTRA: LISTA -->
+		<section class="lobbies-section">
+			<div class="controls">
+				<button
+					type="button"
+					class="pixel-btn refresh"
+					onclick={handleRefresh}
+					disabled={refreshing}
+				>
+					{refreshing ? "⟳ Refreshing..." : "⟳ Refresh"}
+				</button>
 			</div>
-		{/if}
 
-		{#if showJoinForm}
-			<div class="create-form-container">
-				<LobbyJoinForm />
+			<div class="lobbies-scroll-area">
+				<LobbyList lobbies={storeLobby.available} isLoading={storeLobby.isLoadingList} />
 			</div>
-		{/if}
+		</section>
 
-		<div class="lobbies-container">
-			<LobbyList lobbies={storeLobby.available} isLoading={storeLobby.isLoadingList} />
-		</div>
+		<!-- SIDEBAR DESTRA -->
+		<aside class="sidebar">
+			<!-- Sezione Create -->
+			<div class="sidebar-section">
+				<div class="sidebar-form-box">
+					<h2 class="sidebar-form-title">Create Lobby</h2>
+				</div>
+				<div class="sidebar-content">
+					<LobbyCreateForm />
+				</div>
+			</div>
+
+			<div class="sidebar-divider"></div>
+
+			<!-- Sezione Join -->
+			<div class="sidebar-section">
+				<div class="sidebar-form-box">
+					<h2 class="sidebar-form-title">Join Lobby</h2>
+				</div>
+				<div class="sidebar-content">
+					<LobbyJoinForm />
+				</div>
+			</div>
+		</aside>
 	</div>
 </div>
 
 <style>
+	/* --- SETUP GENERALE --- */
+	:global(body) {
+		margin: 0;
+		overflow: hidden;
+		overscroll-behavior: none;
+	}
+
 	.lobbies-screen {
 		display: flex;
 		flex-direction: column;
-		min-height: 100vh;
+		height: 100vh;
+		width: 100vw;
 		background: var(--bg);
 	}
+
+	/* --- HEADER --- */
 	.lobbies-header {
-		display: flex;
-		justify-content: space-between;
+		display: grid;
+		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
-		padding: 24px;
-		border-bottom: 1px solid var(--border);
+		padding: 0 40px;
+		height: 120px;
+		border-bottom: 2px solid var(--border);
+		background: var(--bg);
+		flex-shrink: 0;
+	}
+
+	.main-title-text {
+		font-family: "FatPixel", sans-serif;
+		font-size: 40px;
+		color: var(--text-h);
+		margin: 0;
+		text-transform: uppercase;
+		line-height: 1;
+		text-align: center;
+		letter-spacing: 2px;
+	}
+
+	/* --- BOTTONE PIXEL --- */
+	.pixel-btn {
+		padding: 15px;
+		background: var(--accent);
+		color: white;
+		border: none;
+		font-family: "Pixel", sans-serif;
+		font-size: 20px;
+		cursor: pointer;
+		text-transform: uppercase;
+		transition:
+			filter 0.2s,
+			transform 0.1s;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.pixel-btn:hover:not(:disabled) {
+		filter: brightness(1.2);
+	}
+
+	.pixel-btn:active:not(:disabled) {
+		transform: scale(0.95);
+	}
+
+	.pixel-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.pixel-btn.logout {
+		background: #e91e63; /* Esempio: un tocco di colore diverso per logout */
+	}
+
+	/* --- SIDEBAR --- */
+	.sidebar-form-box {
+		width: 100%;
+		padding: 45px 20px;
+		background: rgba(0, 0, 0, 0.2);
+		border-bottom: 2px solid var(--border);
+		display: flex;
+		justify-content: center;
+		align-items: center;
+	}
+
+	.sidebar-form-title {
+		font-family: "FatPixel", sans-serif;
+		font-size: 15px;
+		color: var(--text-h);
+		margin: 0;
+		text-transform: uppercase;
+	}
+
+	.main-layout {
+		display: flex;
+		flex: 1;
+		overflow: hidden;
+	}
+
+	.lobbies-section {
+		flex: 1;
+		padding: 30px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.lobbies-scroll-area {
+		flex: 1;
+		overflow-y: auto;
+	}
+
+	.sidebar {
+		width: 400px;
+		background: var(--accent-bg);
+		border-left: 2px solid var(--border);
+		display: flex;
+		flex-direction: column;
+	}
+
+	.sidebar-content {
+		padding: 40px 25px; /* Spazio aumentato per staccare dal titolo */
+	}
+
+	.sidebar-divider {
+		height: 4px;
+		background: var(--border);
+		width: 100%;
+		flex-shrink: 0;
+	}
+
+	/* --- ELEMENTI ACCESSORI --- */
+	.user-info {
+		font-size: 18px;
+		color: white;
+		margin: 0;
+	}
+	.mono {
+		font-family: "Pixel", monospace;
+		color: var(--accent);
 	}
 	.header-actions {
 		display: flex;
 		gap: 12px;
-		align-items: center;
-	}
-	.header-content h1 {
-		margin: 0 0 8px;
-		font-size: 32px;
-		color: var(--text-h);
-	}
-	.user-info {
-		margin: 0;
-		font-size: 14px;
-		color: var(--text);
-	}
-	.logout-button,
-	.settings-button {
-		padding: 8px 16px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-size: 14px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: opacity 0.2s;
-	}
-	.logout-button:hover,
-	.settings-button:hover {
-		opacity: 0.9;
-	}
-	.lobbies-content {
-		flex: 1;
-		padding: 24px;
-		max-width: 1200px;
-		margin: 0 auto;
-		width: 100%;
+		justify-content: flex-end;
 	}
 	.controls {
-		display: flex;
-		gap: 12px;
-		margin-bottom: 24px;
+		margin-bottom: 20px;
 	}
-	.refresh-button {
-		padding: 10px 16px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-size: 14px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: opacity 0.2s;
-	}
-	.refresh-button:hover:not(:disabled) {
-		opacity: 0.9;
-	}
-	.refresh-button:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-	.create-form-container {
-		background: var(--accent-bg);
-		border: 1px solid var(--accent-border);
-		border-radius: 8px;
-		padding: 20px;
-		margin-bottom: 24px;
-		width: 30%;
-	}
-	.lobbies-container {
-		display: flex;
-		flex-direction: column;
-	}
-	@media (max-width: 1024px) {
-		.lobbies-header {
+
+	/* --- RESPONSIVE --- */
+	@media (max-width: 1100px) {
+		.main-layout {
 			flex-direction: column;
-			gap: 16px;
-			align-items: flex-start;
+			overflow-y: auto;
+		}
+		.sidebar {
+			width: 100%;
+			border-left: none;
+			border-top: 4px solid var(--border);
+		}
+		.lobbies-header {
+			grid-template-columns: 1fr;
+			height: auto;
+			padding: 20px;
+			gap: 20px;
 		}
 		.header-actions {
-			width: 100%;
-			justify-content: space-between;
-		}
-		.lobbies-content {
-			padding: 16px;
+			justify-content: center;
 		}
 	}
 </style>

@@ -7,42 +7,33 @@
 
 	function validateForm(): boolean {
 		roomCodeError = "";
-
 		const code = roomCodeInput.trim();
 		if (!code) {
 			roomCodeError = "Invite code is required.";
 			return false;
 		}
-
 		if (code.length !== 6 || !/^[a-zA-Z0-9]+$/.test(code)) {
-			roomCodeError = "Invite code must be 6 alphanumeric characters.";
+			roomCodeError = "Must be 6 characters.";
 			return false;
 		}
-
 		return true;
 	}
 
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
-
-		if (!validateForm()) {
-			return;
-		}
-
+		if (!validateForm()) return;
 		storeLobby.join(roomCodeInput);
 	}
 </script>
 
-<form onsubmit={handleSubmit} class="join-lobby-form">
-	<h3>Join Lobby</h3>
-
-	<div class="form-group">
+<form onsubmit={handleSubmit} class="join-form">
+	<div class="input-group">
 		<label for="invite-code">Invite Code:</label>
 		<input
 			id="invite-code"
 			type="text"
 			bind:value={roomCodeInput}
-			placeholder="Enter 6-character invite code"
+			placeholder="ABC123"
 			disabled={isLoading}
 			class:error={roomCodeError}
 			maxlength="6"
@@ -52,83 +43,78 @@
 		{/if}
 	</div>
 
-	<button type="submit" disabled={isLoading} class="submit-button">
-		{isLoading ? "Joining..." : "Join Lobby"}
+	<button type="submit" disabled={isLoading} class="submit-btn">
+		{isLoading ? "Joining..." : "JOIN LOBBY"}
 	</button>
 </form>
 
 <style>
-	.join-lobby-form {
+	.join-form {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: 25px;
 	}
 
-	h3 {
-		margin: 0;
-		font-size: 16px;
-		color: var(--text-h);
-	}
-
-	.form-group {
+	.input-group {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 8px;
 	}
 
+	/* LABEL COERENTE CON CREATE FORM */
 	label {
+		font-family: 'Pixel', sans-serif;
 		font-size: 14px;
-		font-weight: 500;
 		color: var(--text-h);
+		text-transform: uppercase;
 	}
 
+	/* INPUT COERENTE CON CREATE FORM */
 	input {
-		padding: 10px 12px;
+		padding: 12px;
+		background: rgba(0, 0, 0, 0.3);
 		border: 2px solid var(--border);
-		border-radius: 6px;
-		font-size: 14px;
 		color: var(--text-h);
-		background: var(--bg);
-		transition: border-color 0.2s;
+		font-family: 'Pixel', monospace;
+		font-size: 16px;
+		text-transform: uppercase; /* Forza il maiuscolo visivo */
+		outline: none;
 	}
 
 	input:focus {
-		outline: none;
 		border-color: var(--accent);
 	}
 
-	input:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
 	input.error {
-		border-color: #dc2626;
+		border-color: #ff4444;
 	}
 
 	.error-text {
-		font-size: 12px;
-		color: #dc2626;
+		font-family: 'Pixel', sans-serif;
+		font-size: 11px;
+		color: #ff4444;
+		margin-top: 4px;
+		text-transform: uppercase;
 	}
 
-	.submit-button {
-		padding: 10px 16px;
+	/* BOTTONE COERENTE */
+	.submit-btn {
+		padding: 15px;
 		background: var(--accent);
 		color: white;
 		border: none;
-		border-radius: 6px;
-		font-size: 14px;
-		font-weight: 500;
+		font-family: 'Pixel', sans-serif;
+		font-size: 20px;
 		cursor: pointer;
-		transition: opacity 0.2s;
+		transition: filter 0.2s;
 	}
 
-	.submit-button:hover:not(:disabled) {
-		opacity: 0.9;
+	.submit-btn:hover:not(:disabled) {
+		filter: brightness(1.2);
 	}
 
-	.submit-button:disabled {
-		opacity: 0.6;
+	.submit-btn:disabled {
+		opacity: 0.5;
 		cursor: not-allowed;
 	}
 </style>

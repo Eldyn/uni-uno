@@ -1,167 +1,119 @@
 <script lang="ts">
-	import { validateLobbyName } from "../../utils/validation";
-	import { storeLobby } from "../../stores/lobby.svelte";
-	import { storeToast } from "../../stores/toast.svelte";
+    import { storeLobby } from "../../stores/lobby.svelte";
+    
+    let name = $state("");
+    let isPrivate = $state(false);
 
-	let lobbyNameInput = $state("");
-	let lobbyNameError = $state("");
-	let isLoading = $state(false);
-	let isLobbyPublic = $state(false);
-
-	function validateForm(): boolean {
-		lobbyNameError = "";
-
-		const lobbyValidation = validateLobbyName(lobbyNameInput);
-		if (!lobbyValidation.valid) {
-			lobbyNameError = lobbyValidation.error || "";
-			return false;
-		}
-
-		return true;
-	}
-
-	async function handleSubmit(event: SubmitEvent) {
-		event.preventDefault();
-
-		if (!validateForm()) {
-			return;
-		}
-
-		await storeLobby.create({ is_public: isLobbyPublic, name: lobbyNameInput.trim() });
-		storeToast.success("Lobby created successfully!");
-	}
+    async function handleSubmit(e: Event) {
+        e.preventDefault();
+        // Inviamo isPrivate (true/false) allo store
+        await storeLobby.create({name, is_public:!isPrivate});
+        // Reset campi
+        name = ""; 
+        isPrivate = false;
+    }
 </script>
 
-<form onsubmit={handleSubmit} class="create-lobby-form">
-	<h3>Create New Lobby</h3>
+<form onsubmit={handleSubmit} class="create-form">
+    <!-- NOME LOBBY -->
+    <div class="input-group">
+        <label for="name">Lobby Name</label>
+        <input 
+            type="text" 
+            id="name" 
+            bind:value={name} 
+            placeholder="Enter name..." 
+            required 
+            autocomplete="off"
+        />
+    </div>
 
-	<div class="form-group">
-		<label for="lobby-name">Room Name:</label>
-		<input
-			id="lobby-name"
-			type="text"
-			bind:value={lobbyNameInput}
-			placeholder="Enter Lobby name"
-			disabled={isLoading}
-			class:error={lobbyNameError}
-		/>
-		{#if lobbyNameError}
-			<span class="error-text">{lobbyNameError}</span>
-		{/if}
-	</div>
+    <!-- CHECKBOX AFFIANCATO -->
+    <div class="checkbox-row">
+        <label for="private">Private Lobby</label>
+		<input type="checkbox" id="private" bind:checked={isPrivate} />
+    </div>
 
-	<div class="form-actions">
-		<div class="checkbox-group">
-			<label for="lobby-is-public">Is Public?</label>
-			<input id="lobby-is-public" type="checkbox" bind:checked={isLobbyPublic} />
-		</div>
-
-		<button type="submit" disabled={isLoading} class="submit-button">
-			{isLoading ? "Creating..." : "Create Lobby"}
-		</button>
-	</div>
+    <button type="submit" class="submit-btn" disabled={!name}>
+        CREATE
+    </button>
 </form>
 
 <style>
-	.create-lobby-form {
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		width: 92%;
-		max-width: 400px;
-	}
-	h3 {
-		margin: 0;
-		font-size: 16px;
-		color: var(--text-h);
-	}
+    .create-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px; /* Più spazio tra gli elementi */
+    }
 
-	.form-group {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
 
-	label {
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--text-h);
-	}
+    .input-group label {
+        font-family: 'Pixel', sans-serif;
+        font-size: 14px;
+        color: var(--text-h);
+        text-transform: uppercase;
+    }
 
-	input {
-		padding: 10px 12px;
-		border: 2px solid var(--border);
-		border-radius: 6px;
-		font-size: 14px;
-		color: var(--text-h);
-		background: var(--bg);
-		transition: border-color 0.2s;
-		width: 100%;
-	}
+    input[type="text"] {
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 2px solid var(--border);
+        color: var(--text-h);
+        font-family: 'Pixel', monospace;
+        outline: none;
+    }
 
-	input:focus {
-		outline: none;
-		border-color: var(--accent);
-	}
+    input[type="text"]:focus {
+        border-color: var(--accent);
+    }
 
-	input:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
+    /* RIGA CHECKBOX AFFIANCATA */
+    .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+    }
 
-	input.error {
-		border-color: #dc2626;
-	}
+    .checkbox-row input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        cursor: pointer;
+        accent-color: var(--accent);
+    }
 
-	.error-text {
-		font-size: 12px;
-		color: #dc2626;
-	}
+    .checkbox-row label {
+        font-family: 'Pixel', sans-serif;
+        font-size: 14px;
+        color: var(--text-h);
+        cursor: pointer;
+        user-select: none;
+    }
 
-	.form-actions {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-	}
+    /* BOTTONE */
+    .submit-btn {
+        padding: 15px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        font-family: 'Pixel', sans-serif;
+        font-size: 20px;
+        cursor: pointer;
+        transition: filter 0.2s;
+    }
 
-	.checkbox-group {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-        padding: 10px 14px;
-	}
+    .submit-btn:hover:not(:disabled) {
+        filter: brightness(1.2);
+    }
 
-	.checkbox-group label {
-		cursor: pointer;
-	}
-
-	input[type="checkbox"] {
-		padding: 0;
-		width: 16px;
-		height: 16px;
-		cursor: pointer;
-	}
-
-	.submit-button {
-		padding: 10px 14px;
-		font-size: 13px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: opacity 0.2s;
-		white-space: nowrap;
-	}
-
-	.submit-button:hover:not(:disabled) {
-		opacity: 0.9;
-	}
-
-	.submit-button:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
+    .submit-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
 </style>
