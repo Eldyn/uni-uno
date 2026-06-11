@@ -9,7 +9,6 @@
 	createCardBus();
 
 	let playableCardIds = $state(new Set<number>());
-
 	const LAYOUT_LEFT = {
 		gridArea: "2 / 1",
 		wrapperTransform: "translate(-5.5em, -2em)",
@@ -18,7 +17,6 @@
 		boxPos: "top: 40%; right: -3em; transform: translate(50%, -50%);",
 		isTop: false
 	} as const;
-
 	const LAYOUT_TOP = {
 		gridArea: "1 / 2",
 		wrapperTransform: "translateY(-2.5em)",
@@ -27,7 +25,6 @@
 		boxPos: "bottom: -1.2em; left: 50%; transform: translateX(-50%);",
 		isTop: true
 	} as const;
-
 	const LAYOUT_RIGHT = {
 		gridArea: "2 / 3",
 		wrapperTransform: "translate(5.5em, -2em)",
@@ -55,13 +52,10 @@
 		});
 
 		if (rotated.length === 1) {
-			// 2 Players: Local (Bottom) & Top
 			return [assignLayout(rotated[0], LAYOUT_TOP)];
 		} else if (rotated.length === 2) {
-			// 3 Players: Local (Bottom), Right & Top
 			return [assignLayout(rotated[0], LAYOUT_RIGHT), assignLayout(rotated[1], LAYOUT_LEFT)];
 		} else {
-			// 4 Players: Local (Bottom), Left, Top & Right
 			return [
 				assignLayout(rotated[0], LAYOUT_RIGHT),
 				assignLayout(rotated[1], LAYOUT_TOP),
@@ -69,6 +63,11 @@
 			];
 		}
 	});
+
+	// Logica colore coerente anche per il giocatore locale (Umano)
+	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"]; // Blu, Verde, Rosso, Giallo
+	let localPlayerIdx = $derived(storeGame.state?.players?.findIndex(p => p.username === storeGame.localPlayer?.username) ?? -1);
+	let localPlayerColor = $derived(localPlayerIdx !== -1 ? PLAYER_COLORS[localPlayerIdx % 4] : "#0493de");
 </script>
 
 <FlyingCardsOverlay />
@@ -105,7 +104,11 @@
 			class="box"
 			class:is-turn={storeGame.state?.current_turn === storeGame.localPlayer?.username}
 			style="top: -5.7em; left: 50%; transform: translateX(-50%);"
-		></div>
+		>
+			{#if storeGame.localPlayer}
+				<div class="box-mask" style="--mask-img: url('/assets/base_player.gif'); --mask-color: {localPlayerColor};"></div>
+			{/if}
+		</div>
 		<PlayerHand {playableCardIds} />
 	</div>
 </div>
@@ -177,17 +180,31 @@
 
 	.box {
 		position: absolute;
-		width: 50px;
-		height: 50px;
-		background-color: #000;
+		width: 70px;
+		height: 70px;
 		z-index: 100;
 		transition:
 			box-shadow 0.3s ease,
 			background-color 0.3s ease;
+		border-radius: 40%;
+		background-color: rgba(255, 255, 255, 0.5);
 	}
 
 	.box.is-turn {
-		background-color: #ffd700;
-		box-shadow: 0 0 20px 6px rgba(255, 215, 0, 0.75);
+		box-shadow: 0 0 20px 6px rgba(255, 255, 255, 0.75);
+	}
+
+	.box-mask {
+		width: 100%;
+		height: 100%;
+		background-color: var(--mask-color);
+		-webkit-mask-image: var(--mask-img);
+		-webkit-mask-size: 100% 100%;
+		-webkit-mask-repeat: no-repeat;
+		-webkit-mask-position: center;
+		mask-image: var(--mask-img);
+		mask-size: 100% 100%;
+		mask-repeat: no-repeat;
+		mask-position: center;
 	}
 </style>

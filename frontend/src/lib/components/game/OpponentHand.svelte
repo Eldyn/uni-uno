@@ -9,14 +9,14 @@
 		handTransform = "translate(-50%, -50%)",
 		labelPos = "top: 0; left: 50%; transform: translateX(-50%);",
 		boxPos = "top: 0; left: 50%; transform: translateX(-50%);",
-		isTop = false // <-- NEW
+		isTop = false
 	}: {
 		player: GamePlayer | null;
 		index: number;
 		handTransform?: string;
 		labelPos?: string;
 		boxPos?: string;
-		isTop?: boolean; // <-- NEW
+		isTop?: boolean;
 	} = $props();
 
 	const bus = useCardBus();
@@ -33,6 +33,12 @@
 
 	let cardCount = $derived(player?.card_count ?? 0);
 	let handWidth = $derived(`calc(${cardCount} * 2.2em + 7.2em)`);
+
+	// Logica per determinare colore e tipologia di giocatore (Umano o Bot)
+	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"]; // Blu, Verde, Rosso, Giallo
+	let playerIdx = $derived(storeGame.state?.players?.findIndex(p => p.username === player?.username) ?? -1);
+	let playerColor = $derived(playerIdx !== -1 ? PLAYER_COLORS[playerIdx % 4] : "#0493de");
+	let isBot = $derived(!(player?.is_bot || player?.username?.toLowerCase().includes("bot")));
 </script>
 
 <div class="opponent-slot">
@@ -41,6 +47,13 @@
 		class:is-turn={player && storeGame.state?.current_turn === player.username}
 		style={boxPos}
 	>
+		{#if player}
+			{#if isBot}
+				<img src="/assets/bot_animated.gif" alt="Bot" class="box-avatar" />
+			{:else}
+				<div class="box-mask" style="--mask-img: url('/assets/base_player.gif'); --mask-color: {playerColor};"></div>
+			{/if}
+		{/if}
 		<div class="player-label" class:is-top={isTop}>
 			{player ? player.username : "Waiting..."}
 		</div>
@@ -62,7 +75,6 @@
 </div>
 
 <style>
-	/* ... keep all existing styles exactly as they are ... */
 	.opponent-slot {
 		position: relative;
 		width: 100%;
@@ -71,18 +83,39 @@
 
 	.box {
 		position: absolute;
-		width: 50px;
-		height: 50px;
-		background-color: #000;
+		width: 70px;
+		height: 70px;
 		z-index: 100;
 		transition:
 			box-shadow 0.3s ease,
 			background-color 0.3s ease;
+		border-radius: 40%;
+		background-color: rgba(255, 255, 255, 0.5);
 	}
 
 	.box.is-turn {
-		background-color: #ffd700;
-		box-shadow: 0 0 20px 6px rgba(255, 215, 0, 0.75);
+		box-shadow: 0 0 20px 6px rgba(255, 255, 255, 0.75);
+	}
+
+	.box-avatar {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		display: block;
+	}
+
+	.box-mask {
+		width: 100%;
+		height: 100%;
+		background-color: var(--mask-color);
+		-webkit-mask-image: var(--mask-img);
+		-webkit-mask-size: 100% 100%;
+		-webkit-mask-repeat: no-repeat;
+		-webkit-mask-position: center;
+		mask-image: var(--mask-img);
+		mask-size: 100% 100%;
+		mask-repeat: no-repeat;
+		mask-position: center;
 	}
 
 	.player-label {
@@ -110,4 +143,3 @@
 		left: 50%;
 	}
 </style>
-
