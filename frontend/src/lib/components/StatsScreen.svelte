@@ -17,7 +17,7 @@
 
 <div class="stats-container">
 	<header class="top-bar">
-		<button class="back-btn" onclick={() => storeNavigation.back()}> ← Back </button>
+		<button class="back-btn" onclick={() => storeNavigation.back()}> ↩ Back </button>
 		<h1>Global Leaderboard</h1>
 		<div style="width: 80px;"></div>
 	</header>
@@ -89,6 +89,13 @@
 </div>
 
 <style>
+	.profile-section h2,
+	.top-bar h1,
+	.back-btn {
+		line-height: 1.3; /* Aumenta l'altezza della riga per evitare tagli */
+		padding-top: 2px; /* Un piccolo aiuto se il taglio è in alto */
+	}
+
 	.stats-container {
 		display: flex;
 		flex-direction: column;
@@ -121,6 +128,7 @@
 		cursor: pointer;
 		font-weight: bold;
 		transition: all 0.2s;
+		font-family: "Pixel";
 	}
 
 	.back-btn:hover {
@@ -159,7 +167,7 @@
 
 	.profile-section h2 {
 		margin: 0;
-		font-size: 1.8rem;
+		font-size: 1rem;
 	}
 
 	.rank-badge {

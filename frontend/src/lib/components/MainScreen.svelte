@@ -105,9 +105,15 @@
 		{#if !storeAuth.isLoggedIn}
 			<button onclick={() => storeNavigation.goto("auth")}> Login </button>
 		{:else}
-			<button onclick={() => storeNavigation.goto("lobbies")}> Browse Lobbies </button>
-			<button onclick={() => storeNavigation.goto("stats")}> Stats </button>
-			<button onclick={() => storeNavigation.goto("settings")}> Settings </button>
+			<div class="logged-in-menu">
+				<button class="btn-wide" onclick={() => storeNavigation.goto("lobbies")}>
+					Browse Lobbies
+				</button>
+				<div class="secondary-buttons">
+					<button onclick={() => storeNavigation.goto("stats")}> Stats </button>
+					<button onclick={() => storeNavigation.goto("settings")}> Settings </button>
+				</div>
+			</div>
 		{/if}
 	</main>
 </div>
@@ -123,6 +129,10 @@
 		min-height: 100vh;
 		background: var(--bg);
 		overflow: hidden;
+
+		-webkit-font-smoothing: none;
+        -moz-osx-font-smoothing: grayscale;
+        font-smooth: never;
 	}
 
 	.background-overlay {
@@ -217,6 +227,9 @@
 		/* Flexbox mantiene le lettere allineate in orizzontale */
 		display: flex;
 		gap: 0.4rem;
+
+		line-height: 1.3; 
+        padding-top: 4px;
 	}
 
 	.logo-char {
@@ -248,27 +261,46 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		margin-bottom: 3rem; /* Margine di sicurezza dal fondo dello schermo */
+	}
+
+	.logged-in-menu {
+		display: flex;
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+
+	.secondary-buttons {
+		display: flex;
+		justify-content: center;
+		gap: 1.5rem;
+	}
+
+	.btn-wide {
+		width: 100%;
 	}
 
 	button {
-		padding: 1.5rem 5rem;
-		font-size: 1.35rem;
-		font-family: "Pixel", sans-serif;
-		font-weight: 900;
-		letter-spacing: 1.5px;
+        padding: 1.5rem 2.5rem; 
+        font-size: 1.35rem;
+        font-family: "Pixel", sans-serif;
+        font-weight: 900;
+        letter-spacing: 1.5px;
 
-		color: #ffffff;
-		background-color: #8d42d3;
+        line-height: 1.3; 
 
-		border: 3px solid #1a1a1a;
-		border-radius: 12px;
+        color: #ffffff;
+        background-color: #8d42d3;
 
-		cursor: pointer;
-		box-shadow: 5px 5px 0px #1a1a1a;
-		transition:
-			transform 0.08s ease,
-			box-shadow 0.08s ease,
-			background-color 0.2s ease;
+        border: 3px solid #1a1a1a;
+        border-radius: 12px;
+
+        cursor: pointer;
+        box-shadow: 5px 5px 0px #1a1a1a;
+        transition:
+            transform 0.08s ease,
+            box-shadow 0.08s ease,
+            background-color 0.2s ease;
 	}
 
 	button:hover {
