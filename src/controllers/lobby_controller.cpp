@@ -426,16 +426,7 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
 
     bool joined = false;
 
-    if (lobby.members.size() < kMaxMembers) {
-        lobby.members.emplace_back(username, ctx.socket, true, false);
-        
-        if (lobby.match) {
-            lobby.match->AddPlayerMidGame(username, false);
-        }
-
-        joined = true;
-        Logger::Info("[Lobby] '", username, "' joined an empty slot.");
-    } else if (lobby.settings.allow_bot_takeover) {
+    if (lobby.settings.allow_bot_takeover) {
         for (auto& member : lobby.members) {
             if (member.is_bot) {
                 std::string old_bot_name = member.username;
@@ -458,6 +449,17 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
                 break;
             }
         }
+    }
+
+    if (!joined && lobby.members.size() < kMaxMembers) {
+        lobby.members.emplace_back(username, ctx.socket, true, false);
+        
+        if (lobby.match) {
+            lobby.match->AddPlayerMidGame(username, false);
+        }
+
+        joined = true;
+        Logger::Info("[Lobby] '", username, "' joined an empty slot.");
     }
 
     if (!joined) {

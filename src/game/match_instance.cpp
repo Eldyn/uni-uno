@@ -241,6 +241,13 @@ namespace game {
                 }
 
                 TransactionGuard tx(db);
+
+                if (!match_id_.empty()) {
+                    auto delete_save_status = db.Exec("DELETE FROM saved_matches WHERE id = ?", {match_id_});
+                    if (!delete_save_status) {
+                        Logger::Warn("[Match] Failed to clean up saved match: ", delete_save_status.error().message);
+                    }
+                }
                 
                 auto match_status = db.Exec("INSERT INTO matches (winner_username) VALUES (?)", {username});
                 if (!match_status) {
