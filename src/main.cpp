@@ -1,6 +1,7 @@
-#include "controllers/game_controller.hpp"
-#include "controllers/lobby_controller.hpp"
+#include <controllers/game_controller.hpp>
+#include <controllers/lobby_controller.hpp>
 #include <controllers/auth_controller.hpp>
+#include <controllers/stats_controller.hpp>
 #include <common/env.hpp>
 #include <logger.hpp>
 #include <common/ws.hpp>
@@ -17,6 +18,7 @@ int main() {
 
         AuthController  auth(server.GetHTTPRouter());
         LobbyController lobby(server);        
+        StatsController stats(server.GetHTTPRouter());
         GameController  game(server, lobby);
 
         // INFO: Logging Middleware
