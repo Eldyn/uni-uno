@@ -4,7 +4,6 @@
 	import { storeNavigation } from "../../stores/navigation.svelte";
 	import GameCard from "../game/GameCard.svelte";
 
-	// 1. Fetch stats if we navigated directly or refreshed the page
 	onMount(() => {
 		if (!storeStats.myStats) {
 			storeStats.fetchMe();
@@ -15,10 +14,10 @@
 		red: "#dc251c",
 		blue: "#0493de",
 		green: "#018d41",
-		yellow: "#fcf604"
+		yellow: "#fcf604",
+		white: "#fff"
 	};
 
-	// The canonical list of card types we want to iterate over
 	const CARD_TYPES = [
 		"red",
 		"blue",
@@ -44,20 +43,16 @@
 	let cardStats = $derived.by(() => {
 		const stats = [];
 
-		// 2. Loop over the types dynamically instead of relying on the backend JSON keys
 		for (const type of CARD_TYPES) {
-			// Trick TypeScript into accepting our dynamic string as a key
 			const key = `cards_played_${type}` as keyof typeof storeStats.myStats;
 
-			// Safely grab the count. If the backend omitted it (e.g. 0 games played), default to 0.
 			const count = (storeStats.myStats?.[key] as number) ?? 0;
 
-			let color = "black";
+			let color = "wild";
 			let value = type;
 			let label = type.toUpperCase();
 			let textCol = "#fff";
 
-			// Dynamically assign visual properties based on the type
 			if (type in COLOR_HEX) {
 				color = type;
 				value = "";
@@ -84,7 +79,7 @@
 <div class="stats-container">
 	<header class="top-bar">
 		<button class="styled-btn" onclick={() => storeNavigation.back()}> ↩ Back </button>
-		<h1>CARD ARSENAL</h1>
+		<h1>ARSENALE DELLE CARTE</h1>
 		<div style="width: 80px;"></div>
 	</header>
 
@@ -93,7 +88,6 @@
 			{#each cardStats as stat (stat.key)}
 				<div class="card-stat-box">
 					<div class="card-wrapper">
-						<!-- ID is 0 as it's just a display prop here -->
 						<GameCard
 							card={{ id: 0, color: stat.color as any, value: stat.value as any }}
 							style="position: relative; left: 0;"
@@ -116,7 +110,7 @@
 		position: fixed;
 		inset: 0;
 		background-color: #121212;
-		/* background-image: url('/assets/doodle-bg.png'); */
+		background-image: url("/assets/bg_stats.png");
 		background-size: cover;
 		z-index: 0;
 	}
@@ -147,7 +141,6 @@
 		font-family: "Pixel", sans-serif;
 	}
 
-	/* Your requested button styling */
 	.styled-btn {
 		padding: 8px 16px;
 		background: var(--accent);
@@ -168,13 +161,10 @@
 	.content {
 		flex: 1;
 		overflow-y: auto;
-		padding: 40px;
-		max-width: 1000px;
 		margin: 0 auto;
 		width: 100%;
 	}
 
-	/* SNKRX / Balatro Grid Style */
 	.cards-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));

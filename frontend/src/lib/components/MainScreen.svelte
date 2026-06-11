@@ -1,97 +1,10 @@
 <script lang="ts">
 	import { storeNavigation } from "../stores/navigation.svelte";
 	import { storeAuth } from "../stores/auth.svelte";
-	import GameCard from "./game/GameCard.svelte";
-
-	const standardColors = ["red", "yellow", "blue", "green"];
-	const standardValues = [
-		"0",
-		"1",
-		"2",
-		"3",
-		"4",
-		"5",
-		"6",
-		"7",
-		"8",
-		"9",
-		"skip",
-		"reverse",
-		"+2"
-	];
-	const wildColors = ["wild"];
-	const wildValues = ["colorswitch", "+4"];
-
-	const TOTAL_CARDS = 15;
-	const FALL_DURATION = 5;
-
-	function getCardRandomProps() {
-		const isWild = Math.random() < 0.2;
-
-		const color = isWild
-			? wildColors[Math.floor(Math.random() * wildColors.length)]
-			: standardColors[Math.floor(Math.random() * standardColors.length)];
-
-		const value = isWild
-			? wildValues[Math.floor(Math.random() * wildValues.length)]
-			: standardValues[Math.floor(Math.random() * standardValues.length)];
-
-		return {
-			left: `${Math.random() * 90}%`,
-			rotateZ: `${Math.floor(Math.random() * 60) - 30}deg`,
-			initialRX: `${Math.floor(Math.random() * 40) - 20}deg`,
-			scale: `${(Math.random() * 0.4 + 0.7).toFixed(2)}`,
-			cardData: { id: Math.floor(Math.random() * 10000), value, color }
-		};
-	}
-
-	function createInitialCard(index: number) {
-		const calculatedDelay = ((index * FALL_DURATION) / TOTAL_CARDS).toFixed(2);
-		return {
-			slotIndex: index,
-			delay: `${calculatedDelay}s`,
-			duration: `${FALL_DURATION}s`,
-			...getCardRandomProps()
-		};
-	}
-
-	let backgroundCards = $state(Array.from({ length: TOTAL_CARDS }, (_, i) => createInitialCard(i)));
-
-	function regenerateCard(index: number) {
-		backgroundCards[index] = {
-			...backgroundCards[index],
-			...getCardRandomProps()
-		};
-	}
 </script>
 
 <div class="screen-container">
-	<div class="background-overlay">
-		{#each backgroundCards as card, index (card.slotIndex)}
-			<div
-				class="bg-card-wrapper"
-				onanimationiteration={() => regenerateCard(index)}
-				style="left: {card.left}; --rotate-z: {card.rotateZ}; --initial-rx: {card.initialRX}; --delay: {card.delay}; --duration: {card.duration}; --scale: {card.scale};"
-			>
-				<div class="card-3d-inner">
-					<div class="card-side card-front">
-						<GameCard
-							card={card.cardData}
-							turned={false}
-							style="position: absolute; left: 0; top: 0; transform: none; margin: 0;"
-						/>
-					</div>
-					<div class="card-side card-back">
-						<GameCard
-							card={card.cardData}
-							turned={true}
-							style="position: absolute; left: 0; top: 0; transform: none; margin: 0;"
-						/>
-					</div>
-				</div>
-			</div>
-		{/each}
-	</div>
+	<div class="doodle-bg"></div>
 
 	<header class="logo-container">
 		<h1 class="logo-text">
@@ -107,7 +20,7 @@
 		{:else}
 			<div class="logged-in-menu">
 				<button class="btn-wide" onclick={() => storeNavigation.goto("lobbies")}>
-					Browse Lobbies
+					Entra in Stanza
 				</button>
 				<div class="secondary-buttons">
 					<button onclick={() => storeNavigation.goto("stats")}> Stats </button>
@@ -119,6 +32,14 @@
 </div>
 
 <style>
+	.doodle-bg {
+		position: fixed;
+		inset: 0;
+		background-image: url("/assets/bg_main.png");
+		background-size: cover;
+		z-index: 0;
+	}
+
 	.screen-container {
 		position: relative;
 		display: flex;

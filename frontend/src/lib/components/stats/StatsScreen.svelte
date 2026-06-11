@@ -20,11 +20,11 @@
 <div class="stats-container">
 	<header class="top-bar">
 		<button class="styled-btn pixel-corners" onclick={() => storeNavigation.back()}>
-			↩ Back
+			Indietro
 		</button>
-		<h1>GLOBAL LEADERBOARD</h1>
+		<h1>CLASSIFICA GLOBALE</h1>
 		<button class="styled-btn pixel-corners" onclick={() => storeNavigation.goto("detailedStats")}>
-			Card Arsenal
+			Arsenale
 		</button>
 	</header>
 
@@ -34,19 +34,19 @@
 			<div class="top-player-card pixel-corners">
 				<div class="profile-section">
 					<h2>👑 {topPlayer.username}</h2>
-					<span class="rank-badge pixel-corners">#1 Global</span>
+					<span class="rank-badge pixel-corners">#1 Al mondo!</span>
 				</div>
 				<div class="stats-grid">
 					<div class="stat-box">
-						<span class="stat-label">Wins</span>
+						<span class="stat-label">Vittorie</span>
 						<span class="stat-value text-green">{topPlayer.total_wins}</span>
 					</div>
 					<div class="stat-box">
-						<span class="stat-label">Losses</span>
+						<span class="stat-label">Sconfite</span>
 						<span class="stat-value text-red">{topPlayer.total_losses}</span>
 					</div>
 					<div class="stat-box">
-						<span class="stat-label">Win Rate</span>
+						<span class="stat-label">Rateo V/S</span>
 						<span class="stat-value text-purple">
 							{getWinRate(topPlayer.total_wins, topPlayer.total_losses)}
 						</span>
@@ -56,12 +56,12 @@
 		{/if}
 
 		<div class="leaderboard-section pixel-corners">
-			<h3>Top 50 Players</h3>
+			<h3>Top 50 Giocatori</h3>
 
 			{#if storeStats.isLoading}
-				<p class="loading-text">Loading rankings...</p>
+				<p class="loading-text">Caricamento Classifica...</p>
 			{:else if storeStats.leaderboard.length === 0}
-				<p class="loading-text">No games have been played yet!</p>
+				<p class="loading-text">Credo ci sia qualche errore!</p>
 			{:else}
 				<div class="leaderboard-list">
 					{#each storeStats.leaderboard as player, index}

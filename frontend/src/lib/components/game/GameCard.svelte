@@ -48,7 +48,7 @@
 			return `/assets/cards/${value}.png`;
 		}
 
-		return "/assets/base_player.gif";
+		return "";
 	}
 
 	const imgSrc = $derived(getCardImage(card.value));
