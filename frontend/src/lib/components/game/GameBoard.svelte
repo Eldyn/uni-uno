@@ -59,13 +59,13 @@
 			return [assignLayout(rotated[0], LAYOUT_TOP)];
 		} else if (rotated.length === 2) {
 			// 3 Players: Local (Bottom), Right & Top
-			return [assignLayout(rotated[0], LAYOUT_LEFT), assignLayout(rotated[1], LAYOUT_RIGHT)];
+			return [assignLayout(rotated[0], LAYOUT_RIGHT), assignLayout(rotated[1], LAYOUT_LEFT)];
 		} else {
 			// 4 Players: Local (Bottom), Left, Top & Right
 			return [
-				assignLayout(rotated[0], LAYOUT_LEFT),
+				assignLayout(rotated[0], LAYOUT_RIGHT),
 				assignLayout(rotated[1], LAYOUT_TOP),
-				assignLayout(rotated[2], LAYOUT_RIGHT)
+				assignLayout(rotated[2], LAYOUT_LEFT)
 			];
 		}
 	});
