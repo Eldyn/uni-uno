@@ -9,41 +9,72 @@
 	createCardBus();
 
 	let playableCardIds = $state(new Set<number>());
-	let opponents = $derived(
-		storeGame.state?.players.filter((p) => p.username !== storeGame.localPlayer?.username) ?? []
-	);
-	const opponentLayouts = [
-		{
-			// Left player
-			gridArea: "2 / 1",
-			wrapperTransform: "translate(-5.5em, -2em)",
-			handTransform: "translate(-50%, -50%) rotate(90deg)",
-			labelPos: "top: 30%; right: -4.8em; transform: translateY(-50%);",
-			boxPos: "top: 40%; right: -3em; transform: translate(50%, -50%);"
-		},
-		{
-			// Right player
-			gridArea: "2 / 3",
-			wrapperTransform: "translate(5.5em, -2em)",
-			handTransform: "translate(-50%, -50%) rotate(-90deg)",
-			labelPos: "top: 30%; left: -4.8em; transform: translateY(-50%);",
-			boxPos: "top: 40%; left: -3em; transform: translate(-50%, -50%);"
-		},
-		{
-			// Top player
-			gridArea: "1 / 2",
-			wrapperTransform: "translateY(-2.5em)",
-			handTransform: "translate(-50%, -50%) scaleY(-1)",
-			labelPos: "bottom: -3em; left: 50%; transform: translateX(-50%);",
-			boxPos: "bottom: -1.2em; left: 50%; transform: translateX(-50%);"
+
+	const LAYOUT_LEFT = {
+		gridArea: "2 / 1",
+		wrapperTransform: "translate(-5.5em, -2em)",
+		handTransform: "translate(-50%, -50%) rotate(90deg)",
+		labelPos: "top: 30%; right: -4.8em; transform: translateY(-50%);",
+		boxPos: "top: 40%; right: -3em; transform: translate(50%, -50%);",
+		isTop: false
+	} as const;
+
+	const LAYOUT_TOP = {
+		gridArea: "1 / 2",
+		wrapperTransform: "translateY(-2.5em)",
+		handTransform: "translate(-50%, -50%) scaleY(-1)",
+		labelPos: "bottom: -3em; left: 50%; transform: translateX(-50%);",
+		boxPos: "bottom: -1.2em; left: 50%; transform: translateX(-50%);",
+		isTop: true
+	} as const;
+
+	const LAYOUT_RIGHT = {
+		gridArea: "2 / 3",
+		wrapperTransform: "translate(5.5em, -2em)",
+		handTransform: "translate(-50%, -50%) rotate(-90deg)",
+		labelPos: "top: 30%; left: -4.8em; transform: translateY(-50%);",
+		boxPos: "top: 40%; left: -3em; transform: translate(-50%, -50%);",
+		isTop: false
+	} as const;
+
+	let mappedOpponents = $derived.by(() => {
+		const players = storeGame.state?.players ?? [];
+		const myUsername = storeGame.localPlayer?.username;
+		if (!myUsername || players.length <= 1) return [];
+
+		const rawOpponents = players.filter((p) => p.username !== myUsername);
+		const myIdx = players.findIndex((p) => p.username === myUsername);
+
+		const rotated =
+			myIdx === -1 ? rawOpponents : [...players.slice(myIdx + 1), ...players.slice(0, myIdx)];
+
+		const assignLayout = (player: any, layoutTemplate: any) => ({
+			player,
+			layout: layoutTemplate,
+			busIndex: rawOpponents.findIndex((p) => p.username === player.username)
+		});
+
+		if (rotated.length === 1) {
+			// 2 Players: Local (Bottom) & Top
+			return [assignLayout(rotated[0], LAYOUT_TOP)];
+		} else if (rotated.length === 2) {
+			// 3 Players: Local (Bottom), Right & Top
+			return [assignLayout(rotated[0], LAYOUT_LEFT), assignLayout(rotated[1], LAYOUT_RIGHT)];
+		} else {
+			// 4 Players: Local (Bottom), Left, Top & Right
+			return [
+				assignLayout(rotated[0], LAYOUT_LEFT),
+				assignLayout(rotated[1], LAYOUT_TOP),
+				assignLayout(rotated[2], LAYOUT_RIGHT)
+			];
 		}
-	] as const;
+	});
 </script>
 
 <FlyingCardsOverlay />
 
 <div class="game-field perspective">
-	{#each opponentLayouts as layout, i}
+	{#each mappedOpponents as { player, layout, busIndex } (player.username)}
 		<div
 			class="opponent-wrapper"
 			style="
@@ -52,11 +83,12 @@
             "
 		>
 			<OpponentHand
-				player={opponents[i] ?? null}
-				index={i}
+				{player}
+				index={busIndex}
 				handTransform={layout.handTransform}
 				labelPos={layout.labelPos}
 				boxPos={layout.boxPos}
+				isTop={layout.isTop}
 			/>
 		</div>
 	{/each}
@@ -69,8 +101,8 @@
 		<div class="player-label" style="top: -8em; left: 50%; transform: translateX(-50%);">
 			(You) {storeGame.localPlayer?.username ?? ""}
 		</div>
-		<div 
-			class="box" 
+		<div
+			class="box"
 			class:is-turn={storeGame.state?.current_turn === storeGame.localPlayer?.username}
 			style="top: -5.7em; left: 50%; transform: translateX(-50%);"
 		></div>
@@ -79,6 +111,7 @@
 </div>
 
 <style>
+	/* ... keep all existing styles exactly as they are ... */
 	:global(body) {
 		margin: 0;
 		padding: 0;
@@ -104,7 +137,7 @@
 		grid-template-columns: var(--playerSpace) var(--fieldSize) var(--playerSpace);
 		grid-template-rows: var(--playerSpace) var(--fieldSize) var(--playerSpace);
 		-webkit-user-select: none;
-        user-select: none;
+		user-select: none;
 	}
 
 	.game-field.perspective {
@@ -149,9 +182,11 @@
 		height: 50px;
 		background-color: #000;
 		z-index: 100;
-		transition: box-shadow 0.3s ease, background-color 0.3s ease;
+		transition:
+			box-shadow 0.3s ease,
+			background-color 0.3s ease;
 	}
-	
+
 	.box.is-turn {
 		background-color: #ffd700;
 		box-shadow: 0 0 20px 6px rgba(255, 215, 0, 0.75);

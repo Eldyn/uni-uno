@@ -112,4 +112,21 @@
 		transform: translateY(-1em);
 		z-index: 50 !important;
 	}
+
+	.player_hand :global(.card-slot + .card-slot) {
+		margin-left: calc(var(--cardSize) * -0.35);
+	}
+
+	.player_hand:not(.is-active-drag) :global(.card-slot) {
+		transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+	}
+
+	.player_hand:not(.is-active-drag) :global(.card-slot:hover) {
+		transform: translateY(-1.5em) !important;
+		z-index: 50 !important;
+	}
+
+	.player_hand:not(.is-active-drag) :global(.card-slot:hover ~ .card-slot) {
+		transform: translateX(2.8em) !important;
+	}
 </style>

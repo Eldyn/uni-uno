@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { onMount } from "svelte";
 	import GameCard from "./GameCard.svelte";
 	import { useCardBus, type ElementRole } from "./card-bus.svelte";
-	// Importato storeGame per leggere il turno attuale
 	import { storeGame, type GamePlayer } from "../../stores/game.svelte";
 
 	let {
@@ -10,22 +8,22 @@
 		index,
 		handTransform = "translate(-50%, -50%)",
 		labelPos = "top: 0; left: 50%; transform: translateX(-50%);",
-		boxPos = "top: 0; left: 50%; transform: translateX(-50%);"
+		boxPos = "top: 0; left: 50%; transform: translateX(-50%);",
+		isTop = false // <-- NEW
 	}: {
 		player: GamePlayer | null;
 		index: number;
-		/** CSS transform applied to the inner hand div */
 		handTransform?: string;
-		/** Inline style string for the player-label position */
 		labelPos?: string;
-		/** Inline style string for the "box" position */
 		boxPos?: string;
+		isTop?: boolean; // <-- NEW
 	} = $props();
 
 	const bus = useCardBus();
 	const role: ElementRole = `hand-opponent-${index}`;
 
 	let handEl = $state<HTMLElement | null>(null);
+
 	$effect(() => {
 		if (handEl) {
 			bus.register(role, handEl);
@@ -38,12 +36,12 @@
 </script>
 
 <div class="opponent-slot">
-	<div 
-		class="box" 
+	<div
+		class="box"
 		class:is-turn={player && storeGame.state?.current_turn === player.username}
 		style={boxPos}
 	>
-		<div class="player-label" class:is-top={index === 2}>
+		<div class="player-label" class:is-top={isTop}>
 			{player ? player.username : "Waiting..."}
 		</div>
 	</div>
@@ -58,12 +56,13 @@
         "
 	>
 		{#each Array(cardCount) as _, n}
-			<GameCard card={{ id: -1, color: "black", value: "" }} index={n} turned={true} />
+			<GameCard card={{ id: -1, color: "wild", value: "0" }} index={n} turned={true} />
 		{/each}
 	</div>
 </div>
 
 <style>
+	/* ... keep all existing styles exactly as they are ... */
 	.opponent-slot {
 		position: relative;
 		width: 100%;
@@ -76,7 +75,9 @@
 		height: 50px;
 		background-color: #000;
 		z-index: 100;
-		transition: box-shadow 0.3s ease, background-color 0.3s ease;
+		transition:
+			box-shadow 0.3s ease,
+			background-color 0.3s ease;
 	}
 
 	.box.is-turn {
@@ -109,3 +110,4 @@
 		left: 50%;
 	}
 </style>
+

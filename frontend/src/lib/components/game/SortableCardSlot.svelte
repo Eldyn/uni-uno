@@ -42,10 +42,6 @@
 		/* Do not put transform transitions here; the library handles them */
 	}
 
-	.card-slot + .card-slot {
-		margin-left: calc(var(--cardSize) * -0.5); /* Negative margin for fan overlap */
-	}
-
 	.card-slot:active {
 		cursor: grabbing;
 	}
