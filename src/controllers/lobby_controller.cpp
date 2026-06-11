@@ -16,7 +16,6 @@
 #include <chrono>
 #include <stdexcept>
 #include <string>
-#include <numeric>    
 #include <random>
 
 using namespace std::chrono;
@@ -25,6 +24,40 @@ using std::string, std::vector, std::runtime_error, std::memory_order_relaxed, s
 static constexpr char kCodeAlphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 static constexpr int  kCodeLen        = 6;
 static constexpr int  kAlphabetLen    = 36;   
+
+/**
+ * @brief Selects a random, unique bot name from a predefined thematic list.
+ * * Iterates through the current lobby members to ensure that the selected 
+ * bot name is not already taken by an existing human or bot. If all predefined 
+ * names are in use (unlikely but possible), it safely falls back to a 
+ * sequentially numbered "Bot_N" format.
+ * * @param lobby The target lobby context used to verify name availability.
+ * @return std::string A unique bot name safe for insertion into the lobby.
+ */
+std::string GetRandomBotName(const Lobby& lobby) {
+    std::vector<std::string> available;
+    
+    // Use the globally shared bot roster instead of a local variable
+    for (const auto& name : game::kReservedBotNames) {
+        bool taken = std::ranges::any_of(lobby.members, [&](const LobbyMember& m) {
+            return m.username == name;
+        });
+        if (!taken) available.push_back(name);
+    }
+    
+    // Failsafe in case all preset names are miraculously taken
+    if (available.empty()) {
+        static int fallback_id = 1;
+        return "Bot_" + std::to_string(fallback_id++);
+    }
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(0, available.size() - 1);
+    
+    return available[dist(gen)];
+}
+
 
 /**
  * @brief Constructs the LobbyController instance and establishes central inbound routing maps.
@@ -1088,8 +1121,7 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
                 lobby.match.reset();
                 lobby.members.erase(member_it); 
             } else if (lobby.settings.allow_bot_replacement) {
-                static int bot_id = 1;
-                std::string new_bot_name = "Bot_" + std::to_string(bot_id++);
+                std::string new_bot_name = GetRandomBotName(lobby);
 
                 member_it->username = new_bot_name;
                 member_it->is_bot = true;
@@ -1175,28 +1207,7 @@ void LobbyController::SyncBots(Lobby& lobby) {
     static size_t fallback_index = 0;
     static bool is_initialized = false;
 
-    if (!is_initialized) {
-        for (size_t i = 0; i < game::kReservedBotNames.size(); ++i) {
-            available_indices.push_back(i);
-        }
-        
-        std::random_device rd;
-        std::mt19937 g(rd());
-        std::shuffle(available_indices.begin(), available_indices.end(), g);
-        
-        is_initialized = true;
-    }
-
-    std::string bot_name;
-
-    if (!available_indices.empty()) {
-        size_t random_index = available_indices.back();
-        available_indices.pop_back(); 
-        
-        bot_name = game::kReservedBotNames[random_index];
-    } else {
-        bot_name = "Bot_" + std::to_string(fallback_index++);
-    }
+    std::string bot_name = GetRandomBotName(lobby);
 
     LobbyMember bot{bot_name, nullptr, true, true};
 

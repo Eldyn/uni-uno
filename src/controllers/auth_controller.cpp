@@ -13,6 +13,9 @@
 #include <chrono>
 #include <stdexcept>
 #include <vector>
+#include <common/bot_names.hpp>
+#include <algorithm>
+#include <cctype>
 
 using json = nlohmann::json;
 
@@ -100,6 +103,36 @@ void AuthController::HandleRegister(AppResponse* res, AppRequest* /*req*/) {
         if (!duplicate) {
             Logger::Error("[Auth] DB error during register: " + duplicate.error().message);
             res->writeStatus("500 Internal Server Error")->end();
+            return;
+        }
+
+        std::string lower_username = username;
+        std::transform(lower_username.begin(), lower_username.end(), lower_username.begin(),
+                       [](unsigned char c){ return std::tolower(c); });
+
+        bool is_reserved = false;
+        
+        if (lower_username.starts_with("bot_")) {
+            is_reserved = true;
+        }
+
+        if (!is_reserved) {
+            for (const auto& bot_name : game::kReservedBotNames) {
+                std::string lower_bot = bot_name;
+                std::transform(lower_bot.begin(), lower_bot.end(), lower_bot.begin(),
+                               [](unsigned char c){ return std::tolower(c); });
+
+                if (lower_username == lower_bot) {
+                    is_reserved = true;
+                    break;
+                }
+            }
+        }
+
+        if (is_reserved) {
+            res->writeStatus("422 Unprocessable Entity")
+               ->writeHeader("Content-Type", "application/json")
+               ->end(json({{"error", "This username is reserved for AI bots"}}).dump());
             return;
         }
 

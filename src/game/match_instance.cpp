@@ -212,13 +212,14 @@ namespace game {
         state_.active_color = GetColor(played_card);
         current_player->hand.erase(card_iterator);
 
-        if (!current_player->is_bot) {
+        // INFO: we want to track user stats now :)
+        // if (!current_player->is_bot) {
             Color c = GetColor(played_card);
             Value v = GetValue(played_card);
 
             session_stats_[username].color_counts[static_cast<int>(c)]++;
             session_stats_[username].value_counts[static_cast<int>(v)]++;
-        }
+        // }
 
         for (auto& rule : active_rules_) {
             rule->OnCardPlayed(&state_, play_event);
@@ -252,7 +253,7 @@ namespace game {
                 int match_id = match_row->value().Get<int>("id");
 
                 for (const auto& p : state_.players) {
-                    if (p.is_bot) continue;
+                    // if (p.is_bot) continue;
 
                     auto part_status = db.Exec("INSERT INTO match_participants (match_id, username) VALUES (?, ?)", {match_id, p.username});
                     if (!part_status) {
