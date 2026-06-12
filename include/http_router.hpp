@@ -5,51 +5,80 @@
 #include <string>
 #include <vector>
 
+/**
+ * @file http_router.hpp
+ * @brief Implementazione del router per le richieste HTTP/REST.
+ * * Accumula le rotte durante la fase di avvio e le applica (Attach) in blocco 
+ * all'istanza dell'applicazione uWebSockets prima dell'esecuzione.
+ */
+
+/**
+ * @typedef HttpHandler
+ * @brief Firma per i gestori delle richieste HTTP.
+ * Riceve i puntatori agli oggetti `AppResponse` e `AppRequest` di uWS.
+ * @tag HTTP-RTR-TYP-001
+ */
 using HttpHandler = std::function<void(AppResponse*, AppRequest*)>;
 
-// Routes incoming HTTP requests to registered handlers by method + path.
-//
-// Handlers are accumulated via Get()/Post() before the server starts,
-// then applied all at once to the uWS app via Attach().
-//
-// Modules self-register in their constructors:
-//   explicit AuthModule(HttpRouter& router) {
-//       router.Post("/auth",     [this](...){ HandleLogin(...);    });
-//       router.Post("/register", [this](...){ HandleRegister(...); });
-//   }
-//
-// Wildcards ("*") run before every specific handler.
-// Return false from a wildcard to abort the request chain.
-// Returning false does NOT automatically send a response —
-// the wildcard is responsible for writing a response before returning false.
-//
-// Note: Attach() must be called exactly once, before WebServer::Run().
-// Calling it more than once registers duplicate routes in uWS.
+/**
+ * @class HttpRouter
+ * @brief Gestisce la registrazione e il routing delle chiamate HTTP (GET, POST e middleware).
+ * * L'approccio differisce leggermente dall'ActionRouter perché uWebSockets richiede
+ * di registrare esplicitamente le rotte HTTP direttamente sulla sua istanza nativa.
+ * @tag HTTP-RTR-CLS-001
+ */
 class HttpRouter : public Router {
 public:
     HttpRouter() = default;
 
-    // Register a GET handler. Path must start with "/".
-    // Supports uWS wildcard paths, e.g. "/*".
+    /**
+     * @brief Registra un gestore per una rotta in GET.
+     * Supporta i percorsi con wildcard nativi di uWS (es. "/\*").
+     * @param path Il percorso URI, deve iniziare con "/".
+     * @param handler La funzione da eseguire.
+     * @return HttpRouter& Riferimento per il chaining.
+     * @tag HTTP-RTR-MTH-001
+     */
     HttpRouter& Get(const std::string& path, HttpHandler handler);
 
-    // Register a POST handler. Path must start with "/".
+    /**
+     * @brief Registra un gestore per una rotta in POST.
+     * @param path Il percorso URI, deve iniziare con "/".
+     * @param handler La funzione da eseguire.
+     * @return HttpRouter& Riferimento per il chaining.
+     * @tag HTTP-RTR-MTH-002
+     */
     HttpRouter& Post(const std::string& path, HttpHandler handler);
 
-    // Register a wildcard that runs before every request regardless of
-    // method or path. Useful for logging and CORS headers.
-    // Return false to abort — wildcard must write the response itself.
+    /**
+     * @brief Registra un middleware che viene eseguito prima di qualsiasi richiesta HTTP.
+     * Molto utile per configurare logging globali o Header CORS.
+     * * ATTENZIONE: Se restituisce false per interrompere la catena, il middleware
+     * deve occuparsi direttamente di inviare la risposta HTTP al client.
+     * @param handler La funzione middleware.
+     * @return HttpRouter& Riferimento per il chaining.
+     * @tag HTTP-RTR-MTH-003
+     */
     HttpRouter& OnAny(std::function<bool(AppResponse*, AppRequest*)> handler);
 
-    // Apply all accumulated routes to the uWS app.
-    // Called once by WebServer before Run().
+    /**
+     * @brief Applica tutte le rotte accumulate (ed i relativi middleware) all'istanza nativa di uWebSockets.
+     * Deve essere chiamato esattamente una volta dal `WebServer` prima di `Run()`.
+     * @param app Riferimento all'istanza uWebSockets corrente.
+     * @tag HTTP-RTR-MTH-004
+     */
     void Attach(uWS::SSLApp& app);
 
 private:
+    /**
+     * @struct Route
+     * @brief Struttura interna che memorizza temporaneamente le rotte prima del caricamento.
+     * @tag HTTP-RTR-STR-001
+     */
     struct Route {
-        std::string method;   // "GET" or "POST"
-        std::string path;
-        HttpHandler handler;
+        std::string method;   /**< Metodo HTTP ("GET" o "POST"). */
+        std::string path;     /**< Percorso URI registrato. */
+        HttpHandler handler;  /**< Funzione di callback associata. */
 
         Route(std::string m, std::string p, HttpHandler h) : method(m), path(p), handler(h) {}
     };
@@ -57,7 +86,11 @@ private:
     std::vector<Route>                                          routes_;
     std::vector<std::function<bool(AppResponse*, AppRequest*)>> wildcards_;
 
-    // Wraps a handler so wildcards are run first.
-    // Captures wildcards_ by reference — must not outlive this HttpRouter.
+    /**
+     * @brief Avvolge un handler specifico affinché esegua prima le wildcard registrate.
+     * @param handler L'handler originale da decorare.
+     * @return HttpHandler L'handler impacchettato con la logica dei middleware.
+     * @tag HTTP-RTR-PRIV-001
+     */
     HttpHandler WrapWithWildcards(HttpHandler handler);
 };

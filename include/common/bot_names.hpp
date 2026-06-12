@@ -1,11 +1,21 @@
 #pragma once
-#include <random>
 #include <vector>
 #include <string>
 #include <common/lobby.hpp>
 
+ /**
+ * @file bot_names.hpp
+ * @brief Raccoglitore di costanti per l'inizializzazione del motore AI (Bot).
+ */
+
 namespace game {
 
+    /**
+     * @brief Lista globale statica contenente nomi predefiniti per i bot guidati dalla CPU.
+     * Contiene references alla cultura pop, sci-fi e nomi casuali. Usata durante 
+     * il subentro automatico dei bot o l'inizializzazione della lobby.
+     * @tag CMN-BOT-001
+     */
     inline const std::vector<std::string> kReservedBotNames = {
         "GLaDOS", "HAL9000", "Bender", "Wall-E", "R2-D2", "C-3PO",
         "Data", "Lore", "T-800", "Johnny5", "Marvin", "BB-8", "Ultron",

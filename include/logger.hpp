@@ -11,6 +11,18 @@
 #include <windows.h>
 #endif
 
+/**
+ * @file logger.hpp
+ * @brief Sistema di logging thread-safe e formattato a colori per la console.
+ */
+
+/**
+ * @struct Logger
+ * @brief Fornisce metodi statici per stampare messaggi di log formattati sullo standard output.
+ * * Implementa il supporto per i colori ANSI cross-platform (abilitando il VT processing su Windows)
+ * e formatta automaticamente i messaggi con timestamp al millisecondo e tag allineati.
+ * @tag LOG-CLS-001
+ */
 struct Logger {
 private:
     // ANSI Color Codes
@@ -27,7 +39,10 @@ private:
 
     inline static bool is_initialized = false;
 
-    // Unlocks ANSI color support on Windows consoles.
+    /**
+     * @brief Abilita il supporto ANSI sui terminali Windows.
+     * @tag LOG-PRIV-001
+     */
     static void Init() {
         if (is_initialized) return;
 #ifdef _WIN32
@@ -43,8 +58,11 @@ private:
         is_initialized = true;
     }
 
-    // Upgraded timestamp: incorporates your posix/win32 safe time fetching 
-    // but adds fixed-width 3-digit padding for the milliseconds and gray coloring.
+    /**
+     * @brief Genera un timestamp formattato con millisecondi (es. "[14:32:01.045]").
+     * @return std::string Timestamp colorato in grigio.
+     * @tag LOG-PRIV-002
+     */
     static std::string timestamp() {
         auto now = std::chrono::system_clock::now();
         auto ms  = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -66,7 +84,11 @@ private:
         return oss.str();
     }
 
-    // Core internal print function
+    /**
+     * @brief Funzione core per la formattazione e la stampa.
+     * Utilizza le fold expressions del C++17 per spacchettare in modo efficiente gli argomenti variadici.
+     * @tag LOG-PRIV-003
+     */
     template<typename... Args>
     static void Print(std::string_view color, std::string_view tag, Args&&... args) {
         if (!is_initialized) Init();
@@ -83,24 +105,52 @@ private:
     }
 
 public:
+    /**
+     * @brief Registra un messaggio di informazione generico (Verde).
+     * @tag LOG-MTH-001
+     */
     template<typename... Args>
     static void Info(Args&&... args) { Print(Green, "INFO", std::forward<Args>(args)...); }
 
+    /**
+     * @brief Registra un avviso non bloccante (Giallo).
+     * @tag LOG-MTH-002
+     */
     template<typename... Args>
     static void Warn(Args&&... args) { Print(Yellow, "WARN", std::forward<Args>(args)...); }
 
+    /**
+     * @brief Registra un errore critico (Rosso).
+     * @tag LOG-MTH-003
+     */
     template<typename... Args>
     static void Error(Args&&... args) { Print(Red, "ERROR", std::forward<Args>(args)...); }
 
+    /**
+     * @brief Registra un evento specifico del layer WebSocket (Ciano).
+     * @tag LOG-MTH-004
+     */
     template<typename... Args>
     static void WS(Args&&... args) { Print(Cyan, " WS ", std::forward<Args>(args)...); }
 
+    /**
+     * @brief Registra un evento specifico del LobbyController (Giallo scuro).
+     * @tag LOG-MTH-005
+     */
     template<typename... Args>
     static void Lobby(Args&&... args) { Print(Yellow, "LOBBY", std::forward<Args>(args)...); }
 
+    /**
+     * @brief Registra un evento specifico delle richieste HTTP (Magenta).
+     * @tag LOG-MTH-006
+     */
     template<typename... Args>
     static void HTTP(Args&&... args) { Print(Magenta, "HTTP", std::forward<Args>(args)...); }
     
+    /**
+     * @brief Registra un log di debug base (Bianco).
+     * @tag LOG-MTH-007
+     */
     template<typename... Args>
     static void Log(Args&&... args) { Print(White, " LOG", std::forward<Args>(args)...); }
 
