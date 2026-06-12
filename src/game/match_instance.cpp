@@ -334,40 +334,75 @@ namespace game {
         return true;
     }
     
-    bool MatchInstance::DrawCard(const std::string& username) {
-        if (IsWaitingForInput() || IsGameOver()) return false;
-    
-        Player* current_player = GetPlayer(username);
-        if (!current_player) return false;
-    
-        if (GetCurrentPlayerUsername() != username) return false;
-    
+bool MatchInstance::DrawCard(const std::string& username) {
+    if (IsWaitingForInput() || IsGameOver()) return false;
+
+    Player* current_player = GetPlayer(username);
+    if (!current_player) return false;
+
+    if (GetCurrentPlayerUsername() != username) return false;
+
+    // --- NEW: Draw Stacking Penalty Resolution ---
+    if (state_.pending_draws > 0) {
+        for (int draw_index = 0; draw_index < state_.pending_draws; ++draw_index) {
+            if (state_.draw_pile.empty()) {
+                ReshuffleDiscardIntoDraw(&state_);
+                if (state_.draw_pile.empty()) break; 
+            }
+            current_player->hand.push_back(state_.draw_pile.back());
+            state_.draw_pile.pop_back();
+        }
+        state_.pending_draws = 0;
+        current_player->has_called_uno = false;
+        state_.effect_queue.push_back(std::make_unique<AdvanceTurnEffect>());
+        return true;
+    }
+
+    CardDrawnEvent draw_event = { username, 0, false, false, false };
+    for (auto& rule : active_rules_) {
+        rule->OnCardDrawn(&state_, draw_event);
+    }
+
+    bool playable_found = false;
+
+    do {
         if (state_.draw_pile.empty()) {
             ReshuffleDiscardIntoDraw(&state_);
-            if (state_.draw_pile.empty()) return false; 
+            if (state_.draw_pile.empty()) break; 
         }
-    
+
         CompactCard drawn_card = state_.draw_pile.back();
         current_player->hand.push_back(drawn_card);
         state_.draw_pile.pop_back();
+        draw_event.drawn_card = drawn_card;
         
         current_player->has_called_uno = false; 
-    
-        // INFO: check if the card is playable
+
         CardPlayedEvent dummy_event = { username, drawn_card, true, false };
         for (auto& rule : active_rules_) {
             rule->ValidatePlay(&state_, dummy_event);
             if (dummy_event.is_handled) break;
         }
-    
-        if (dummy_event.is_valid_play) {
-            state_.effect_queue.push_front(std::make_unique<DecideDrawnCardEffect>(username, GetId(drawn_card)));
-        } else {
-            state_.effect_queue.push_back(std::make_unique<AdvanceTurnEffect>());
+
+        playable_found = dummy_event.is_valid_play;
+
+        if (playable_found || !draw_event.keep_drawing) {
+            break;
         }
-    
-        return true;
+    } while (true);
+
+    if (playable_found) {
+        if (draw_event.force_play) {
+            PlayCard(username, GetId(draw_event.drawn_card));
+        } else {
+            state_.effect_queue.push_front(std::make_unique<DecideDrawnCardEffect>(username, GetId(draw_event.drawn_card)));
+        }
+    } else {
+        state_.effect_queue.push_back(std::make_unique<AdvanceTurnEffect>());
     }
+
+    return true;
+}
     
     void MatchInstance::ProvideInput(const std::string& username, const std::string& input) {
         if (username == state_.pending_player) {

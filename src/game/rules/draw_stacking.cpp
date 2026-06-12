@@ -1,0 +1,39 @@
+#include <common/game/gamerule.hpp>
+#include <game/game_state.hpp>
+#include <game/rule_registry.hpp>
+#include <game/effects/standard.hpp>
+
+namespace game {
+    class DrawStackingRule : public GameRule {
+    public:
+        void ValidatePlay(GameState* state, CardPlayedEvent& event) override {
+            if (state->pending_draws > 0) {
+                Value played_val = GetValue(event.played_card);
+                Value top_val = GetValue(state->discard_pile.back());
+                
+                if (played_val != top_val || (played_val != Value::kDraw2 && played_val != Value::kWildDraw4)) {
+                    event.is_valid_play = false;
+                    event.is_handled = true;
+                }
+            }
+        }
+
+        void OnCardPlayed(GameState* state, CardPlayedEvent& event) override {
+            Value card_val = GetValue(event.played_card);
+            
+            if (card_val == Value::kDraw2) {
+                state->pending_draws += 2;
+                event.is_handled = true; // Flag handled so StandardRule doesn't push a skip!
+            }
+            else if (card_val == Value::kWildDraw4) {
+                state->effect_queue.push_back(std::make_unique<ChooseColorEffect>(event.player_username));
+                state->pending_draws += 4;
+                event.is_handled = true; 
+            }
+        }
+    };
+
+    static RuleRegistrar registrar("draw_stacking", []() { 
+        return std::make_unique<DrawStackingRule>(); 
+    });
+}

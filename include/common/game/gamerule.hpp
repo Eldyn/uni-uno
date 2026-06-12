@@ -24,6 +24,17 @@ namespace game {
         bool is_handled = false;      /**< Flag che indica se l'evento è già stato completamente processato da una regola. */
         bool is_out_of_turn = false;  /**< Flag che indica se la giocata è avvenuta fuori turno (utile per regole speciali o penalità). */
     };
+
+// Add below CardPlayedEvent
+    struct CardDrawnEvent {
+        std::string player_username;
+        CompactCard drawn_card;
+        bool is_handled = false;
+
+        bool keep_drawing = false; // Hook for "Progressive" mod
+        bool force_play = false;   // Hook for "Force Play" mod
+    };
+
     
     /**
      * @class GameRule
@@ -49,5 +60,7 @@ namespace game {
          * @param event L'evento contenente la giocata risolta.
          */
         virtual void OnCardPlayed(GameState* state, CardPlayedEvent& event) {}
+
+        virtual void OnCardDrawn(GameState* state, CardDrawnEvent& event) {}
     };
 }
