@@ -340,6 +340,18 @@
 		width: 100%;
 	}
 
+	.start-button:disabled {
+        cursor: not-allowed;
+    }
+
+    .start-button:disabled .letter {
+        animation: none; /* Blocca l'animazione */
+        color: #888; /* Colore grigio per il testo */
+        -webkit-text-stroke: 1.5px #444; /* Bordo grigio scuro per adattarsi al testo */
+        text-shadow: 2px 2px 0px #1a1a1a; /* Ombra statica fissa, senza salto */
+        transform: translateY(0); /* Assicura che le lettere restino in basso */
+    }
+
 	.leave-button-fixed {
 		position: fixed;
 		bottom: 40px;
