@@ -94,7 +94,7 @@ void StatsController::HandleGetMe(AppResponse* res, AppRequest* req) {
 void StatsController::HandleGetLeaderboard(AppResponse* res, AppRequest* req) {
     auto rows_result = Database::Get().Query(R"(
         SELECT username, total_wins, total_losses, 
-               RANK() OVER (ORDER BY total_wins DESC, total_losses ASC) as rank 
+               DENSE_RANK() OVER (ORDER BY total_wins DESC, total_losses ASC) as rank 
         FROM player_stats
         ORDER BY rank ASC
         LIMIT 50;
