@@ -19,7 +19,7 @@
 
 <div class="stats-container">
 	<header class="top-bar">
-		<button class="styled-btn pixel-corners" onclick={() => storeNavigation.back()}>
+		<button class="styled-btn pixel-corners" onclick={() => storeNavigation.goto("main")}>
 			Indietro
 		</button>
 		<h1>CLASSIFICA GLOBALE</h1>

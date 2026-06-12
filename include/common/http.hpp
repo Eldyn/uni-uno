@@ -5,32 +5,29 @@
 #include <string_view>
 #include <websocket_context.hpp>
 
+/**
+ * @file http.hpp
+ * @brief Funzioni di utilità per la gestione del protocollo HTTP.
+ * * Poiché uWebSockets utilizza un'architettura non-bloccante event-driven,
+ * questo file contiene helper cruciali per semplificare l'estrazione in sicurezza 
+ * di body chunked e il parsing degli header (es. Cookies).
+ */
+
 namespace http {
 
-//  Accumulates a full HTTP request body from uWS's chunked onData delivery,
-//  then invokes `callback` with the complete body string.
-//
-//  Why this is non-trivial in uWS:
-//    uWS never blocks. Bodies arrive in one or more string_view chunks via
-//    the onData callback. The bool `isLast` signals the final chunk. Callers
-//    must therefore buffer every chunk themselves and act only when isLast
-//    is true — which is exactly what this helper does.
-//
-//  The shared_ptr<bool> is_alive guard handles connection abortion:
-//    If the client disconnects mid-transfer, uWS fires onAborted and the
-//    `res` pointer becomes dangling. The guard flips to false inside
-//    onAborted so that any subsequent onData invocation (which can race on
-//    some platforms) detects the abort and returns immediately without
-//    touching `res`.
-//
-//  @param res        The response object for the current HTTP request.
-//                    Must remain valid until `callback` is invoked or the
-//                    connection is aborted — uWS guarantees this.
-//  @param max_bytes  Hard cap on body size. Responds 413 and stops if
-//                    exceeded. Callers should pass their domain-specific
-//                    limit rather than relying on a global default.
-//  @param callback   Invoked exactly once with the complete body, or never
-//                    if the connection is aborted or the size cap is hit.
+/**
+ * @brief Accumula asincronamente un intero body HTTP frammentato (chunked) da uWebSockets.
+ * * Poiché uWebSockets non è bloccante, i body arrivano in uno o più frammenti `string_view`
+ * tramite la callback `onData`. Il parametro booleano `isLast` segnala l'ultimo frammento.
+ * Questa funzione bufferizza i frammenti autonomamente e agisce solo a trasferimento completato.
+ * * @details Implementa una guardia di memoria `is_alive` (`std::shared_ptr<bool>`) per gestire le disconnessioni
+ * improvvise. Se il client interrompe il trasferimento, uWS lancia `onAborted`. La guardia diventa `false`
+ * evitando che successivi trigger di `onData` accedano al puntatore `res` divenuto pendente (dangling).
+ * * @param res Puntatore all'oggetto Response della richiesta HTTP corrente. Deve restare valido fino al termine.
+ * @param max_bytes Limite massimo rigido in byte (Hard cap) per evitare attacchi DDoS. Se superato, restituisce 413.
+ * @param callback La funzione da invocare, una volta sola, con la stringa completa del body (se non abortita).
+ * @tag CMN-HTTP-MTH-001
+ */
 inline void ReadBody(AppResponse* res, size_t max_bytes, std::function<void(const std::string&)> callback) {
     auto is_alive = std::make_shared<bool>(true);
     auto buffer   = std::make_shared<std::string>();
@@ -51,6 +48,13 @@ inline void ReadBody(AppResponse* res, size_t max_bytes, std::function<void(cons
     });
 }
 
+/**
+ * @brief Rimuove gli spazi bianchi ASCII (spazi, tabulazioni, a capo) all'inizio e alla fine di una stringa.
+ * Essendo `constexpr`, se valutata a tempo di compilazione non genera overhead.
+ * * @param str La vista della stringa originale.
+ * @return std::string_view Una porzione centrata della stringa priva degli spazi esterni. Restituisce una vista vuota se composta solo da spazi.
+ * @tag CMN-HTTP-MTH-002
+ */
 constexpr std::string_view TrimWhitespace(std::string_view str) {
     size_t first = str.find_first_not_of(" \t\r\n");
     if (first == std::string_view::npos) {
@@ -60,6 +64,16 @@ constexpr std::string_view TrimWhitespace(std::string_view str) {
     return str.substr(first, (last - first + 1));
 }
 
+/**
+ * @brief Estrae in modo sicuro il valore di un singolo cookie dalla stringa raw dell'header.
+ * * Scansiona iterativamente la stringa dell'header `Cookie` (es. `session=123; user=abc`), 
+ * separando le coppie al punto e virgola e cercando la corrispondenza esatta della chiave,
+ * ripulendo eventuali spazi generati dal browser.
+ * * @param cookie_header La stringa nativa dell'header HTTP contenente i cookie.
+ * @param target_key La chiave identificativa del cookie da ricercare.
+ * @return std::optional<std::string> Il valore del cookie decodificato, oppure una stringa vuota se la chiave non esiste.
+ * @tag CMN-HTTP-MTH-003
+ */
 inline std::optional<std::string> GetCookieValue(std::string_view cookie_header, std::string_view target_key) {
     size_t start = 0;
     
@@ -70,7 +84,7 @@ inline std::optional<std::string> GetCookieValue(std::string_view cookie_header,
                                 ? cookie_header.substr(start) 
                                 : cookie_header.substr(start, end - start);
 
-        // Split the pair into key and value
+        // Separa la coppia in Chiave e Valore (Key/Value)
         size_t eq_pos = pair.find('=');
         if (eq_pos != std::string_view::npos) {
             std::string_view key = TrimWhitespace(pair.substr(0, eq_pos));

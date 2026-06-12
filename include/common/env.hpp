@@ -1,120 +1,123 @@
 #pragma once
+#include <array>
+#include <cstdint>
 #include <string>
-#include <string_view>
-#include <fstream>
-#include <cstdlib>
+#include <vector>
 #include <stdexcept>
-#include <logger.hpp>
 
-//
-//  File format:
-//    KEY=VALUE          plain assignment
-//    KEY="VALUE"        surrounding double-quotes are stripped
-//    # comment          lines whose first non-whitespace char is '#'
-//    (blank lines)      silently skipped
-//
-//  All values are pushed into the real process environment via setenv /
-//  _putenv_s so that child processes and third-party libraries that call
-//  std::getenv() directly also see them.
-//
-//  Usage:
-//    Env::Load(".env");                       // once, at program start
-//    std::string s = Env::Require("JWT_SECRET");  // throws if absent
-//    std::string s = Env::Get("PORT", "9999");    // fallback if absent
-// ---------------------------------------------------------------------------
-namespace Env {
+/**
+ * @file base64.hpp
+ * @brief Libreria standalone per codifica e decodifica efficiente in formato Base64.
+ * * Fornisce funzioni inline per convertire array di byte arbitrari in stringhe
+ * ASCII Base64 e viceversa, utilizzando manipolazione diretta dei bit (bit shifting)
+ * per garantire alte prestazioni.
+ */
 
-//  Returns the named environment variable or throws std::runtime_error.
-//  Use for values that must be present for the server to function correctly
-//  (e.g. JWT_SECRET) — failing fast here is better than a cryptic failure
-//  deeper in the call stack.
-inline std::string Require(const std::string& key) {
-    const char* val = std::getenv(key.c_str());
-    if (!val) {
-        throw std::runtime_error("[Env] Required variable '" + key + "' is not set");
-    }
-    return val;
-}
+namespace Base64 {
+    /**
+     * @brief Alfabeto standard utilizzato per la codifica Base64.
+     * Contiene i 64 caratteri (A-Z, a-z, 0-9, +, /) indicizzati da 0 a 63.
+     * @tag CMN-B64-CONST-001
+     */
+    inline constexpr char kAlphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-// ---------------------------------------------------------------------------
-//  Get
-// ---------------------------------------------------------------------------
-//
-//  Returns the named environment variable, or `fallback` if it is absent.
-//  Safe to call before Load() — std::getenv works on variables set by the
-//  shell or the OS regardless of whether Load() has run.
+    /**
+     * @brief Valore sentinella che indica un carattere non valido.
+     * Utilizzato all'interno della tabella di decodifica per marcare i byte ASCII
+     * che non fanno parte dell'alfabeto Base64.
+     * @tag CMN-B64-CONST-002
+     */
+    inline constexpr uint8_t kInvalid = 0xFF;
 
-inline std::string Get(const std::string& key,
-                        const std::string& fallback = "") {
-    const char* val = std::getenv(key.c_str());
-    return val ? std::string(val) : fallback;
-}
+    /**
+     * @brief Tabella di lookup precalcolata a compile-time per la decodifica.
+     * * Mappa il valore ASCII di un carattere (0-255) al suo corrispondente valore intero 
+     * a 6-bit (0-63). I caratteri non appartenenti all'alfabeto sono mappati a `kInvalid`.
+     * L'utilizzo di una lambda `constexpr` permette di generare la tabella a tempo di 
+     * compilazione, eliminando l'overhead a runtime.
+     * @tag CMN-B64-CONST-003
+     */
+    inline constexpr std::array<uint8_t, 256> kDecodeTable = []() {
+        std::array<uint8_t, 256> table{};
+        table.fill(kInvalid);
 
-// Internal helpers (not intended for direct use by callers)
-//
-// Cross-platform setenv.
-// POSIX: setenv(key, value, overwrite=1) — the '1' means "replace if exists".
-// Windows: _putenv_s has no overwrite flag; it always replaces.
-inline void SetEnv(const std::string& key, const std::string& value) {
-#ifdef _WIN32
-    _putenv_s(key.c_str(), value.c_str());
-#else
-    ::setenv(key.c_str(), value.c_str(), 1);
-#endif
-}
-
-// Strip leading and trailing ASCII whitespace (' ', '\t', '\r', '\n').
-// find_first_not_of returns npos when the entire string is whitespace,
-// which the guard converts to an empty return rather than UB.
-inline std::string Trim(const std::string& s) {
-    constexpr std::string_view kWs = " \t\r\n";
-    auto start = s.find_first_not_of(kWs);
-    if (start == std::string::npos) return "";
-    auto end = s.find_last_not_of(kWs);
-    return s.substr(start, end - start + 1);
-}
-
-//  Reads `path` line by line and pushes each KEY=VALUE pair into the process
-//  environment. Returns the number of variables successfully loaded.
-//
-//  Non-fatal if the file doesn't exist: production environments often inject
-//  variables directly (Docker, systemd, CI) without a .env file on disk.
-inline int Load(std::string_view path = ".env") {
-    std::ifstream file(path.data());
-    if (!file.is_open()) {
-        Logger::Warn("[Env] .env not found at '" + std::string(path) +
-                     "' — relying on existing environment variables");
-        return 0;
-    }
-
-    int count = 0;
-    std::string line;
-
-    // std::getline extracts characters until '\n', discarding the delimiter.
-    while (std::getline(file, line)) {
-        // Skip blank lines and comment lines (first non-ws char is '#').
-        if (line.empty() || line[0] == '#') continue;
-
-        auto eq = line.find('=');
-        if (eq == std::string::npos) continue;   // no '=' → malformed, skip
-
-        std::string key   = Trim(line.substr(0, eq));
-        std::string value = Trim(line.substr(eq + 1));
-
-        // Strip optional surrounding double-quotes: "value" → value
-        if (value.size() >= 2 && value.front() == '"' && value.back() == '"') {
-            value = value.substr(1, value.size() - 2);
+        for (uint8_t i = 0; i < 64; ++i) {
+            table[static_cast<uint8_t>(kAlphabet[i])] = i;
         }
 
-        if (key.empty()) continue;
+        return table;
+    }();
 
-        SetEnv(key, value);
-        ++count;
+    /**
+     * @brief Converte dati binari grezzi (bytes) nella loro rappresentazione Base64.
+     * * Prende dati binari arbitrari e restituisce la stringa ASCII codificata.
+     * Ogni 3 byte di input vengono convertiti in 4 caratteri di output. Il padding 
+     * finale con il carattere '=' viene aggiunto automaticamente per compensare le code.
+     * * Aritmetica dei bit:
+     * Dati i byte [A, B, C] impacchettati in un intero a 24-bit:
+     * - bit 23-18 → indice 0
+     * - bit 17-12 → indice 1
+     * - bit 11- 6 → indice 2
+     * - bit  5- 0 → indice 3
+     * * @param data Vettore contenente i byte raw da codificare.
+     * @return std::string Stringa ASCII codificata in Base64.
+     * @tag CMN-B64-MTH-001
+     */
+    inline std::string Encode(const std::vector<uint8_t>& data) {
+        std::string out;
+        out.reserve(((data.size() + 2) / 3) * 4);
+
+        for (size_t i = 0; i < data.size(); i += 3) {
+            uint32_t b = static_cast<uint32_t>(data[i]) << 16;
+            if (i + 1 < data.size()) b |= static_cast<uint32_t>(data[i + 1]) << 8;
+            if (i + 2 < data.size()) b |= static_cast<uint32_t>(data[i + 2]);
+
+            out += kAlphabet[(b >> 18) & 0x3F];
+            out += kAlphabet[(b >> 12) & 0x3F];
+
+            out += (i + 1 < data.size()) ? kAlphabet[(b >> 6) & 0x3F] : '=';
+            out += (i + 2 < data.size()) ? kAlphabet[ b       & 0x3F] : '=';
+        }
+        return out;
     }
 
-    Logger::Info("[Env] Loaded " + std::to_string(count) +
-                 " variable(s) from '" + std::string(path) + "'");
-    return count;
-}
+    /**
+     * @brief Operazione inversa di Encode, ripristina la stringa Base64 in byte.
+     * * Esegue una validazione di ogni carattere stringa tramite `kDecodeTable` 
+     * ed estrae i 6 bit originari.
+     * * @param encoded Stringa codificata in Base64 (può includere il padding '=').
+     * @return std::vector<uint8_t> I byte raw originali decodificati.
+     * @throws std::invalid_argument Se `encoded` contiene caratteri illegali 
+     * o ha una lunghezza che non è un multiplo di 4.
+     * @tag CMN-B64-MTH-002
+     */
+    inline std::vector<uint8_t> Decode(const std::string& encoded) {
+        if (encoded.size() % 4 != 0) {
+            throw std::invalid_argument("base64::Decode: length must be a multiple of 4");
+        }
+
+        std::vector<uint8_t> out;
+        out.reserve((encoded.size() / 4) * 3);
+
+        for (size_t i = 0; i < encoded.size(); i += 4) {
+            auto idx = [&](size_t pos) -> uint32_t {
+                uint8_t c = static_cast<uint8_t>(encoded[pos]);
+                uint8_t v = kDecodeTable[c];
+                if (v == kInvalid && encoded[pos] != '=') {
+                    throw std::invalid_argument(
+                        std::string("base64::Decode: invalid character '") + encoded[pos] + "'");
+                }
+                return (encoded[pos] == '=') ? 0u : static_cast<uint32_t>(v);
+            };
+
+            // Rimpacchetta quattro valori a 6-bit in un intero a 24-bit.
+            uint32_t b = (idx(i) << 18) | (idx(i+1) << 12) | (idx(i+2) << 6) | idx(i+3);
+
+            out.push_back(static_cast<uint8_t>((b >> 16) & 0xFF));
+            if (encoded[i + 2] != '=') out.push_back(static_cast<uint8_t>((b >> 8) & 0xFF));
+            if (encoded[i + 3] != '=') out.push_back(static_cast<uint8_t>( b       & 0xFF));
+        }
+        return out;
+    }
 
 }
