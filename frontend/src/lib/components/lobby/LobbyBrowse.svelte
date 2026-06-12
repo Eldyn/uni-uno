@@ -33,10 +33,18 @@
 		</div>
 
 		<div class="header-actions">
-			<button type="button" class="pixel-btn" onclick={() => storeNavigation.goto("main")}>
+			<button
+				type="button"
+				class="pixel-btn pixel-corners"
+				onclick={() => storeNavigation.goto("main")}
+			>
 				Back
 			</button>
-			<button type="button" class="pixel-btn logout" onclick={() => storeAuth.logout()}>
+			<button
+				type="button"
+				class="pixel-btn pixel-corners logout"
+				onclick={() => storeAuth.logout()}
+			>
 				Logout
 			</button>
 		</div>
@@ -54,7 +62,7 @@
 			<div class="controls">
 				<button
 					type="button"
-					class="pixel-btn refresh"
+					class="pixel-btn pixel-corners refresh"
 					onclick={handleRefresh}
 					disabled={refreshing}
 				>
@@ -157,6 +165,26 @@
 
 	.pixel-btn:active:not(:disabled) {
 		transform: scale(0.95);
+	}
+
+	.pixel-corners {
+		/* Removes native smooth rounding */
+		border-radius: 0 !important;
+		/* Cuts the corners in 4-pixel blocky steps */
+		clip-path: polygon(
+			0 4px,
+			4px 4px,
+			4px 0,
+			calc(100% - 4px) 0,
+			calc(100% - 4px) 4px,
+			100% 4px,
+			100% calc(100% - 4px),
+			calc(100% - 4px) calc(100% - 4px),
+			calc(100% - 4px) 100%,
+			4px 100%,
+			4px calc(100% - 4px),
+			0 calc(100% - 4px)
+		);
 	}
 
 	.pixel-btn:disabled {
@@ -269,3 +297,4 @@
 		}
 	}
 </style>
+

@@ -148,9 +148,9 @@
 
 	/* Pixelated Corners Trick */
 	.pixel-corners {
-		/* Removes native smooth rounding */
+		/* removes native smooth rounding */
 		border-radius: 0 !important;
-		/* Cuts the corners in 4-pixel blocky steps */
+		/* cuts the corners in 4-pixel blocky steps */
 		clip-path: polygon(
 			0 4px,
 			4px 4px,

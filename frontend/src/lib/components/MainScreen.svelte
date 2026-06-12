@@ -16,15 +16,17 @@
 
 	<main class="button-container">
 		{#if !storeAuth.isLoggedIn}
-			<button onclick={() => storeNavigation.goto("auth")}> Login </button>
+			<button class="pixel-corners" onclick={() => storeNavigation.goto("auth")}> Login </button>
 		{:else}
 			<div class="logged-in-menu">
-				<button class="btn-wide" onclick={() => storeNavigation.goto("lobbies")}>
+				<button class="pixel-corners btn-wide" onclick={() => storeNavigation.goto("lobbies")}>
 					Entra in Stanza
 				</button>
 				<div class="secondary-buttons">
-					<button onclick={() => storeNavigation.goto("stats")}> Stats </button>
-					<button onclick={() => storeAuth.logout()}>Logout</button>
+					<button class="pixel-corners" onclick={() => storeNavigation.goto("stats")}>
+						Stats
+					</button>
+					<button class="pixel-corners" onclick={() => storeAuth.logout()}>Logout</button>
 				</div>
 			</div>
 		{/if}
@@ -32,6 +34,25 @@
 </div>
 
 <style>
+	.pixel-corners {
+		/* Removes native smooth rounding */
+		border-radius: 0 !important;
+		/* Cuts the corners in 4-pixel blocky steps */
+		clip-path: polygon(
+			0 4px,
+			4px 4px,
+			4px 0,
+			calc(100% - 4px) 0,
+			calc(100% - 4px) 4px,
+			100% 4px,
+			100% calc(100% - 4px),
+			calc(100% - 4px) calc(100% - 4px),
+			calc(100% - 4px) 100%,
+			4px 100%,
+			4px calc(100% - 4px),
+			0 calc(100% - 4px)
+		);
+	}
 	.doodle-bg {
 		position: fixed;
 		inset: 0;
@@ -145,7 +166,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		margin-bottom: 3rem; /* Margine di sicurezza dal fondo dello schermo */
+		margin-bottom: 3rem;
 	}
 
 	.logged-in-menu {
@@ -175,9 +196,6 @@
 
 		color: #ffffff;
 		background-color: #8d42d3;
-
-		border: 3px solid #1a1a1a;
-		border-radius: 12px;
 
 		cursor: pointer;
 		box-shadow: 5px 5px 0px #1a1a1a;

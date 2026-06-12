@@ -1,109 +1,127 @@
 <script lang="ts">
-    import DetailedStatsScreen from "./lib/components/stats/DetailedStatsScreen.svelte";
-    import AuthScreen from "./lib/components/auth/AuthScreen.svelte";
-    import GameScreen from "./lib/components/game/GameScreen.svelte";
-    import LobbyScreen from "./lib/components/lobby/LobbyScreen.svelte";
-    import LobbyBrowse from "./lib/components/lobby/LobbyBrowse.svelte";
-    import StatsScreen from "./lib/components/stats/StatsScreen.svelte";
-    import MainScreen from "./lib/components/MainScreen.svelte";
-    import Toast from "./lib/components/common/Toast.svelte";
+	import DetailedStatsScreen from "./lib/components/stats/DetailedStatsScreen.svelte";
+	import AuthScreen from "./lib/components/auth/AuthScreen.svelte";
+	import GameScreen from "./lib/components/game/GameScreen.svelte";
+	import LobbyScreen from "./lib/components/lobby/LobbyScreen.svelte";
+	import LobbyBrowse from "./lib/components/lobby/LobbyBrowse.svelte";
+	import StatsScreen from "./lib/components/stats/StatsScreen.svelte";
+	import MainScreen from "./lib/components/MainScreen.svelte";
+	import Toast from "./lib/components/common/Toast.svelte";
 
-    import { onMount } from "svelte";
-    import { storeNavigation } from "./lib/stores/navigation.svelte";
-    import { ws } from "./lib/stores/ws.svelte";
-    import { storeToast } from "./lib/stores/toast.svelte";
-    import { storeAuth } from "./lib/stores/auth.svelte";
+	import { onMount } from "svelte";
+	import { storeNavigation } from "./lib/stores/navigation.svelte";
+	import { ws } from "./lib/stores/ws.svelte";
+	import { storeToast } from "./lib/stores/toast.svelte";
+	import { storeAuth } from "./lib/stores/auth.svelte";
 
-    // 1. Variabili per la gestione dell'audio
-    let volume = 0.05;
-    let audioPlayer: HTMLAudioElement;
+	// 1. Variabili per la gestione dell'audio
+	let volume = 0.05;
+	let audioPlayer: HTMLAudioElement;
 
-    onMount(async () => {
-        // --- LOGICA AUTOPLAY AUDIO ---
-        if (audioPlayer) {
-            // funzionerà solo se l'utente ha già interagito col sito in passato o ricarica la pagina
-            audioPlayer.play().catch(() => {
-                console.warn("Autoplay bloccato. La musica partirà al primo click.");
-                
-                // Se bloccato, creiamo una funzione che fa partire l'audio al primo click in assoluto sulla pagina
-                const startAudioOnInteraction = () => {
-                    audioPlayer.play();
-                    // Una volta partita, rimuoviamo l'evento per non sovraccaricare il browser
-                    document.removeEventListener("click", startAudioOnInteraction);
-                    document.removeEventListener("keydown", startAudioOnInteraction);
-                };
+	onMount(async () => {
+		// --- LOGICA AUTOPLAY AUDIO ---
+		if (audioPlayer) {
+			// funzionerà solo se l'utente ha già interagito col sito in passato o ricarica la pagina
+			audioPlayer.play().catch(() => {
+				console.warn("Autoplay bloccato. La musica partirà al primo click.");
 
-                // Mettiamo il sito "in ascolto" del primo click o tasto premuto
-                document.addEventListener("click", startAudioOnInteraction);
-                document.addEventListener("keydown", startAudioOnInteraction);
-            });
-        }
-        // -----------------------------
+				// Se bloccato, creiamo una funzione che fa partire l'audio al primo click in assoluto sulla pagina
+				const startAudioOnInteraction = () => {
+					audioPlayer.play();
+					// Una volta partita, rimuoviamo l'evento per non sovraccaricare il browser
+					document.removeEventListener("click", startAudioOnInteraction);
+					document.removeEventListener("keydown", startAudioOnInteraction);
+				};
 
-        await storeAuth.checkSession();
+				// Mettiamo il sito "in ascolto" del primo click o tasto premuto
+				document.addEventListener("click", startAudioOnInteraction);
+				document.addEventListener("keydown", startAudioOnInteraction);
+			});
+		}
+		// -----------------------------
 
-        if (storeAuth.isLoggedIn) {
-            await ws.connect();
+		await storeAuth.checkSession();
 
-            if (storeNavigation.current === "auth") {
-                storeNavigation.goto("lobbies");
-            }
-        }
+		if (storeAuth.isLoggedIn) {
+			await ws.connect();
 
-        ws.on("error", (data) => {
-            console.error(data);
-        });
-    });
+			if (storeNavigation.current === "auth") {
+				storeNavigation.goto("lobbies");
+			}
+		}
 
-    async function handleAuthSuccess() {
-        await ws.connect().catch((error) => {
-            storeToast.error(`Failed to connect to server. Please try again. (${error})`);
-        });
+		ws.on("error", (data) => {
+			console.error(data);
+		});
+	});
 
+	async function handleAuthSuccess() {
+		await ws.connect().catch((error) => {
+			storeToast.error(`Failed to connect to server. Please try again. (${error})`);
+		});
 
-        storeNavigation.goto("lobbies");
-    }
+		storeNavigation.goto("lobbies");
+	}
 
-    function handleBackToLobbies() {
-        storeNavigation.goto("lobbies");
-    }
-
+	function handleBackToLobbies() {
+		storeNavigation.goto("lobbies");
+	}
 </script>
 
 <div id="app">
-    <Toast />
-    
-    <audio loop bind:volume={volume} bind:this={audioPlayer}>
-        <source src="/assets/music/lofi.mp3" type="audio/mpeg" />
-    </audio>
+	<Toast />
 
-    {#if storeNavigation.current === "main"}
-        <MainScreen />
-    {:else if storeNavigation.current === "auth"}
-        <AuthScreen onAuthSuccess={handleAuthSuccess} />
-    {:else if storeNavigation.current === "lobbies"}
-        <LobbyBrowse />
-    {:else if storeNavigation.current === "lobby"}
-        <LobbyScreen />
-    {:else if storeNavigation.current === "game"}
-        <GameScreen />
-    {:else if storeNavigation.current === "stats"}
-        <StatsScreen />
-    {:else if storeNavigation.current === "detailedStats"}
-        <DetailedStatsScreen />
-    {/if}
+	<audio autoplay loop bind:volume bind:this={audioPlayer}>
+		<source src="/assets/music/lofi.mp3" type="audio/mpeg" />
+	</audio>
+
+	{#if storeNavigation.current === "main"}
+		<MainScreen />
+	{:else if storeNavigation.current === "auth"}
+		<AuthScreen onAuthSuccess={handleAuthSuccess} />
+	{:else if storeNavigation.current === "lobbies"}
+		<LobbyBrowse />
+	{:else if storeNavigation.current === "lobby"}
+		<LobbyScreen />
+	{:else if storeNavigation.current === "game"}
+		<GameScreen />
+	{:else if storeNavigation.current === "stats"}
+		<StatsScreen />
+	{:else if storeNavigation.current === "detailedStats"}
+		<DetailedStatsScreen />
+	{/if}
 </div>
 
 <style>
-    :global(body) {
-        margin: 0;
-        padding: 0;
-    }
+	:global(body) {
+		margin: 0;
+		padding: 0;
+	}
 
-    #app {
-        width: 100%;
-        color-scheme: light dark;
-        color: var(--text);
-        background: var(--bg);
-    }
+	#app {
+		width: 100%;
+		color-scheme: light dark;
+		color: var(--text);
+		background: var(--bg);
+	}
+	:global(button) {
+		/* Removes native smooth rounding */
+		border-radius: 0 !important;
+		/* Cuts the corners in 4-pixel blocky steps */
+		clip-path: polygon(
+			0 4px,
+			4px 4px,
+			4px 0,
+			calc(100% - 4px) 0,
+			calc(100% - 4px) 4px,
+			100% 4px,
+			100% calc(100% - 4px),
+			calc(100% - 4px) calc(100% - 4px),
+			calc(100% - 4px) 100%,
+			4px 100%,
+			4px calc(100% - 4px),
+			0 calc(100% - 4px)
+		);
+	}
 </style>
+

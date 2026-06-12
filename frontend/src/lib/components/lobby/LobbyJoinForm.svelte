@@ -43,12 +43,31 @@
 		{/if}
 	</div>
 
-	<button type="submit" disabled={isLoading} class="submit-btn">
+	<button type="submit" disabled={isLoading} class="pixel-corners submit-btn">
 		{isLoading ? "Joining..." : "JOIN LOBBY"}
 	</button>
 </form>
 
 <style>
+	.pixel-corners {
+		/* Removes native smooth rounding */
+		border-radius: 0 !important;
+		/* Cuts the corners in 4-pixel blocky steps */
+		clip-path: polygon(
+			0 4px,
+			4px 4px,
+			4px 0,
+			calc(100% - 4px) 0,
+			calc(100% - 4px) 4px,
+			100% 4px,
+			100% calc(100% - 4px),
+			calc(100% - 4px) calc(100% - 4px),
+			calc(100% - 4px) 100%,
+			4px 100%,
+			4px calc(100% - 4px),
+			0 calc(100% - 4px)
+		);
+	}
 	.join-form {
 		display: flex;
 		flex-direction: column;
@@ -63,7 +82,7 @@
 
 	/* LABEL COERENTE CON CREATE FORM */
 	label {
-		font-family: 'Pixel', sans-serif;
+		font-family: "Pixel", sans-serif;
 		font-size: 14px;
 		color: var(--text-h);
 		text-transform: uppercase;
@@ -75,7 +94,7 @@
 		background: rgba(0, 0, 0, 0.3);
 		border: 2px solid var(--border);
 		color: var(--text-h);
-		font-family: 'Pixel', monospace;
+		font-family: "Pixel", monospace;
 		font-size: 16px;
 		text-transform: uppercase; /* Forza il maiuscolo visivo */
 		outline: none;
@@ -90,7 +109,7 @@
 	}
 
 	.error-text {
-		font-family: 'Pixel', sans-serif;
+		font-family: "Pixel", sans-serif;
 		font-size: 11px;
 		color: #ff4444;
 		margin-top: 4px;
@@ -103,7 +122,7 @@
 		background: var(--accent);
 		color: white;
 		border: none;
-		font-family: 'Pixel', sans-serif;
+		font-family: "Pixel", sans-serif;
 		font-size: 20px;
 		cursor: pointer;
 		transition: filter 0.2s;
