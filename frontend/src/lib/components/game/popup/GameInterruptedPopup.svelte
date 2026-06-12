@@ -70,7 +70,7 @@
 
 	.cute-modal-content h1 {
 		font-family: "FatPixel", sans-serif;
-		font-size: 2rem;
+		font-size: 1rem;
 		margin: 0 0 10px 0;
 		color: var(--accent);
 		text-shadow: 2px 2px 0px #1a1a1a;
