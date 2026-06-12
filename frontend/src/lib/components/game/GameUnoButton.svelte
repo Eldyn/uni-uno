@@ -19,7 +19,7 @@
                 console.log(ClientAction.GameCallUno);
             }}
         >
-            🔥 UNO!
+            UNO!
         </button>
     {:else}
         <div class="uno-floating-badge">✅ UNO Dichiarato</div>
@@ -35,13 +35,14 @@
         right: 25%;
         z-index: 150;
         padding: 12px 24px;
-        background: #dc251c;
+        border-radius: 5%;
+        background: var(--accent);
         color: white;
         border: 4px solid #000;
         border-radius: 0;
         
         /* Applichiamo il font pixel */
-        font-family: 'Press Start 2P', system-ui, monospace; 
+        font-family: 'Pixel', system-ui, monospace; 
         font-size: 14px; /* Ridotto leggermente per bilanciare la larghezza del font */
         letter-spacing: 1px;
         cursor: pointer;

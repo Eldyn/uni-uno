@@ -1,16 +1,32 @@
 <script lang="ts">
-	import { storeGame } from "../../../stores/game.svelte";
+    import { storeGame } from "../../../stores/game.svelte";
 
-	let winnerName = $derived(storeGame.state?.winner ?? "Unknown");
-	let isMe = $derived(winnerName === storeGame.localPlayer?.username);
+    let winnerName = $derived(storeGame.state?.winner ?? "Unknown");
+    let isMe = $derived(winnerName === storeGame.localPlayer?.username);
 
-	let winnerIdx = $derived(
-		storeGame.state?.players?.findIndex((p) => p.username === winnerName) ?? -1
-	);
-	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"];
-	let winnerColor = $derived(winnerIdx !== -1 ? PLAYER_COLORS[winnerIdx % 4] : "#0493de");
+    let winnerIdx = $derived(
+        storeGame.state?.players?.findIndex((p) => p.username === winnerName) ?? -1
+    );
+    const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"];
+    let winnerColor = $derived(winnerIdx !== -1 ? PLAYER_COLORS[winnerIdx % 4] : "#0493de");
 
-	let isBot = $derived(winnerName.toLowerCase().includes("bot"));
+    let isBot = $derived(winnerName.toLowerCase().includes("bot"));
+
+    // --- Gestione Audio Vittoria/Sconfitta ---
+    $effect(() => {
+        // Seleziona il file in base all'esito
+        const audioSrc = isMe ? "/assets/music/victory.mp3" : "/assets/music/lose.mp3";
+        const gameAudio = new Audio(audioSrc);
+
+        // Fa partire l'audio (suonerà sopra quello del router)
+        gameAudio.play().catch(err => console.warn("Autoplay audio bloccato:", err));
+
+        // Cleanup: interrompe l'audio se si esce dalla schermata
+        return () => {
+            gameAudio.pause();
+            gameAudio.currentTime = 0;
+        };
+    });
 </script>
 
 <div class="modal-overlay victory-overlay">
@@ -36,7 +52,6 @@
 </div>
 
 <style>
-	/* ... (keep modal-overlay and cute-modal-content the same) ... */
 	.modal-overlay {
 		position: fixed;
 		top: 0;
@@ -112,7 +127,6 @@
 		align-items: center;
 	}
 
-	/* ... (keep the rest of your avatar, h2, and button styles exactly the same) ... */
 	.box-avatar {
 		width: 100%;
 		height: 100%;
