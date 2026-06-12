@@ -133,7 +133,7 @@
 
 	<Toggle
 		label="Allow Player Replacement"
-		description="When a Player leave (and quitting does not stop the match), a bot takes the player's place"
+		description="When a Player leaves (and quitting does not stop the match), a bot takes the player's place"
 		checked={settings.allow_bot_replacement}
 		disabled={!isHost}
 		oncommit={(v) => commit("allow_bot_replacement", v)}
