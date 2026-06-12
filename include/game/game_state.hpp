@@ -5,7 +5,6 @@
 #include <deque>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 #include <chrono>
 
@@ -49,6 +48,7 @@ namespace game {
         std::vector<Player> players;
         int current_player_index = 0;
         int play_direction = 1; 
+        int pending_draws = 0;
             
         std::vector<CompactCard> draw_pile;
         std::vector<CompactCard> discard_pile;
