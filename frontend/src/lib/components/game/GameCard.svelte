@@ -53,6 +53,13 @@
 
 	const imgSrc = $derived(getCardImage(card.value));
 	const tint = $derived(card.value !== "colorswitch");
+	function playRandomCardSound() {
+		// Genera un numero casuale tra 1 e 3
+		const randomNum = Math.floor(Math.random() * 3) + 1;
+		const audio = new Audio(`assets/music/card${randomNum}.mp3`);
+
+		audio.play().catch((err) => console.warn("Impossibile riprodurre l'audio:", err));
+	}
 </script>
 
 <div
@@ -65,8 +72,16 @@
 	tabindex="0"
 	draggable="false"
 	style={style || `left: calc(${index} * 2.2em + 1.1em)`}
-	onclick={() => onCardClick(card.id)}
-	onkeydown={(e) => e.key === "Enter" && onCardClick(card.id)}
+	onclick={() => {
+		playRandomCardSound();
+		onCardClick(card.id);
+	}}
+	onkeydown={(e) => {
+		if (e.key === "Enter") {
+			playRandomCardSound();
+			onCardClick(card.id);
+		}
+	}}
 >
 	<div class="bckg">
 		{#if turned}
