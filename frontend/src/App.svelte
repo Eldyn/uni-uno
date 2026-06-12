@@ -15,10 +15,31 @@
     import { storeAuth } from "./lib/stores/auth.svelte";
 
     // 1. Variabili per la gestione dell'audio
-    let volume = 0.2;
+    let volume = 0.05;
     let audioPlayer: HTMLAudioElement;
 
     onMount(async () => {
+        // --- LOGICA AUTOPLAY AUDIO ---
+        if (audioPlayer) {
+            // funzionerà solo se l'utente ha già interagito col sito in passato o ricarica la pagina
+            audioPlayer.play().catch(() => {
+                console.warn("Autoplay bloccato. La musica partirà al primo click.");
+                
+                // Se bloccato, creiamo una funzione che fa partire l'audio al primo click in assoluto sulla pagina
+                const startAudioOnInteraction = () => {
+                    audioPlayer.play();
+                    // Una volta partita, rimuoviamo l'evento per non sovraccaricare il browser
+                    document.removeEventListener("click", startAudioOnInteraction);
+                    document.removeEventListener("keydown", startAudioOnInteraction);
+                };
+
+                // Mettiamo il sito "in ascolto" del primo click o tasto premuto
+                document.addEventListener("click", startAudioOnInteraction);
+                document.addEventListener("keydown", startAudioOnInteraction);
+            });
+        }
+        // -----------------------------
+
         await storeAuth.checkSession();
 
         if (storeAuth.isLoggedIn) {
@@ -39,11 +60,6 @@
             storeToast.error(`Failed to connect to server. Please try again. (${error})`);
         });
 
-        // 2. Facciamo partire la musica al login! L'utente ha appena interagito,
-        // quindi il browser ci permetterà di avviare l'audio senza bloccarlo.
-        if (audioPlayer) {
-            audioPlayer.play().catch(err => console.warn("Autoplay bloccato dal browser:", err));
-        }
 
         storeNavigation.goto("lobbies");
     }
@@ -78,7 +94,6 @@
     {/if}
 </div>
 
-
 <style>
     :global(body) {
         margin: 0;
@@ -91,5 +106,4 @@
         color: var(--text);
         background: var(--bg);
     }
-	
 </style>
