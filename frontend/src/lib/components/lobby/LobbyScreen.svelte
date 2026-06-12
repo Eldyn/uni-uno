@@ -116,7 +116,7 @@
 
 									<span class="member-name">{member.username}</span>
 
-									{#if member.is_host}<span style="color: gold; font-size: 1.5rem;"> 󱟜 </span>{/if}
+									{#if member.is_host}<span style="color: gold; font-size: 1.5rem;font-family: var(--mono);"> 󱟜 </span>{/if}
 								</div>
 							</div>
 
