@@ -50,6 +50,9 @@
 		min-height: 100vh;
 		padding: 20px;
 		font-family: "Pixel";
+		background-image: url("/assets/bg_main.png");
+		background-size: cover;
+
 	}
 
 	.auth-container {
