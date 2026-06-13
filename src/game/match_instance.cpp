@@ -572,58 +572,58 @@ bool MatchInstance::DrawCard(const std::string& username) {
 
                     // INFO: Heuristic 3 (mod: seven_zero)
                     //       Exploit hand-swapping/rotation mechanics.
-                    if (HasMod("seven_zero")) {
-                        if (card_value == Value::k7) {
-                            if (lowest_card_count < current_player->hand.size()) {
-                                current_score += 60 +
-                                    static_cast<int>(current_player->hand.size() - lowest_card_count) * 15;
-                            } else {
-                                current_score -= 20;
-                            }
-                        } else if (card_value == Value::k0) {
-                            int total = static_cast<int>(state_.players.size());
-                            int prev_idx = (state_.current_player_index - state_.play_direction + total) % total;
-                            size_t incoming_hand_size = state_.players[prev_idx].hand.size();
-
-                            if (incoming_hand_size < current_player->hand.size()) {
-                                current_score += 30;
-                            } else {
-                                current_score -= 15;
-                            }
-                        }
-                    }
+                    // if (HasMod("seven_zero")) {
+                    //     if (card_value == Value::k7) {
+                    //         if (lowest_card_count < current_player->hand.size()) {
+                    //             current_score += 60 +
+                    //                 static_cast<int>(current_player->hand.size() - lowest_card_count) * 15;
+                    //         } else {
+                    //             current_score -= 20;
+                    //         }
+                    //     } else if (card_value == Value::k0) {
+                    //         int total = static_cast<int>(state_.players.size());
+                    //         int prev_idx = (state_.current_player_index - state_.play_direction + total) % total;
+                    //         size_t incoming_hand_size = state_.players[prev_idx].hand.size();
+                    //
+                    //         if (incoming_hand_size < current_player->hand.size()) {
+                    //             current_score += 30;
+                    //         } else {
+                    //             current_score -= 15;
+                    //         }
+                    //     }
+                    // }
 
                     // INFO: Heuristic 4 (mod: draw_stacking)
                     //       Keep pressure chains alive / start new ones.
-                    if (HasMod("draw_stacking") &&
-                        (card_value == Value::kDraw2 || card_value == Value::kWildDraw4)) {
-                        current_score += 35;
-
-                        if (state_.pending_draws > 0) {
-                            current_score += 45;
-                        }
-
-                        if (next_player_hand_size <= 2) {
-                            current_score += 25;
-                        }
-                    }
+                    // if (HasMod("draw_stacking") &&
+                    //     (card_value == Value::kDraw2 || card_value == Value::kWildDraw4)) {
+                    //     current_score += 35;
+                    //
+                    //     if (state_.pending_draws > 0) {
+                    //         current_score += 45;
+                    //     }
+                    //
+                    //     if (next_player_hand_size <= 2) {
+                    //         current_score += 25;
+                    //     }
+                    // }
 
                     // INFO: Heuristic 5 (mod: no_bluffing)
                     //       Hoard +4s while we still have a "real" matching color,
                     //       since playing one when we don't need to just wastes it
                     //       (and could've been our emergency out later).
-                    if (HasMod("no_bluffing") && card_value == Value::kWildDraw4) {
-                        bool has_other_matching_color = false;
-                        for (CompactCard other : current_player->hand) {
-                            if (other != card && GetColor(other) == dominant_color) {
-                                has_other_matching_color = true;
-                                break;
-                            }
-                        }
-                        if (has_other_matching_color) {
-                            current_score -= 25;
-                        }
-                    }
+                    // if (HasMod("no_bluffing") && card_value == Value::kWildDraw4) {
+                    //     bool has_other_matching_color = false;
+                    //     for (CompactCard other : current_player->hand) {
+                    //         if (other != card && GetColor(other) == dominant_color) {
+                    //             has_other_matching_color = true;
+                    //             break;
+                    //         }
+                    //     }
+                    //     if (has_other_matching_color) {
+                    //         current_score -= 25;
+                    //     }
+                    // }
 
                     // INFO: Apply all the Heuristics
                     if (current_score > best_score) {
