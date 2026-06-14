@@ -10,7 +10,7 @@
 		"lint": "prettier --check .",
 		"format": "prettier --write .",
 		"docs": "typedoc",
-		"pdf": "cat docs/markdown/**/*.md | npx md-to-pdf > frontend-manual.pdf"
+		"pdf": "mkdir -p docs/build && cat docs/markdown/**/*.md > docs/build/_tsdoc.md && node docs/md2pdf-pixel.cjs docs/build/_tsdoc.md frontend-manual.pdf"
 	},
 	"devDependencies": {
 		"@sveltejs/vite-plugin-svelte": "^5.0.3",
