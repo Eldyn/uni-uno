@@ -5,6 +5,7 @@
 	import OpponentHand from "./OpponentHand.svelte";
 	import GamePiles from "./GamePiles.svelte";
 	import FlyingCardsOverlay from "./FlyingCardsOverlay.svelte";
+	import DrawStackIndicator from "./DrawStackIndicator.svelte";
 
 	createCardBus();
 
@@ -71,6 +72,7 @@
 </script>
 
 <FlyingCardsOverlay />
+<DrawStackIndicator />
 
 <div class="game-field perspective">
 	{#each mappedOpponents as { player, layout, busIndex } (player.username)}

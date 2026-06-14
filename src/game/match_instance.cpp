@@ -217,6 +217,15 @@ namespace game {
         
         if (!play_event.is_valid_play) return false;
 
+        // INFO: Record provenance (who + which hand slot) so clients can animate
+        //       the card flying from the exact slot it left, onto the discard pile.
+        state_.last_play = {
+            true,
+            username,
+            static_cast<int>(std::distance(current_player->hand.begin(), card_iterator)),
+            played_card
+        };
+
         state_.discard_pile.push_back(played_card);
         state_.active_color = GetColor(played_card);
         current_player->hand.erase(card_iterator);
@@ -738,6 +747,20 @@ bool MatchInstance::DrawCard(const std::string& username) {
         root["current_turn"] = GetCurrentPlayerUsername();
         root["play_direction"] = state_.play_direction;
         root["discard_pile_size"] = state_.discard_pile.size();
+        root["pending_draws"] = state_.pending_draws;
+
+        if (state_.last_play.valid) {
+            CompactCard lp = state_.last_play.card;
+            root["last_play"] = {
+                {"player", state_.last_play.player},
+                {"hand_index", state_.last_play.hand_index},
+                {"card", {
+                    {"id", GetId(lp)},
+                    {"color", static_cast<int>(GetColor(lp))},
+                    {"value", static_cast<int>(GetValue(lp))}
+                }}
+            };
+        }
     
         if (!state_.discard_pile.empty()) {
             CompactCard top = state_.discard_pile.back();

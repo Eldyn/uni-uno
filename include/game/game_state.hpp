@@ -65,6 +65,19 @@ namespace game {
     };
 
     /**
+     * @struct LastPlay
+     * @brief Descrive l'ultima carta giocata e la sua provenienza, così che il client
+     * possa animare la carta dalla specifica posizione (slot) della mano di chi l'ha giocata.
+     * @tag GAME-STRUCT-004
+     */
+    struct LastPlay {
+        bool valid = false;       /**< True se contiene una giocata valida da animare. */
+        std::string player;       /**< Username di chi ha giocato la carta. */
+        int hand_index = -1;      /**< Indice nello slot della mano da cui è partita la carta. */
+        CompactCard card{};       /**< La carta giocata (id/colore/valore compatti). */
+    };
+
+    /**
      * @struct GameState
      * @brief Struttura dati monolitica che contiene l'intera "fotografia" della partita ad un dato istante.
      * Viene manipolata dalle classi Effect e MatchInstance e serializzata in JSON.
@@ -78,7 +91,8 @@ namespace game {
         int current_player_index = 0;                      /**< Indice del giocatore con il turno attivo. */
         int play_direction = 1;                            /**< Direzione di gioco (1 = orario, -1 = antiorario). */
         int pending_draws = 0;                             /**< Carte accumulate che il prossimo giocatore dovrà pescare (es. catena +2/+4). */
-            
+        LastPlay last_play;                                /**< Provenienza dell'ultima carta giocata, usata per le animazioni client. */
+
         std::vector<CompactCard> draw_pile;                /**< Mazzo delle carte da cui pescare. */
         std::vector<CompactCard> discard_pile;             /**< Mazzo degli scarti al centro del tavolo. */
         Color active_color = Color::kRed;                  /**< Colore attualmente obbligatorio per rispondere (cambia con carte Jolly). */

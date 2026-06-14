@@ -1,170 +1,137 @@
 <script lang="ts">
 	import { untrack } from "svelte";
 	import GameCard from "./GameCard.svelte";
-	import { useCardBus } from "./card-bus.svelte";
+	import { useCardBus, type Point } from "./card-bus.svelte";
 	import { storeGame } from "../../stores/game.svelte";
 
 	const bus = useCardBus();
 
-	function getRect(el: HTMLElement | null): DOMRect {
-		return (
-			el?.getBoundingClientRect() ??
-			new DOMRect(window.innerWidth / 2, window.innerHeight / 2, 80, 120)
-		);
-	}
+	/** Delay between consecutive cards in a multi-card burst (progressive/+N draws). */
+	const STAGGER_MS = 50;
+	/** Must match the CSS flight duration below (in ms) for the in-hand reveal. */
+	const FLIGHT_MS = 550;
 
-	/** Launch a card clone; hides the real card in-hand if hideId is given. */
-	function launch(params: {
-		color: string;
-		value: string;
-		turned: boolean;
-		from: Parameters<typeof bus.launch>[0]["from"];
-		to: Parameters<typeof bus.launch>[0]["to"];
-		hideId?: number;
-		delayMs?: number;
-	}) {
-		const fire = () => {
-			const { color, value, turned, from, to, hideId } = params;
+	// Diff bookkeeping (intentionally non-reactive: only touched inside untrack).
+	let prevHandIds = new Set<number>();
+	let prevTopCardId: number | null = null;
+	let prevOpponentCounts = new Map<string, number>();
+	/** Screen positions of every slot as of the previous server snapshot. */
+	let prevSlotSnapshot = new Map<string, Point>();
 
-			if (hideId !== undefined) {
-				bus.hide(hideId);
-				setTimeout(() => bus.show(hideId), 550);
-			}
-
-			bus.launch({ color, value, turned, from, to });
-		};
-
-		if (params.delayMs) {
-			setTimeout(fire, params.delayMs);
-		} else {
-			fire();
-		}
-	}
-
-	let prevHandIds = $state(new Set<number>());
-	let prevTopCardId = $state<number | null>(null);
-	let prevOpponentCounts = $state(new Map<string, number>());
-	let lastKnownHand = $state<{ id: number; color: string; value: string }[]>([]);
-
-	let hand = $derived(storeGame.localPlayer?.hand ?? []);
-
-	// NOTE: EFFECT 1
-	//       Draw Pile -> PlayerHand
 	$effect(() => {
-		const currentHand = hand;
-		const currentIds = new Set(currentHand.map((c) => c.id));
+		// --- Reactive reads: rerun once per server state update ---
+		const state = storeGame.state;
+		const localUser = storeGame.localPlayer?.username;
+		const hand = storeGame.localPlayer?.hand ?? [];
+		const top = state?.top_card;
+		const players = state?.players ?? [];
+		// Touch counts so card draws/plays retrigger the effect.
+		players.forEach((p) => p.card_count);
 
 		untrack(() => {
-			const newIds: number[] = [];
-			for (const id of currentIds) {
-				if (!prevHandIds.has(id)) newIds.push(id);
-			}
+			if (!state) return;
 
-			for (const id of newIds) {
-				const card = currentHand.find((c) => c.id === id);
-				if (!card) continue;
+			// =========================================================
+			// 1. PLAY: a card just reached the top of the discard pile.
+			//    Animate it flying from the exact slot it was played from.
+			// =========================================================
+			if (top && top.id !== prevTopCardId) {
+				const isFirst = prevTopCardId === null;
+				const lp = state.last_play;
 
-				launch({
-					color: card.color,
-					value: card.value,
-					turned: true,
-					from: "draw-pile",
-					to: "hand-local",
-					hideId: id
-				});
-			}
+				if (!isFirst && lp) {
+					const slotKey =
+						lp.player === localUser
+							? `local:${top.id}`
+							: `opp:${lp.player}:${lp.hand_index}`;
+					const srcPoint = prevSlotSnapshot.get(slotKey);
 
-			prevHandIds = currentIds;
-		});
-	});
-
-	// NOTE: EFFECT 2
-	//       Any Card -> Discard Pile
-	$effect(() => {
-		const top = storeGame.state?.top_card;
-		const currentHand = storeGame.localPlayer?.hand ?? [];
-
-		untrack(() => {
-			if (!top) return;
-
-			if (top.id !== prevTopCardId) {
-				const currentIds = new Set(currentHand.map((c) => c.id));
-				const playedCard = lastKnownHand.find((c) => !currentIds.has(c.id) && c.id === top.id);
-
-				if (playedCard) {
-					launch({
-						color: playedCard.color,
-						value: playedCard.value,
+					bus.launch({
+						color: top.color,
+						value: top.value,
 						turned: false,
-						from: "hand-local",
-						to: "discard-pile"
+						from: srcPoint ? { point: srcPoint } : { role: "discard-pile" },
+						to: { role: "discard-pile" }
 					});
 				}
 
 				prevTopCardId = top.id;
 			}
 
-			lastKnownHand = currentHand.map((c) => ({
-				id: c.id,
-				color: c.color,
-				value: c.value
-			}));
-		});
-	});
+			// =========================================================
+			// 2. LOCAL DRAWS: new cards entered my hand. Fly each from
+			//    the draw pile onto its own (rightmost-growing) slot,
+			//    staggered so a +N burst reads as distinct cards.
+			// =========================================================
+			const currentIds = new Set(hand.map((c) => c.id));
+			const added = hand.filter((c) => !prevHandIds.has(c.id));
 
-	// NOTE: EFFECT 3
-	//       Draw Pile -> OpponentHand
-	$effect(() => {
-		const players = storeGame.state?.players ?? [];
-		const localUser = storeGame.localPlayer?.username;
+			added.forEach((card, i) => {
+				const delay = i * STAGGER_MS;
+				bus.hide(card.id);
+				setTimeout(() => {
+					bus.launch({
+						color: card.color,
+						value: card.value,
+						turned: true,
+						from: { role: "draw-pile" },
+						to: { slot: `local:${card.id}` }
+					});
+				}, delay);
+				// Reveal the real card slightly before the clone lands so they
+				// overlap for a frame instead of leaving an empty gap.
+				setTimeout(() => bus.show(card.id), delay + FLIGHT_MS - 60);
+			});
 
-		untrack(() => {
-			const opponents = players.filter((p) => p.username !== localUser);
+			prevHandIds = currentIds;
 
-			for (let idx = 0; idx < opponents.length; idx++) {
-				const p = opponents[idx];
+			// =========================================================
+			// 3. OPPONENT DRAWS: opponents whose hand grew. Fly each new
+			//    card from the draw pile onto its destination slot.
+			// =========================================================
+			for (const p of players) {
+				if (p.username === localUser) continue;
+
 				const prev = prevOpponentCounts.get(p.username) ?? p.card_count;
 				const delta = p.card_count - prev;
 
-				if (delta > 0) {
-					for (let i = 0; i < delta; i++) {
-						launch({
+				for (let i = 0; i < delta; i++) {
+					const slotIndex = prev + i;
+					setTimeout(() => {
+						bus.launch({
 							color: "black",
 							value: "",
 							turned: true,
-							from: "draw-pile",
-							to: `hand-opponent-${idx}`,
-							delayMs: i * 80
+							from: { role: "draw-pile" },
+							to: { slot: `opp:${p.username}:${slotIndex}` }
 						});
-					}
+					}, i * STAGGER_MS);
 				}
 			}
 
-			const next = new Map<string, number>();
+			const nextCounts = new Map<string, number>();
 			for (const p of players) {
-				if (p.username !== localUser) next.set(p.username, p.card_count);
+				if (p.username !== localUser) nextCounts.set(p.username, p.card_count);
 			}
-			prevOpponentCounts = next;
+			prevOpponentCounts = nextCounts;
+
+			// =========================================================
+			// 4. Snapshot current slot positions so the NEXT play can
+			//    animate from where the card actually was (pre-removal).
+			// =========================================================
+			prevSlotSnapshot = bus.snapshotSlots();
 		});
 	});
-
-	function rects(flight: (typeof bus.flights)[0]) {
-		return {
-			src: getRect(bus.getEl(flight.from)),
-			dst: getRect(bus.getEl(flight.to))
-		};
-	}
 </script>
 
 {#each bus.flights as flight (flight.key)}
-	{@const { src, dst } = rects(flight)}
 	<div
 		class="flying-card"
 		style="
-            --src-x: {src.left + src.width / 2}px;
-            --src-y: {src.top + src.height / 2}px;
-            --dst-x: {dst.left + dst.width / 2}px;
-            --dst-y: {dst.top + dst.height / 2}px;
+            --src-x: {flight.src.x}px;
+            --src-y: {flight.src.y}px;
+            --dst-x: {flight.dst.x}px;
+            --dst-y: {flight.dst.y}px;
             left: var(--src-x);
             top: var(--src-y);
         "
@@ -204,8 +171,9 @@
 		100% {
 			left: var(--dst-x);
 			top: var(--dst-y);
-			transform: translate(-50%, -50%) scale(0.85) rotate(0deg);
-			opacity: 0;
+			/* Land solid & full-size so the real card replaces it seamlessly. */
+			transform: translate(-50%, -50%) scale(1) rotate(0deg);
+			opacity: 1;
 		}
 	}
 </style>
