@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { createSortable } from "@dnd-kit/svelte/sortable";
 	import GameCard from "./GameCard.svelte";
+	import { useCardBus } from "./card-bus.svelte";
 	import type { Card } from "../../stores/game.svelte";
+
+	const bus = useCardBus();
 
 	let {
 		card,
@@ -27,7 +30,12 @@
 	});
 </script>
 
-<div class="card-slot" class:is-dragging={sortable.isDragging} {@attach sortable.attach}>
+<div
+	class="card-slot"
+	class:is-dragging={sortable.isDragging}
+	{@attach sortable.attach}
+	{@attach bus.slotAttachment(`local:${card.id}`)}
+>
 	<GameCard {card} {isHidden} {isPlayable} onCardClick={() => onCardClick(card.id)} />
 </div>
 

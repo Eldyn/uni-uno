@@ -11,6 +11,7 @@
 		turned = false,
 		style = "",
 		extraClass = "",
+		attach,
 		onCardClick = () => {}
 	}: {
 		card: Card;
@@ -22,6 +23,8 @@
 		turned?: boolean;
 		style?: string;
 		extraClass?: string;
+		/** Optional Svelte attachment, e.g. to register this card as a flight slot. */
+		attach?: (node: Element) => void | (() => void);
 		onCardClick?: (cardId: number) => void;
 		onDragStart?: (e: DragEvent, cardId: number) => void;
 		onDragOver?: (e: DragEvent, cardId: number) => void;
@@ -53,6 +56,7 @@
 
 	const imgSrc = $derived(getCardImage(card.value));
 	const tint = $derived(card.value !== "colorswitch");
+	const slotAttach = (node: Element) => attach?.(node);
 	function playRandomCardSound() {
         // Genera un numero casuale tra 1 e 3
         const randomNum = Math.floor(Math.random() * 3) + 1;
@@ -75,6 +79,7 @@
 	tabindex="0"
 	draggable="false"
 	style={style || `left: calc(${index} * 2.2em + 1.1em)`}
+	{@attach slotAttach}
 	onclick={() => {
 		playRandomCardSound();
 		onCardClick(card.id);
