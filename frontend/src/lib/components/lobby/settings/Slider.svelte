@@ -25,7 +25,7 @@
 	} = $props();
 
 	// Tracks the in-progress drag without firing server updates on every tick
-	let localValue = $state(value);
+	let localValue = $state(0);
 
 	// Keep in sync if the store pushes a new value (e.g. host changes it)
 	$effect(() => {
