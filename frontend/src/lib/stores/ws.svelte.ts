@@ -56,6 +56,30 @@ export type ServerActionType = (typeof ServerAction)[keyof typeof ServerAction];
 
 export type ServerActionDef = ServerActionType | string;
 
+export interface ClientPayloads {
+    [ClientAction.GamePlayCard]: { card_id: number };
+    [ClientAction.GameDrawCard]: Record<string, never>;
+    [ClientAction.GameSubmitInput]: { value: string };
+    [ClientAction.GameCallUno]: Record<string, never>;
+    [ClientAction.GameExit]: Record<string, never>;
+
+    [ClientAction.LobbyListSavedMatches]: Record<string, never>;
+    [ClientAction.LobbyDeleteSavedMatch]: { match_id: string };
+    [ClientAction.LobbyResumeSavedMatch]: { match_id: string };
+
+    [ClientAction.LobbyList]: Record<string, never>;
+    [ClientAction.LobbyCreate]: { is_public?: boolean; name?: string };
+    [ClientAction.LobbyJoin]: { code: string };
+    [ClientAction.LobbyRejoin]: { code: string };
+    [ClientAction.LobbyLeave]: Record<string, never>;
+    [ClientAction.LobbyPromote]: { username: string };
+    [ClientAction.LobbyKick]: { username: string };
+    [ClientAction.LobbyUpdateSettings]: { is_public?: boolean; name?: string; bot_count?: number; max_score?: number; turn_time_limit_ms?: number; allow_bot_takeover?: boolean; allow_bot_replacement?: boolean; save_state?: boolean; quit_deletes_match?: boolean; bot_mode?: number };
+    [ClientAction.LobbyStartMatch]: Record<string, never>;
+
+    [ClientAction.ChatSend]: { message: string };
+}
+
 /**
  * @typedef MessageHandler
  * @brief Signature of the callback function for intercepting WebSocket messages.
@@ -222,7 +246,8 @@ export class WebSocketClient {
      * @param action The action to perform (ClientAction).
      * @param payload Optional data to attach in JSON format.
      */
-    emit(action: string, payload: Record<string, unknown> = {}): void {
+    emit<K extends keyof ClientPayloads>(action: K, ...args: ClientPayloads[K] extends Record<string, never> ? [payload?: Record<string, never>] : [payload: ClientPayloads[K]]): void {
+        const payload = args[0] || {};
         if (this.isConnected) {
             this.socket!.send(JSON.stringify({ action, ...payload }));
         }
@@ -237,11 +262,12 @@ export class WebSocketClient {
      * @param timeoutMs Maximum wait time before aborting (Default: 5000ms).
      * @returns Promise resolved with the server's response packet.
      */
-    emitAndWait(
-        action: string,
-        payload: Record<string, unknown> = {},
+    emitAndWait<K extends keyof ClientPayloads>(
+        action: K,
+        payload?: ClientPayloads[K],
         timeoutMs: number = 5000
     ): Promise<WsResponse> {
+        const actualPayload = payload || {};
         return new Promise((resolve, reject) => {
             const requestId = String(this._nextRequestId++);
 
@@ -253,7 +279,7 @@ export class WebSocketClient {
             this.pendingRequests.set(requestId, { resolve, reject, timer });
 
             if (this.isConnected) {
-                this.socket!.send(JSON.stringify({ action, request_id: requestId, ...payload }));
+                this.socket!.send(JSON.stringify({ action, request_id: requestId, ...actualPayload }));
             } else {
                 this.pendingRequests.delete(requestId);
                 clearTimeout(timer);

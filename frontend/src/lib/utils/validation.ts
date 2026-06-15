@@ -15,10 +15,12 @@ export interface ValidationResult {
     error?: string;
 }
 
-const USERNAME_MIN = 3;
-const USERNAME_MAX = 32; // matches kMaxUsernameLen
-const PASSWORD_MIN = 8; // matches kMinPasswordLen
-const LOBBY_NAME_MAX = 50;
+import contract from '../../../../contract.json';
+
+const USERNAME_MIN = contract.USERNAME_MIN;
+const USERNAME_MAX = contract.USERNAME_MAX;
+const PASSWORD_MIN = contract.PASSWORD_MIN;
+const LOBBY_NAME_MAX = contract.LOBBY_NAME_MAX;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const USERNAME_RE = /^[a-zA-Z0-9_]+$/;

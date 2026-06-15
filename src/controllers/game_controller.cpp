@@ -6,6 +6,7 @@
 #include "controllers/game_controller.hpp"
 #include "common/lobby.hpp"
 #include "common/ws.hpp"
+#include "common/payloads.hpp"
 #include "logger.hpp"
 #include <App.h>
 
@@ -63,7 +64,12 @@ void GameController::HandlePlayCard(WsContext context, const json& message) {
     }
 
     std::string request_identifier = ws::GetOr<std::string>(message, "request_id", "");
-    uint16_t card_identifier = ws::GetOr<uint16_t>(message, "card_id", 0);
+    auto payload_res = ws::ParsePayload<ws::GamePlayCardPayload>(message);
+    if (!payload_res) {
+        ws::SendError(context.socket, context.op_code, payload_res.error().message, request_identifier);
+        return;
+    }
+    uint16_t card_identifier = payload_res->card_id;
 
     bool was_play_successful = active_lobby->match->PlayCard(context.socket_data->username, card_identifier);
     
@@ -113,7 +119,13 @@ void GameController::HandleProvideInput(WsContext context, const json& message) 
     Lobby* active_lobby = lobby_controller_.GetLobbyByCode(context.socket_data->lobby_code);
     if (!active_lobby || !active_lobby->match) return;
 
-    std::string input_value = ws::GetOr<std::string>(message, "value", "");
+    std::string request_identifier = ws::GetOr<std::string>(message, "request_id", "");
+    auto payload_res = ws::ParsePayload<ws::GameSubmitInputPayload>(message);
+    if (!payload_res) {
+        ws::SendError(context.socket, context.op_code, payload_res.error().message, request_identifier);
+        return;
+    }
+    std::string input_value = payload_res->value;
     active_lobby->match->ProvideInput(context.socket_data->username, input_value);
     active_lobby->match->Tick();
     

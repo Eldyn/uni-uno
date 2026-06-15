@@ -3,6 +3,7 @@
 #include <controllers/auth_controller.hpp>
 #include <controllers/stats_controller.hpp>
 #include <common/env.hpp>
+#include <common/contract.hpp>
 #include <logger.hpp>
 #include <common/ws.hpp>
 #include <nlohmann/json_fwd.hpp>
@@ -14,6 +15,7 @@ using json = nlohmann::json;
 int main() {
     try {
         Env::Load(".env");
+        ContractConstants::Get().Load("contract.json");
         WebServer server(9999);
 
         AuthController  auth(server.GetHTTPRouter());

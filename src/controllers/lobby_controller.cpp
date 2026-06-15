@@ -10,6 +10,7 @@
 #include <controllers/lobby_controller.hpp>
 #include <common/bot_names.hpp>
 #include <common/ws.hpp>
+#include <common/payloads.hpp>
 #include <logger.hpp>
 #include <openssl/rand.h>
 #include <algorithm>
@@ -332,6 +333,11 @@ void LobbyController::OnClose(AppWebSocket* ws, PerSocketData* sd) {
 void LobbyController::HandleCreate(WsContext ctx, const json& message) {
     const string& username = ctx.socket_data->username;
     const string request_id = ws::GetOr<string>(message, "request_id", "");
+    auto payload_res = ws::ParsePayload<ws::LobbyCreatePayload>(message);
+    if (!payload_res) {
+        ws::SendError(ctx.socket, ctx.op_code, payload_res.error().message, request_id);
+        return;
+    }
 
     if (!ctx.socket_data->lobby_code.empty()) {
         ws::SendError(ctx.socket, ctx.op_code, "Already in a lobby", request_id);
@@ -350,10 +356,10 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
 
     Lobby& lobby = lobbies_[id];
     lobby.id                   = id;
-    lobby.settings.is_public   = ws::GetOr<bool>(message, "is_public", false);
+    lobby.settings.is_public   = payload_res->is_public;
     lobby.invite_code          = code;
     lobby.host                 = username;
-    lobby.name                 = ws::GetOr<string>(message, "name", username+"'s lobby");
+    lobby.name                 = payload_res->name.empty() ? username+"'s lobby" : payload_res->name;
     lobby.members.emplace_back(username, ctx.socket, true, false);
 
     code_to_id_[code] = id;
@@ -383,10 +389,10 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
  */
 void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     const string request_id = ws::GetOr<string>(message, "request_id", "");
-    auto tryCode = ws::Get<string>(message, "code");
+    auto payload_res = ws::ParsePayload<ws::LobbyJoinPayload>(message);
 
-    if (!tryCode) {
-        ws::SendError(ctx.socket, ctx.op_code, "Malformed or missing join code", request_id);
+    if (!payload_res) {
+        ws::SendError(ctx.socket, ctx.op_code, "Malformed or missing join code: " + payload_res.error().message, request_id);
         return;
     }
 
@@ -395,7 +401,7 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
         return;
     }
 
-    string code = tryCode.value();
+    string code = payload_res->code;
     transform(code.begin(), code.end(), code.begin(), ::toupper);
 
     auto it = code_to_id_.find(code);
@@ -498,13 +504,14 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
  */
 void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
     const std::string request_id = ws::GetOr<string>(message, "request_id", "");
+    auto payload_res = ws::ParsePayload<ws::LobbyRejoinPayload>(message);
 
-    if (!message.contains("code") || !message["code"].is_string()) {
-        ws::SendError(ctx.socket, ctx.op_code, "Missing lobby code", request_id);
+    if (!payload_res) {
+        ws::SendError(ctx.socket, ctx.op_code, "Missing lobby code: " + payload_res.error().message, request_id);
         return;
     }
 
-    string code = message["code"];
+    string code = payload_res->code;
     transform(code.begin(), code.end(), code.begin(), ::toupper);
 
     auto it = code_to_id_.find(code);
@@ -637,14 +644,14 @@ void LobbyController::HandleList(WsContext ctx, const json& message) {
 void LobbyController::HandlePromote(WsContext ctx, const json& message) {
     const string& code       = ctx.socket_data->lobby_code;
     const string& request_id = ws::GetOr<string>(message, "request_id", "");
-    auto try_username = ws::Get<string>(message, "username");
+    auto payload_res = ws::ParsePayload<ws::LobbyPromotePayload>(message);
 
-    if (!try_username) {
+    if (!payload_res) {
         ws::SendError(ctx.socket, ctx.op_code, "Username not specified", request_id);
         return; 
     }
     
-    const string& username = try_username.value();
+    const string& username = payload_res->username;
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
@@ -688,14 +695,14 @@ void LobbyController::HandlePromote(WsContext ctx, const json& message) {
 void LobbyController::HandleKick(WsContext ctx, const json& message) {
     const string& code       = ctx.socket_data->lobby_code;
     const string& request_id = ws::GetOr<string>(message, "request_id", "");
-    auto try_username = ws::Get<string>(message, "username");
+    auto payload_res = ws::ParsePayload<ws::LobbyKickPayload>(message);
 
-    if (!try_username) {
+    if (!payload_res) {
         ws::SendError(ctx.socket, ctx.op_code, "Username not specified", request_id);
         return; 
     }
     
-    const string& username = try_username.value();
+    const string& username = payload_res->username;
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
@@ -879,10 +886,13 @@ void LobbyController::HandleGetSavedMatchesList(WsContext ctx, const json& messa
 void LobbyController::HandleDeleteSavedMatch(WsContext context, const json& message) {
     const string& code = context.socket_data->lobby_code;
     const string request_id = ws::GetOr<string>(message, "request_id", "");
-    auto match_id_opt = ws::Get<string>(message, "match_id");
+    auto payload_res = ws::ParsePayload<ws::LobbyDeleteSavedMatchPayload>(message);
 
-    if (!match_id_opt) return;
-    std::string match_id = match_id_opt.value();
+    if (!payload_res) {
+        ws::SendError(context.socket, context.op_code, payload_res.error().message, request_id);
+        return;
+    }
+    std::string match_id = payload_res->match_id;
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) return;
@@ -920,10 +930,13 @@ void LobbyController::HandleDeleteSavedMatch(WsContext context, const json& mess
 void LobbyController::HandleResumeSavedMatch(WsContext context, const json& message) {
     const string& code = context.socket_data->lobby_code;
     const string request_id = ws::GetOr<string>(message, "request_id", "");
-    auto match_id_opt = ws::Get<string>(message, "match_id");
+    auto payload_res = ws::ParsePayload<ws::LobbyResumeSavedMatchPayload>(message);
 
-    if (!match_id_opt) return;
-    std::string match_id = match_id_opt.value();
+    if (!payload_res) {
+        ws::SendError(context.socket, context.op_code, payload_res.error().message, request_id);
+        return;
+    }
+    std::string match_id = payload_res->match_id;
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) return;

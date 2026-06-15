@@ -45,7 +45,7 @@ target_link_libraries(uno_server PRIVATE
 # Note: the presence of the files is evaluated at configuration time (CMake), so
 # the certificates, .env and public/ must be generated BEFORE `cmake --preset`. The setup
 # script creates them in the correct order.
-set(RUNTIME_FILES cert.pem key.pem .env)
+set(RUNTIME_FILES cert.pem key.pem .env contract.json)
 foreach(asset IN LISTS RUNTIME_FILES)
     if(EXISTS "${CMAKE_SOURCE_DIR}/${asset}")
         add_custom_command(TARGET uno_server POST_BUILD

@@ -126,9 +126,6 @@ private:
 
     // --- Validation and Security Parameters ---
 
-    static constexpr int kMinUsernameLen = 3;       /**< @brief Minimum length of the username. @tag CTRL-AUTH-CFG-001 */
-    static constexpr int kMaxUsernameLen = 32;      /**< @brief Maximum length of the username. @tag CTRL-AUTH-CFG-002 */
-    static constexpr int kMinPasswordLen = 8;       /**< @brief Minimum length of the password. @tag CTRL-AUTH-CFG-003 */
     static constexpr int kMaxBodyBytes   = 4096;    /**< @brief Limit in bytes for the HTTP payload (Anti-DDoS). @tag CTRL-AUTH-CFG-004 */
 
     // PBKDF2 parameters (increasing kIterations raises the cost of brute-force attempts)
