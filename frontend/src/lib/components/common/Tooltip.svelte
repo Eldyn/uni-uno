@@ -1,4 +1,4 @@
-<script lang="ts" snippets="snippets">
+<script lang="ts">
 	import { type Snippet } from "svelte";
 
 	interface Props {
@@ -41,6 +41,7 @@
 
 <div
 	class="tooltip-container"
+	role="tooltip"
 	onmouseenter={() => (isVisible = true)}
 	onmouseleave={() => (isVisible = false)}
 	onmousemove={handleMouseMove}
