@@ -96,7 +96,7 @@
 		color: var(--text-h);
 		font-family: "Pixel", monospace;
 		font-size: 16px;
-		text-transform: uppercase; /* Forza il maiuscolo visivo */
+		text-transform: uppercase; /* Forces visual uppercase */
 		outline: none;
 	}
 

@@ -1,47 +1,47 @@
 /**
  * @file toast.svelte.ts
- * @brief Store globale per la gestione delle notifiche a comparsa (Toast).
- * Fornisce una coda tipizzata e auto-scadente per inviare feedback visivi all'utente
- * da qualsiasi parte dell'applicazione (es. errori di rete o conferme di salvataggio).
+ * @brief Global store for managing pop-up notifications (Toasts).
+ * Provides a typed, auto-expiring queue to send visual feedback to the user
+ * from anywhere in the application (e.g. network errors or save confirmations).
  */
 
 /**
  * @typedef ToastType
- * @brief Tipologia della notifica, utilizzata per determinare lo stile e l'icona del toast.
+ * @brief Type of the notification, used to determine the style and icon of the toast.
  */
 export type ToastType = "success" | "error" | "info" | "warning";
 
 /**
  * @interface Toast
- * @brief Rappresenta una singola notifica attualmente visibile a schermo.
+ * @brief Represents a single notification currently visible on screen.
  */
 export interface Toast {
-    /** Identificativo numerico univoco della notifica, usato per la rimozione. */
+    /** Unique numeric identifier of the notification, used for removal. */
     id: number;
-    /** Tipo di notifica (determina il colore di sfondo/bordo). */
+    /** Type of notification (determines the background/border colour). */
     type: ToastType;
-    /** Il messaggio testuale da mostrare all'utente. */
+    /** The textual message to show to the user. */
     message: string;
 }
 
 /**
  * @class StoreToast
- * @brief Gestisce la coda reattiva delle notifiche e il loro ciclo di vita temporale.
+ * @brief Manages the reactive notification queue and their temporal lifecycle.
  * @tag FRONT-TOAST-001
  */
 class StoreToast {
-    /** Array reattivo contenente le notifiche attualmente attive e visibili. */
+    /** Reactive array containing the notifications currently active and visible. */
     items = $state<Toast[]>([]);
 
-    /** Contatore incrementale interno per assegnare un ID univoco ad ogni nuova notifica. */
+    /** Internal incremental counter to assign a unique ID to each new notification. */
     #nextId = 0;
 
     /**
-     * @brief Aggiunge una nuova notifica alla coda e imposta un timer per la sua rimozione.
-     * @param message Il testo della notifica.
-     * @param type La gravità/categoria della notifica (Default: "info").
-     * @param durationMs Millisecondi prima della scomparsa automatica (Default: 5000ms). Se 0, il toast non scade.
-     * @returns Una funzione di callback che, se invocata, rimuove prematuramente la notifica.
+     * @brief Adds a new notification to the queue and sets a timer for its removal.
+     * @param message The text of the notification.
+     * @param type The severity/category of the notification (Default: "info").
+     * @param durationMs Milliseconds before automatic disappearance (Default: 5000ms). If 0, the toast does not expire.
+     * @returns A callback function that, when invoked, removes the notification prematurely.
      * @tag FRONT-TOAST-MTH-001
      */
     add(message: string, type: ToastType = "info", durationMs = 5_000): () => void {
@@ -54,44 +54,44 @@ class StoreToast {
     }
 
     /**
-     * @brief Rimuove immediatamente una notifica dall'array filtrandola per ID.
-     * L'interfaccia utente Svelte aggiornerà la lista eliminando il componente dal DOM.
-     * @param id L'identificativo numerico della notifica da eliminare.
+     * @brief Immediately removes a notification from the array by filtering it by ID.
+     * The Svelte UI will update the list by removing the component from the DOM.
+     * @param id The numeric identifier of the notification to delete.
      * @tag FRONT-TOAST-MTH-002
      */
     remove(id: number): void {
         this.items = this.items.filter((t) => t.id !== id);
     }
 
-    // --- Metodi di utilità rapida (Shorthands) ---
+    // --- Quick utility methods (Shorthands) ---
 
     /**
-     * @brief Scorciatoia per mostrare un messaggio di errore (Resta visibile per 6 secondi).
-     * @param msg Il messaggio di errore.
+     * @brief Shorthand to show an error message (stays visible for 6 seconds).
+     * @param msg The error message.
      */
     error(msg: string): void {
         this.add(msg, "error", 6_000);
     }
 
     /**
-     * @brief Scorciatoia per mostrare un messaggio di successo (Resta visibile per 3 secondi).
-     * @param msg Il messaggio di successo.
+     * @brief Shorthand to show a success message (stays visible for 3 seconds).
+     * @param msg The success message.
      */
     success(msg: string): void {
         this.add(msg, "success", 3_000);
     }
 
     /**
-     * @brief Scorciatoia per mostrare un messaggio informativo (Resta visibile per 5 secondi).
-     * @param msg Il messaggio informativo.
+     * @brief Shorthand to show an informational message (stays visible for 5 seconds).
+     * @param msg The informational message.
      */
     info(msg: string): void {
         this.add(msg, "info", 5_000);
     }
 
     /**
-     * @brief Scorciatoia per mostrare un avvertimento (Resta visibile per 5 secondi).
-     * @param msg Il messaggio di avvertimento.
+     * @brief Shorthand to show a warning (stays visible for 5 seconds).
+     * @param msg The warning message.
      */
     warning(msg: string): void {
         this.add(msg, "warning", 5_000);
@@ -99,6 +99,6 @@ class StoreToast {
 }
 
 /**
- * @brief Istanza singleton esportata globalmente. È il punto di accesso per tutti gli altri store.
+ * @brief Globally exported singleton instance. It is the access point for all other stores.
  */
 export const storeToast = new StoreToast();

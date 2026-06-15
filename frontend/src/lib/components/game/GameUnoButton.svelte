@@ -8,14 +8,14 @@
 
     let alreadyCalled = $derived(storeGame.localPlayer?.has_called_uno ?? false);
 
-    // Ottieni la carta attualmente in cima agli scarti
-    let topCard = $derived(storeGame.state?.top_card); 
+    // Get the card currently on top of the discard pile
+    let topCard = $derived(storeGame.state?.top_card);
 
-    // Controlla se almeno una delle due carte in mano può essere giocata
+    // Check whether at least one of the cards in hand can be played
     let canPlayCard = $derived((storeGame.localPlayer?.hand || []).some(card => {
         if (!topCard) return false;
         
-        // Verifica le regole di base (colore, valore o jolly)
+        // Check the basic rules (colour, value or wild)
         const matchesColor = card.color === topCard.color;
         const matchesValue = card.value === topCard.value;
         const isWildCard = card.color === 'wild' || card.is_wild; 
@@ -54,9 +54,9 @@
         border: 4px solid #000;
         border-radius: 0;
         
-        /* Applichiamo il font pixel */
-        font-family: 'Pixel', system-ui, monospace; 
-        font-size: 20px; /* Ridotto leggermente per bilanciare la larghezza del font */
+        /* Apply the pixel font */
+        font-family: 'Pixel', system-ui, monospace;
+        font-size: 20px; /* Slightly reduced to balance the font width */
         letter-spacing: 1px;
         cursor: pointer;
         
@@ -86,7 +86,7 @@
         border: 4px solid #000;
         border-radius: 0;
         font-family: 'Press Start 2P', system-ui, monospace;
-        font-size: 10px; /* Più piccolo per stare bene nel badge */
+        font-size: 10px; /* Smaller to fit nicely in the badge */
         text-transform: uppercase;
         box-shadow: 6px 6px 0px #000;
     }

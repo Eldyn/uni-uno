@@ -1,8 +1,8 @@
 /**
  * @file auth.svelte.ts
- * @brief Store per la gestione dell'autenticazione, sessione e validazione.
- * Concentra tutte le chiamate HTTP RESTful al modulo `/auth` e mappa
- * gli errori del server in messaggi validi per i form dell'interfaccia.
+ * @brief Store for managing authentication, session and validation.
+ * Concentrates all the RESTful HTTP calls to the `/auth` module and maps
+ * server errors to valid messages for the interface forms.
  */
 
 import {
@@ -16,7 +16,7 @@ import { storeToast } from "./toast.svelte";
 
 /**
  * @interface AuthFieldErrors
- * @brief Mappatura degli errori per ogni singolo campo del form di registrazione/login.
+ * @brief Mapping of the errors for each individual field of the registration/login form.
  */
 export interface AuthFieldErrors {
     username?: string;
@@ -27,23 +27,23 @@ export interface AuthFieldErrors {
 
 /**
  * @class StoreAuth
- * @brief Gestisce lo stato reattivo dell'utente autenticato (Username, Avatar).
+ * @brief Manages the reactive state of the authenticated user (Username, Avatar).
  * @tag FRONT-AUTH-001
  */
 class StoreAuth {
-    /** Nome utente dell'account correntemente connesso. */
+    /** Username of the currently connected account. */
     username = $state("");
-    /** Immagine di profilo o URL dell'avatar locale. */
+    /** Profile picture or local avatar URL. */
     avatar = $state("");
-    /** Flag che indica se l'utente possiede una sessione valida. */
+    /** Flag indicating whether the user holds a valid session. */
     isLoggedIn = $state(false);
-    /** Flag per mostrare i caricamenti (spinners) durante le chiamate HTTP. */
+    /** Flag to show the loading indicators (spinners) during HTTP calls. */
     isLoading = $state(false);
 
     /**
-     * @brief Chiamata all'avvio dell'app per ripristinare una sessione preesistente.
-     * Sfrutta l'invio automatico dei cookie HttpOnly verso l'endpoint `/auth/me`.
-     * @returns {Promise<boolean>} True se l'utente è loggato, false altrimenti.
+     * @brief Called on app startup to restore a pre-existing session.
+     * Leverages the automatic sending of HttpOnly cookies to the `/auth/me` endpoint.
+     * @returns {Promise<boolean>} True if the user is logged in, false otherwise.
      */
     async checkSession(): Promise<boolean> {
         try {
@@ -67,12 +67,12 @@ class StoreAuth {
     }
 
     /**
-     * @brief Valida i campi lato client e invia la richiesta POST di registrazione.
-     * @param username Nome utente desiderato.
-     * @param email Indirizzo email.
-     * @param password Password in chiaro.
-     * @param confirmPassword Conferma della password.
-     * @returns {Promise<AuthFieldErrors>} Oggetto con eventuali errori. Se vuoto, successo.
+     * @brief Validates the fields client-side and sends the POST registration request.
+     * @param username Desired username.
+     * @param email Email address.
+     * @param password Plaintext password.
+     * @param confirmPassword Password confirmation.
+     * @returns {Promise<AuthFieldErrors>} Object with any errors. If empty, success.
      */
     async register(
         username: string,
@@ -129,10 +129,10 @@ class StoreAuth {
     }
 
     /**
-     * @brief Valida le credenziali e tenta il login al server.
-     * @param email Email inserita.
-     * @param password Password inserita.
-     * @returns {Promise<AuthFieldErrors>} Oggetto con eventuali errori (es. "Credenziali errate").
+     * @brief Validates the credentials and attempts to log in to the server.
+     * @param email Entered email.
+     * @param password Entered password.
+     * @returns {Promise<AuthFieldErrors>} Object with any errors (e.g. "Incorrect credentials").
      */
     async login(email: string, password: string): Promise<AuthFieldErrors> {
         const errors: AuthFieldErrors = {};
@@ -174,23 +174,23 @@ class StoreAuth {
     }
 
     /**
-     * @brief Aggiorna localmente l'avatar (es. Blob URL).
-     * @param file Il file immagine selezionato.
-     * @returns True se l'URL è stato creato con successo.
+     * @brief Updates the avatar locally (e.g. Blob URL).
+     * @param file The selected image file.
+     * @returns True if the URL was created successfully.
      */
     updateAvatar(file: File): boolean {
         try {
             this.avatar = URL.createObjectURL(file);
-            storeToast.success("Immagine del profilo aggiornata localmente!");
+            storeToast.success("Profile picture updated locally!");
             return true;
         } catch {
-            storeToast.error("Impossibile caricare l'immagine.");
+            storeToast.error("Unable to load the image.");
             return false;
         }
     }
 
     /**
-     * @brief Tenta il logout inviando una richiesta e pulisce lo stato locale.
+     * @brief Attempts to log out by sending a request and clears the local state.
      */
     async logout(): Promise<void> {
         await fetch("/auth/logout", { method: "POST", credentials: "include" });

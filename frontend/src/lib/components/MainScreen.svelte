@@ -157,8 +157,8 @@
 			text-shadow: 5px 5px 0px #1a1a1a;
 		}
 		50% {
-			transform: translateY(-20px); /* Spinta verso l'alto */
-			text-shadow: 5px 25px 0px #1a1a1a; /* L'ombra si allunga verso il basso */
+			transform: translateY(-20px); /* Push upwards */
+			text-shadow: 5px 25px 0px #1a1a1a; /* The shadow stretches downwards */
 		}
 	}
 

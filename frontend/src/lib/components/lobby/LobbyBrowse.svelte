@@ -51,9 +51,9 @@
 	</header>
 
 	<div class="main-layout">
-		<!-- PARTE SINISTRA: LISTA -->
+		<!-- LEFT SIDE: LIST -->
 		<section class="lobbies-section">
-			<!-- Area della lista (sopra) -->
+			<!-- List area (above) -->
 			<div class="lobbies-scroll-area">
 				<LobbyList lobbies={storeLobby.available} isLoading={storeLobby.isLoadingList} />
 			</div>
