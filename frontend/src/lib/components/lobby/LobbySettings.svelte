@@ -50,11 +50,11 @@
 
 	function handleRuleChange(id: string, enabled: boolean) {
 		if (!isHost) return;
-		const idx = rules.findIndex((r) => r.id === id);
-		if (idx !== -1) rules[idx].enabled = enabled;
-		const activeRuleIds = rules.filter((rule) => rule.enabled).map((rule) => rule.id);
-
-		storeLobby.updateSettings({ active_mods: activeRuleIds as string[] });
+		const current = storeLobby.current?.settings.active_mods ?? [];
+		const activeRuleIds = enabled
+			? [...current, id]
+			: current.filter((m) => m !== id);
+		storeLobby.updateSettings({ active_mods: activeRuleIds });
 	}
 </script>
 
