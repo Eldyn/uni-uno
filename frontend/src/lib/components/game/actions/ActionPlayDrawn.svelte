@@ -87,16 +87,10 @@
 		}
 	}
 
-	.action-buttons-group,
-	.player-options-list {
+	.action-buttons-group {
 		display: flex;
 		gap: 15px;
 		animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-	}
-
-	.player-options-list {
-		flex-direction: column;
-		gap: 10px;
 	}
 
 	.pixel-btn {
@@ -120,11 +114,6 @@
 	.keep-btn {
 		background-color: #dc251c;
 	}
-	.target-btn {
-		background-color: var(--accent);
-		color: #fff;
-	}
-
 	.pixel-btn:hover {
 		transform: translate(-2px, -2px);
 		box-shadow: 6px 6px 0px #1a1a1a;

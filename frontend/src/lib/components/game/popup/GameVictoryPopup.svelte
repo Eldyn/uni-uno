@@ -96,15 +96,6 @@
 		word-wrap: break-word;
 	}
 
-	.cute-modal-content h1 {
-		font-family: "FatPixel", sans-serif;
-		/* FIXED: Scaled down max size, added bottom margin to push avatar down */
-		font-size: clamp(1.4rem, 8vw, 2rem);
-		line-height: 1.1;
-		margin: 0 0 15px 0;
-		width: 100%;
-	}
-
 	.text-victory {
 		color: var(--accent);
 		text-shadow: 2px 2px 0px #1a1a1a;

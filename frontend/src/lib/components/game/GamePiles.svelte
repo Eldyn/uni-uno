@@ -28,7 +28,7 @@
 </script>
 
 <div id="piles_area">
-	<div id="draw_pile" bind:this={drawPileEl} onclick={handleDrawClick} role="button" tabindex="0">
+	<div id="draw_pile" bind:this={drawPileEl} onclick={handleDrawClick} onkeydown={(e) => (e.key === "Enter" || e.key === " ") && handleDrawClick()} role="button" tabindex="0">
 		<GameCard
 			card={{ id: -1, color: "black", value: "" }}
 			turned={true}
