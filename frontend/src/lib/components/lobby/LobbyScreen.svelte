@@ -33,6 +33,10 @@
 		isEditingName = true;
 	}
 
+	function focusOnMount(node: HTMLElement) {
+		node.focus();
+	}
+
 	function saveName() {
 		isEditingName = false;
 		const trimmed = editedName.trim();
@@ -52,12 +56,18 @@
 					onblur={saveName}
 					onkeydown={(e) => e.key === "Enter" && saveName()}
 					maxlength="22"
-					autofocus
+					use:focusOnMount
 				/>
 			{:else}
-				<span class="lobby-title" class:editable={isHost} onclick={startEditing}>
-					{storeLobby.current?.name}
-				</span>
+				{#if isHost}
+					<button type="button" class="lobby-title editable" onclick={startEditing}>
+						{storeLobby.current?.name}
+					</button>
+				{:else}
+					<span class="lobby-title">
+						{storeLobby.current?.name}
+					</span>
+				{/if}
 			{/if}
 
 			<div class="header-controls">

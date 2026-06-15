@@ -168,8 +168,7 @@
 	}
 
 	.profile-section h2,
-	.top-bar h1,
-	.back-btn {
+	.top-bar h1 {
 		line-height: 1.3;
 		padding-top: 2px;
 		font-family: "Pixel", sans-serif; /* Ensuring blocky font if available */
@@ -200,21 +199,6 @@
 		text-shadow: 2px 2px 0px #000;
 	}
 
-	.back-btn {
-		background: #1c1c1e;
-		color: #ffcc00;
-		/* Using box-shadow as a border because clip-path cuts real borders */
-		box-shadow: inset 0 0 0 2px #ffcc00;
-		border: none;
-		padding: 8px 16px;
-		cursor: pointer;
-		font-weight: bold;
-		transition: filter 0.2s;
-	}
-
-	.back-btn:hover {
-		filter: brightness(1.2);
-	}
 
 	.content {
 		flex: 1;

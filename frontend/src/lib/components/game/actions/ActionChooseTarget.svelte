@@ -50,10 +50,4 @@
 		text-shadow: 2px 2px 0px #1a1a1a;
 	}
 
-	.instruction-text {
-		font-family: "Pixel", sans-serif;
-		color: var(--text-h);
-		font-size: 0.9rem;
-		margin: 0;
-	}
 </style>

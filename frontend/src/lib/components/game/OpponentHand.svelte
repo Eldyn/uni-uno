@@ -20,7 +20,7 @@
 	} = $props();
 
 	const bus = useCardBus();
-	const role: ElementRole = `hand-opponent-${index}`;
+	const role: ElementRole = $derived(`hand-opponent-${index}` as ElementRole);
 
 	let handEl = $state<HTMLElement | null>(null);
 
@@ -51,11 +51,17 @@
 	);
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
 	class="opponent-slot"
 	class:is-targetable={isValidTarget}
 	onclick={() => {
 		if (isValidTarget && player) {
+			storeGame.submitInput(player.username);
+		}
+	}}
+	onkeydown={(e) => {
+		if ((e.key === "Enter" || e.key === " ") && isValidTarget && player) {
 			storeGame.submitInput(player.username);
 		}
 	}}
