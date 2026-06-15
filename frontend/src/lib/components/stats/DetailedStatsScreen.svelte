@@ -79,7 +79,7 @@
 <div class="stats-container">
 	<header class="top-bar">
 		<button class="styled-btn" onclick={() => storeNavigation.back()}> ↩ Back </button>
-		<h1>ARSENALE DELLE CARTE</h1>
+		<h1>CARD ARSENAL</h1>
 		<div style="width: 80px;"></div>
 	</header>
 

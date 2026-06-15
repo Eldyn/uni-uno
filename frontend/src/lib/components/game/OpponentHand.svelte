@@ -33,7 +33,7 @@
 	let cardCount = $derived(player?.card_count ?? 0);
 	let handWidth = $derived(`calc(${cardCount} * 2.2em + 7.2em)`);
 
-	// Logica per determinare colore e tipologia di giocatore (Umano o Bot)
+	// Logic to determine the colour and type of player (Human or Bot)
 	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"];
 
 	let playerIdx = $derived(

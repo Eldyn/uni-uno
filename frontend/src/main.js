@@ -4,7 +4,7 @@ import App from './App.svelte'
 
 const app = mount(App, {
   target: document.getElementById('app') ?? document.body, 
-  // ?? document.body Risolve l'errore usando il body come fallback se #app è null - anche se ora esiste il div
+  // ?? document.body resolves the error by using the body as a fallback if #app is null - even though the div now exists
 })
 
 export default app

@@ -1,7 +1,7 @@
 /**
  * @file navigation.svelte.ts
- * @brief Gestore del routing interno dell'applicazione (Single Page Application).
- * Mantiene in memoria lo storico limitato a un livello per gestire l'azione "Indietro".
+ * @brief Manager of the application's internal routing (Single Page Application).
+ * Keeps a history limited to one level in memory to handle the "Back" action.
  */
 
 import { storeAuth } from "./auth.svelte";
@@ -9,7 +9,7 @@ import { ws } from "./ws.svelte";
 
 /**
  * @typedef AppScreen
- * @brief Elenco delle schermate disponibili nell'applicazione frontend.
+ * @brief List of the screens available in the frontend application.
  */
 export type AppScreen =
     | "main"
@@ -23,16 +23,16 @@ export type AppScreen =
 
 /**
  * @class StoreNavigation
- * @brief Store reattivo per il cambio di schermata.
- * Sfrutta il localStorage per persistere la schermata corrente e ripristinarla
- * dopo un ricaricamento (F5), previa verifica dello stato di login.
+ * @brief Reactive store for screen switching.
+ * Uses localStorage to persist the current screen and restore it
+ * after a reload (F5), after verifying the login state.
  * @tag FRONT-NAV-001
  */
 class StoreNavigation {
-    /** La schermata attualmente visualizzata dall'utente. */
+    /** The screen currently displayed to the user. */
     current = $state<AppScreen>("main");
 
-    /** Memorizza la schermata precedente per la navigazione 'back'. */
+    /** Stores the previous screen for 'back' navigation. */
     #previous: AppScreen | null = null;
 
     constructor() {
@@ -49,9 +49,9 @@ class StoreNavigation {
     }
 
     /**
-     * @brief Cambia la schermata corrente.
-     * Salva automaticamente la schermata nel `localStorage`.
-     * @param screen La nuova schermata di destinazione.
+     * @brief Changes the current screen.
+     * Automatically saves the screen to `localStorage`.
+     * @param screen The new destination screen.
      */
     goto(screen: AppScreen): void {
         if (screen === this.current) return;
@@ -61,7 +61,7 @@ class StoreNavigation {
     }
 
     /**
-     * @brief Ritorna alla schermata precedente, se disponibile in memoria.
+     * @brief Returns to the previous screen, if available in memory.
      */
     back(): void {
         if (this.#previous) this.goto(this.#previous);

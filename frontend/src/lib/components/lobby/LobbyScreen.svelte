@@ -345,11 +345,11 @@
     }
 
     .start-button:disabled .letter {
-        animation: none; /* Blocca l'animazione */
-        color: #888; /* Colore grigio per il testo */
-        -webkit-text-stroke: 1.5px #444; /* Bordo grigio scuro per adattarsi al testo */
-        text-shadow: 2px 2px 0px #1a1a1a; /* Ombra statica fissa, senza salto */
-        transform: translateY(0); /* Assicura che le lettere restino in basso */
+        animation: none; /* Stops the animation */
+        color: #888; /* Grey colour for the text */
+        -webkit-text-stroke: 1.5px #444; /* Dark grey border to match the text */
+        text-shadow: 2px 2px 0px #1a1a1a; /* Fixed static shadow, no jump */
+        transform: translateY(0); /* Ensures the letters stay at the bottom */
     }
 
 	.leave-button-fixed {
@@ -421,27 +421,27 @@
 	}
 
 	.dots-button {
-		background: var(--bg); /* Sfondo scuro semitrasparente */
-		border: 2px solid var(--border); /* Bordo coerente con il resto */
-		width: 22px; /* Larghezza fissa per renderlo quadrato */
-		height: 42px; /* Altezza fissa */
+		background: var(--bg); /* Semi-transparent dark background */
+		border: 2px solid var(--border); /* Border consistent with the rest */
+		width: 22px; /* Fixed width to make it square */
+		height: 42px; /* Fixed height */
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1.8rem; /* Dimensione dei puntini */
+		font-size: 1.8rem; /* Size of the dots */
 		cursor: pointer;
 		color: white;
 		transition: all 0.2s;
 		line-height: 0;
-		padding-bottom: 2px; /* Aggiustamento ottico per centrare i puntini verticalmente */
+		padding-bottom: 2px; /* Optical adjustment to centre the dots vertically */
 	}
 
 	.dots-button:hover {
-		background: var(--bg); /* Cambia colore quando ci passi sopra */
+		background: var(--bg); /* Changes colour on hover */
 		border-color: white;
 	}
 
-	/* Assicurati che il wrapper sia relativo per posizionare il menu correttamente */
+	/* Make sure the wrapper is relative to position the menu correctly */
 	.menu-wrapper {
 		position: relative;
 	}
@@ -455,7 +455,7 @@
 		min-width: 140px;
 	}
 
-	/* Stile base dell'item */
+	/* Base item style */
 	.dropdown-item {
 		width: 100%;
 		padding: 12px;
@@ -467,16 +467,16 @@
 		font-weight: bold;
 		transition:
 			background 0.2s,
-			filter 0.2s; /* Transizione fluida */
+			filter 0.2s; /* Smooth transition */
 	}
 
-	/* EFFETTO ILLUMINAZIONE AL PASSAGGIO */
+	/* HOVER ILLUMINATION EFFECT */
 	.dropdown-item:hover {
-		background: rgba(255, 255, 255, 0.1); /* Sfondo leggermente più chiaro */
-		filter: brightness(1.4); /* Aumenta la luminosità del testo (Promote/Kick) */
+		background: rgba(255, 255, 255, 0.1); /* Slightly lighter background */
+		filter: brightness(1.4); /* Increases the brightness of the text (Promote/Kick) */
 	}
 
-	/* Opzionale: un piccolo bordo a sinistra quando passi sopra */
+	/* Optional: a small border on the left on hover */
 	.dropdown-item:hover {
 		box-shadow: inset 4px 0 0 var(--accent);
 	}

@@ -6,7 +6,7 @@
 
 	async function handleSubmit(e: Event) {
 		e.preventDefault();
-		// Inviamo isPrivate (true/false) allo store
+		// We send isPrivate (true/false) to the store
 		await storeLobby.create({ name, is_public: !isPrivate });
 		// Reset campi
 		name = "";
@@ -60,7 +60,7 @@
 	.create-form {
 		display: flex;
 		flex-direction: column;
-		gap: 15px; /* Più spazio tra gli elementi */
+		gap: 15px; /* More space between the elements */
 	}
 
 	.input-group {

@@ -65,8 +65,8 @@
 		}
 	});
 
-	// Logica colore coerente anche per il giocatore locale (Umano)
-	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"]; // Blu, Verde, Rosso, Giallo
+	// Consistent colour logic for the local player too (Human)
+	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"]; // Blue, Green, Red, Yellow
 	let localPlayerIdx = $derived(storeGame.state?.players?.findIndex(p => p.username === storeGame.localPlayer?.username) ?? -1);
 	let localPlayerColor = $derived(localPlayerIdx !== -1 ? PLAYER_COLORS[localPlayerIdx % 4] : "#0493de");
 </script>

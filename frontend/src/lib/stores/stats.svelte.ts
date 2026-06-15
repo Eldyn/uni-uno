@@ -1,86 +1,86 @@
 /**
  * @file stats.svelte.ts
- * @brief Store globale reattivo per la gestione delle statistiche e della classifica globale.
- * Si interfaccia con il backend REST per recuperare i dati dell'utente e la Top 50.
+ * @brief Reactive global store for managing statistics and the global leaderboard.
+ * Interfaces with the REST backend to retrieve the user's data and the Top 50.
  */
 
 import { storeToast } from "./toast.svelte";
 
 /**
  * @interface PlayerStats
- * @brief Rappresenta le statistiche complete di un singolo giocatore restituite dal server.
- * Include vittorie, sconfitte e un dettaglio analitico delle singole carte giocate (se disponibile).
+ * @brief Represents the complete statistics of a single player returned by the server.
+ * Includes wins, losses and an analytical breakdown of the individual cards played (if available).
  */
 export interface PlayerStats {
-    /** L'username univoco del giocatore. */
+    /** The unique username of the player. */
     username: string;
-    /** Numero totale di partite vinte. */
+    /** Total number of matches won. */
     total_wins: number;
-    /** Numero totale di partite perse. */
+    /** Total number of matches lost. */
     total_losses: number;
-    /** Posizione nella classifica globale (null se il giocatore non è ancora classificato). */
+    /** Position in the global leaderboard (null if the player is not yet ranked). */
     rank: number | null;
 
-    /** Contatore di carte rosse giocate (Opzionale). */
+    /** Counter of red cards played (optional). */
     cards_played_red?: number;
-    /** Contatore di carte blu giocate (Opzionale). */
+    /** Counter of blue cards played (optional). */
     cards_played_blue?: number;
-    /** Contatore di carte verdi giocate (Opzionale). */
+    /** Counter of green cards played (optional). */
     cards_played_green?: number;
-    /** Contatore di carte gialle giocate (Opzionale). */
+    /** Counter of yellow cards played (optional). */
     cards_played_yellow?: number;
-    /** Contatore di carte '0' giocate (Opzionale). */
+    /** Counter of '0' cards played (optional). */
     cards_played_0?: number;
-    /** Contatore di carte '1' giocate (Opzionale). */
+    /** Counter of '1' cards played (optional). */
     cards_played_1?: number;
-    /** Contatore di carte '2' giocate (Opzionale). */
+    /** Counter of '2' cards played (optional). */
     cards_played_2?: number;
-    /** Contatore di carte '3' giocate (Opzionale). */
+    /** Counter of '3' cards played (optional). */
     cards_played_3?: number;
-    /** Contatore di carte '4' giocate (Opzionale). */
+    /** Counter of '4' cards played (optional). */
     cards_played_4?: number;
-    /** Contatore di carte '5' giocate (Opzionale). */
+    /** Counter of '5' cards played (optional). */
     cards_played_5?: number;
-    /** Contatore di carte '6' giocate (Opzionale). */
+    /** Counter of '6' cards played (optional). */
     cards_played_6?: number;
-    /** Contatore di carte '7' giocate (Opzionale). */
+    /** Counter of '7' cards played (optional). */
     cards_played_7?: number;
-    /** Contatore di carte '8' giocate (Opzionale). */
+    /** Counter of '8' cards played (optional). */
     cards_played_8?: number;
-    /** Contatore di carte '9' giocate (Opzionale). */
+    /** Counter of '9' cards played (optional). */
     cards_played_9?: number;
-    /** Contatore di carte 'Divieto/Salta' giocate (Opzionale). */
+    /** Counter of 'Skip' cards played (optional). */
     cards_played_skip?: number;
-    /** Contatore di carte 'Inverti' giocate (Opzionale). */
+    /** Counter of 'Reverse' cards played (optional). */
     cards_played_reverse?: number;
-    /** Contatore di carte '+2' giocate (Opzionale). */
+    /** Counter of '+2' cards played (optional). */
     cards_played_draw2?: number;
-    /** Contatore di carte '+4' giocate (Opzionale). */
+    /** Counter of '+4' cards played (optional). */
     cards_played_draw4?: number;
-    /** Contatore di carte 'Cambio Colore' giocate (Opzionale). */
+    /** Counter of 'Colour Change' cards played (optional). */
     cards_played_colorswitch?: number;
 }
 
 /**
  * @class StoreStats
- * @brief Incapsula lo stato e i metodi per recuperare le statistiche dal server.
+ * @brief Encapsulates the state and methods to retrieve statistics from the server.
  * @tag FRONT-STAT-001
  */
 class StoreStats {
-    /** Stato reattivo contenente le statistiche personali dell'utente loggato. */
+    /** Reactive state containing the personal statistics of the logged-in user. */
     myStats = $state<PlayerStats | null>(null);
 
-    /** Stato reattivo contenente la classifica dei migliori 50 giocatori. */
+    /** Reactive state containing the leaderboard of the top 50 players. */
     leaderboard = $state<PlayerStats[]>([]);
 
-    /** Flag booleano che indica se è in corso una richiesta di rete, utile per gli spinner UI. */
+    /** Boolean flag indicating whether a network request is in progress, useful for UI spinners. */
     isLoading = $state(false);
 
     /**
-     * @brief Recupera le statistiche personali dal server.
-     * Effettua una richiesta GET a `/stats/me` includendo le credenziali (cookie).
-     * In caso di successo, decodifica il JSON e popola lo stato `myStats`.
-     * @returns Promise vuota risolta al termine dell'operazione di rete.
+     * @brief Retrieves the personal statistics from the server.
+     * Makes a GET request to `/stats/me` including the credentials (cookie).
+     * On success, decodes the JSON and populates the `myStats` state.
+     * @returns Empty promise resolved when the network operation completes.
      * @tag FRONT-STAT-MTH-001
      */
     async fetchMe(): Promise<void> {
@@ -99,10 +99,10 @@ class StoreStats {
     }
 
     /**
-     * @brief Recupera la classifica globale dal server.
-     * Effettua una richiesta GET a `/stats/leaderboard` e aggiorna l'array di stato `leaderboard`
-     * per permettere alla UI di renderizzare la tabella. Gestisce in automatico il loading state.
-     * @returns Promise vuota risolta al termine dell'operazione.
+     * @brief Retrieves the global leaderboard from the server.
+     * Makes a GET request to `/stats/leaderboard` and updates the `leaderboard` state array
+     * to let the UI render the table. Automatically manages the loading state.
+     * @returns Empty promise resolved when the operation completes.
      * @tag FRONT-STAT-MTH-002
      */
     async fetchLeaderboard(): Promise<void> {
@@ -128,6 +128,6 @@ class StoreStats {
 }
 
 /**
- * @brief Istanza singleton esportata per essere utilizzata dai componenti Svelte.
+ * @brief Singleton instance exported for use by the Svelte components.
  */
 export const storeStats = new StoreStats();

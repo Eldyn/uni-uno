@@ -58,11 +58,11 @@
 	const tint = $derived(card.value !== "colorswitch");
 	const slotAttach = (node: Element) => attach?.(node);
 	function playRandomCardSound() {
-        // Genera un numero casuale tra 1 e 3
+        // Generate a random number between 1 and 3
         const randomNum = Math.floor(Math.random() * 3) + 1;
         const audio = new Audio(`assets/music/card${randomNum}.mp3`);
 
-        // Abbassa il volume (es. 0.2 equivale al 20% del volume massimo)
+        // Lower the volume (e.g. 0.2 equals 20% of the maximum volume)
         audio.volume = 0.2; 
 
         audio.play().catch((err) => console.warn("Impossibile riprodurre l'audio:", err));

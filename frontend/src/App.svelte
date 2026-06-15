@@ -14,26 +14,26 @@
 	import { storeToast } from "./lib/stores/toast.svelte";
 	import { storeAuth } from "./lib/stores/auth.svelte";
 
-	// 1. Variabili per la gestione dell'audio
+	// 1. Variables for audio management
 	let volume = 0.05;
 	let audioPlayer: HTMLAudioElement;
 
 	onMount(async () => {
-		// --- LOGICA AUTOPLAY AUDIO ---
+		// --- AUDIO AUTOPLAY LOGIC ---
 		if (audioPlayer) {
-			// funzionerà solo se l'utente ha già interagito col sito in passato o ricarica la pagina
+			// will only work if the user has already interacted with the site in the past or reloads the page
 			audioPlayer.play().catch(() => {
-				console.warn("Autoplay bloccato. La musica partirà al primo click.");
+				console.warn("Autoplay blocked. The music will start on the first click.");
 
-				// Se bloccato, creiamo una funzione che fa partire l'audio al primo click in assoluto sulla pagina
+				// If blocked, we create a function that starts the audio on the very first click on the page
 				const startAudioOnInteraction = () => {
 					audioPlayer.play();
-					// Una volta partita, rimuoviamo l'evento per non sovraccaricare il browser
+					// Once started, we remove the event so as not to overload the browser
 					document.removeEventListener("click", startAudioOnInteraction);
 					document.removeEventListener("keydown", startAudioOnInteraction);
 				};
 
-				// Mettiamo il sito "in ascolto" del primo click o tasto premuto
+				// We make the site "listen" for the first click or key press
 				document.addEventListener("click", startAudioOnInteraction);
 				document.addEventListener("keydown", startAudioOnInteraction);
 			});

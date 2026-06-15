@@ -18,10 +18,10 @@
         const audioSrc = isMe ? "/assets/music/victory.mp3" : "/assets/music/lose.mp3";
         const gameAudio = new Audio(audioSrc);
 
-        // Fa partire l'audio (suonerà sopra quello del router)
-        gameAudio.play().catch(err => console.warn("Autoplay audio bloccato:", err));
+        // Starts the audio (it will play over the router's audio)
+        gameAudio.play().catch(err => console.warn("Audio autoplay blocked:", err));
 
-        // Cleanup: interrompe l'audio se si esce dalla schermata
+        // Cleanup: stops the audio if the screen is exited
         return () => {
             gameAudio.pause();
             gameAudio.currentTime = 0;

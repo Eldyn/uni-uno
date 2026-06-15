@@ -16,7 +16,7 @@
 			00:{storeGame.turnTimeRemaining.toString().padStart(2, "0")}
 		</span>
 
-		<button class="lobby-btn" onclick={handleReturnToLobbies}> Esci </button>
+		<button class="lobby-btn" onclick={handleReturnToLobbies}> Exit </button>
 	</div>
 {/if}
 
