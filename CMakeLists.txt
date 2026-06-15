@@ -36,4 +36,36 @@ target_link_libraries(uno_server PRIVATE
     nlohmann_json::nlohmann_json
 )
 
+# --- Copia degli asset di runtime accanto all'eseguibile ---
+# Il server risolve certificati, file .env e cartella public/ a partire dalla
+# directory di lavoro corrente. Copiandoli accanto al binario, l'eseguibile può
+# essere avviato indifferentemente dalla root del progetto oppure direttamente
+# dalla propria cartella di build (es. build/Release/).
+#
+# Nota: la presenza dei file è valutata in fase di configurazione (CMake), quindi
+# certificati, .env e public/ vanno generati PRIMA di `cmake --preset`. Lo script
+# di setup li crea nell'ordine corretto.
+set(RUNTIME_FILES cert.pem key.pem .env)
+foreach(asset IN LISTS RUNTIME_FILES)
+    if(EXISTS "${CMAKE_SOURCE_DIR}/${asset}")
+        add_custom_command(TARGET uno_server POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${CMAKE_SOURCE_DIR}/${asset}"
+                    "$<TARGET_FILE_DIR:uno_server>/${asset}"
+            COMMENT "Copia ${asset} accanto all'eseguibile")
+    else()
+        message(WARNING "Asset di runtime '${asset}' non trovato: non verrà copiato accanto all'eseguibile.")
+    endif()
+endforeach()
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/public")
+    add_custom_command(TARGET uno_server POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+                "${CMAKE_SOURCE_DIR}/public"
+                "$<TARGET_FILE_DIR:uno_server>/public"
+        COMMENT "Copia la cartella public/ accanto all'eseguibile")
+else()
+    message(WARNING "Cartella 'public/' non trovata: compila prima il frontend (deploy_frontend.sh).")
+endif()
+
 message(STATUS "Configuration complete for system: ${CMAKE_SYSTEM_NAME}")

@@ -58,50 +58,25 @@ _Installazione dei tool di base:_
 
 ## 🚀 Setup e Build
 
-### 1. Clona il repository
+### Clona il repository
 
 ```bash
 git clone https://github.com/Eldyn/uni-uno.git
 cd uni-uno
 ```
 
-### 2. Genera i certificati SSL
+### Setup automatico (consigliato)
 
-Il server usa HTTPS/WSS, quindi servono i file `key.pem` e `cert.pem` nella root del
-progetto. Per uno sviluppo locale è sufficiente un certificato self-signed per `localhost`.
+Una volta installati i [prerequisiti](#️-prerequisiti-di-sistema), un singolo script
+porta il progetto da una checkout pulita a un eseguibile pronto all'uso. Lo script:
 
-#### 🐧 Linux / macOS / Git Bash
-
-```bash
-openssl req -newkey rsa:2048 -nodes -x509 -days 365 \
-  -keyout key.pem -out cert.pem \
-  -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
-```
-
-#### 🪟 Windows (PowerShell)
-
-Con **OpenSSL** installato e disponibile nel PATH (vedi prerequisiti), esegui nella
-root del progetto:
-
-```powershell
-openssl req -newkey rsa:2048 -nodes -x509 -days 365 `
-  -keyout key.pem -out cert.pem `
-  -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
-```
-
-> In alternativa, apri **Git Bash** nella cartella del progetto e usa lo stesso comando
-> della sezione Linux.
-
-### 3. Installazione delle dipendenze (automatico)
-
-Esegui lo script di setup per il tuo sistema: verifica la presenza di Python, installa
-**Conan** e **Ninja**, rileva il profilo di compilazione e scarica tutte le librerie
-del backend.
-
-```powershell
-# Windows
-./setup.ps1
-```
+1. verifica i prerequisiti di sistema e segnala con chiarezza ciò che manca;
+2. genera certificati TLS self-signed per `localhost` (`cert.pem` / `key.pem`) se assenti;
+3. genera un file `.env` con segreti casuali (`JWT_SECRET`, `PASSWORD_PEPPER`) se assente;
+4. compila il frontend Svelte nella cartella `public/`;
+5. installa **Conan** + **Ninja** e scarica le dipendenze del backend;
+6. configura e compila il backend;
+7. lascia che CMake copi `cert.pem`, `key.pem`, `.env` e `public/` **accanto all'eseguibile**.
 
 ```bash
 # Linux / macOS
@@ -109,9 +84,53 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-### 4. Build del frontend
+```powershell
+# Windows (PowerShell)
+./setup.ps1
+# Se PowerShell blocca lo script per le policy di esecuzione:
+#   powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
 
-Compila il frontend Svelte e copia il risultato nella cartella `public/` servita dal server:
+A fine esecuzione lo script stampa il comando per avviare il server (vedi
+[Esecuzione](#-esecuzione)).
+
+---
+
+### Build manuale (passo per passo)
+
+Se preferisci controllare ogni fase — o lo script automatico fallisce — puoi
+riprodurne i passaggi manualmente.
+
+#### 1. Certificati TLS
+
+Il server usa HTTPS/WSS, quindi servono `key.pem` e `cert.pem` nella root del progetto.
+Per lo sviluppo locale basta un certificato self-signed per `localhost`:
+
+```bash
+# Linux / macOS / Git Bash
+openssl req -newkey rsa:2048 -nodes -x509 -days 365 \
+  -keyout key.pem -out cert.pem \
+  -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
+```
+
+```powershell
+# Windows (PowerShell, con OpenSSL nel PATH)
+openssl req -newkey rsa:2048 -nodes -x509 -days 365 `
+  -keyout key.pem -out cert.pem `
+  -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
+```
+
+#### 2. File `.env`
+
+Il backend richiede `JWT_SECRET` e `PASSWORD_PEPPER`. Crea un file `.env` nella root:
+
+```bash
+printf 'JWT_SECRET=%s\nPASSWORD_PEPPER=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > .env
+```
+
+#### 3. Frontend
+
+Compila il frontend Svelte e copialo nella cartella `public/` servita dal server:
 
 ```bash
 ./deploy_frontend.sh
@@ -119,17 +138,30 @@ Compila il frontend Svelte e copia il risultato nella cartella `public/` servita
 
 > Lo script esegue `npm install`/`npm run build` nella cartella `frontend/`. Vedi
 > [`frontend/README.md`](frontend/README.md) per i dettagli e per la modalità di sviluppo.
+> **Importante:** `public/` va generata _prima_ di configurare CMake, perché la copia
+> automatica degli asset (punto 5) ne rileva la presenza in fase di configurazione.
 
-### 5. Build del backend
+#### 4. Dipendenze del backend (Conan + Ninja)
+
+```bash
+pip install --upgrade --user conan ninja
+conan profile detect --force
+conan install . --build=missing -s build_type=Release -s compiler.cppstd=20 \
+  -c tools.cmake.cmaketoolchain:generator=Ninja
+```
+
+#### 5. Build del backend
 
 Usa i preset CMake generati automaticamente da Conan:
 
 ```bash
-# Configura
 cmake --preset conan-release
-# Compila
 cmake --build --preset conan-release
 ```
+
+In fase di build CMake copia `cert.pem`, `key.pem`, `.env` e la cartella `public/`
+accanto all'eseguibile, così il binario può essere avviato anche direttamente dalla
+sua cartella di build.
 
 > **Nota per gli sviluppatori (clangd / LSP):** Conan genera `compile_commands.json`
 > in `build/Release/generators/`. Se il tuo editor lo richiede nella root del progetto:
@@ -141,21 +173,29 @@ cmake --build --preset conan-release
 
 ## 🏃 Esecuzione
 
-L'eseguibile compilato si trova nella cartella di build:
+Il server cerca certificati, `.env`, il database `game.db` e la cartella `public/`
+nella **directory di lavoro corrente**. Poiché la build copia gli asset di runtime
+accanto all'eseguibile, puoi avviarlo in due modi equivalenti:
 
 ```bash
-# Linux / macOS
+# Linux / macOS — dalla root del progetto
 ./build/Release/uno_server
 
-# Windows
-build\Release\uno_server.exe
+# …oppure dalla cartella di build (asset già copiati accanto al binario)
+cd build/Release && ./uno_server
 ```
 
-CMake copia automaticamente `cert.pem` e `key.pem` accanto all'eseguibile. Assicurati
-che il database SQLite (`game.db`) e la cartella `public/` del frontend siano
-raggiungibili dal percorso in cui avvii il server. Per impostazione predefinita il
-server è raggiungibile su **https://localhost:9999** (accetta l'avviso del browser
-sul certificato self-signed).
+```powershell
+# Windows — dalla root del progetto
+build\Release\uno_server.exe
+
+# …oppure dalla cartella di build
+cd build\Release; .\uno_server.exe
+```
+
+Il database SQLite (`game.db`) viene creato automaticamente al primo avvio se non
+esiste. Per impostazione predefinita il server è raggiungibile su
+**https://localhost:9999** (accetta l'avviso del browser sul certificato self-signed).
 
 ---
 
