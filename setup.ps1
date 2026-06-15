@@ -1,22 +1,22 @@
 # =============================================================================
-#  Uni-Uno — Setup e build completo (Windows / PowerShell)
+#  Uni-Uno — Complete setup and build (Windows / PowerShell)
 #
-#  Eseguendo questo script da una checkout pulita ottieni un eseguibile pronto
-#  all'uso. In sequenza:
-#    1. verifica i prerequisiti di sistema;
-#    2. genera certificati TLS self-signed (se mancanti);
-#    3. genera il file .env con dei segreti casuali (se mancante);
-#    4. compila il frontend Svelte in public\;
-#    5. installa Conan + Ninja e scarica le dipendenze del backend;
-#    6. configura e compila il backend;
-#    7. CMake copia certificati, .env e public\ accanto all'eseguibile.
+#  Running this script from a clean checkout gives you a ready-to-use executable.
+#  In sequence, it:
+#    1. checks the system prerequisites;
+#    2. generates self-signed TLS certificates (if missing);
+#    3. generates the .env file with random secrets (if missing);
+#    4. builds the Svelte frontend into public\;
+#    5. installs Conan + Ninja and downloads the backend dependencies;
+#    6. configures and compiles the backend;
+#    7. CMake copies the certificates, .env and public\ next to the executable.
 #
-#  Suggerimento: se ricevi un errore sulle policy di esecuzione, avvia con:
+#  Tip: if you get an execution policy error, start it with:
 #    powershell -ExecutionPolicy Bypass -File .\setup.ps1
 # =============================================================================
 $ErrorActionPreference = "Stop"
 
-# Lavora sempre dalla cartella dello script (la root del progetto).
+# Always work from the script's folder (the project root).
 Set-Location -Path $PSScriptRoot
 
 function Write-Step($m) { Write-Host "`n==> $m" -ForegroundColor Cyan }
@@ -24,54 +24,54 @@ function Write-Ok($m)   { Write-Host $m -ForegroundColor Green }
 function Write-Warn2($m){ Write-Host $m -ForegroundColor Yellow }
 
 # -----------------------------------------------------------------------------
-# 1. Prerequisiti
+# 1. Prerequisites
 # -----------------------------------------------------------------------------
-Write-Step "Verifica dei prerequisiti..."
+Write-Step "Checking prerequisites..."
 $missing = $false
 function Require-Cmd($name, $hint) {
     if (-not (Get-Command $name -ErrorAction SilentlyContinue)) {
-        Write-Host "  [MANCANTE] $name - $hint" -ForegroundColor Red
+        Write-Host "  [MISSING] $name - $hint" -ForegroundColor Red
         $script:missing = $true
     } else {
         Write-Host "  [ok] $name"
     }
 }
 
-Require-Cmd python  "installa Python 3 da python.org o dal Microsoft Store"
-Require-Cmd cmake   "installa CMake da cmake.org/download"
-Require-Cmd openssl "incluso in Git Bash, oppure: winget install ShiningLight.OpenSSL.Light"
-Require-Cmd node    "installa Node.js da nodejs.org"
-Require-Cmd npm     "installa Node.js (include npm) da nodejs.org"
+Require-Cmd python  "install Python 3 from python.org or the Microsoft Store"
+Require-Cmd cmake   "install CMake from cmake.org/download"
+Require-Cmd openssl "included in Git Bash, or: winget install ShiningLight.OpenSSL.Light"
+Require-Cmd node    "install Node.js from nodejs.org"
+Require-Cmd npm     "install Node.js (includes npm) from nodejs.org"
 
 if ($missing) {
-    Write-Host "`nMancano dei prerequisiti. Installali e riesegui questo script." -ForegroundColor Red
-    Write-Host "Ricorda inoltre Visual Studio 2022 con il carico di lavoro 'Sviluppo di applicazioni desktop con C++'." -ForegroundColor Red
+    Write-Host "`nSome prerequisites are missing. Install them and rerun this script." -ForegroundColor Red
+    Write-Host "Remember also Visual Studio 2022 with the 'Desktop development with C++' workload." -ForegroundColor Red
     exit 1
 }
-Write-Ok "Tutti i prerequisiti sono presenti."
+Write-Ok "All prerequisites are present."
 
 # -----------------------------------------------------------------------------
-# 2. Certificati TLS self-signed
+# 2. Self-signed TLS certificates
 # -----------------------------------------------------------------------------
-Write-Step "Certificati TLS..."
+Write-Step "TLS certificates..."
 if ((Test-Path cert.pem) -and (Test-Path key.pem)) {
-    Write-Host "  cert.pem e key.pem gia' presenti - salto la generazione."
+    Write-Host "  cert.pem and key.pem already present - skipping generation."
 } else {
-    Write-Host "  Genero un certificato self-signed per localhost (valido 365 giorni)..."
+    Write-Host "  Generating a self-signed certificate for localhost (valid 365 days)..."
     openssl req -newkey rsa:2048 -nodes -x509 -days 365 `
         -keyout key.pem -out cert.pem `
         -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
-    Write-Ok "  Certificati generati."
+    Write-Ok "  Certificates generated."
 }
 
 # -----------------------------------------------------------------------------
-# 3. File .env con segreti
+# 3. .env file with secrets
 # -----------------------------------------------------------------------------
-Write-Step "File di ambiente (.env)..."
+Write-Step "Environment file (.env)..."
 if (Test-Path .env) {
-    Write-Host "  .env gia' presente - lo lascio invariato."
+    Write-Host "  .env already present - leaving it unchanged."
 } else {
-    Write-Host "  Genero .env con segreti casuali..."
+    Write-Host "  Generating .env with random secrets..."
     function New-Secret {
         $bytes = New-Object byte[] 32
         [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
@@ -80,13 +80,13 @@ if (Test-Path .env) {
     $jwt    = New-Secret
     $pepper = New-Secret
     "JWT_SECRET=$jwt`nPASSWORD_PEPPER=$pepper" | Out-File -FilePath .env -Encoding ascii -NoNewline
-    Write-Ok "  .env generato."
+    Write-Ok "  .env generated."
 }
 
 # -----------------------------------------------------------------------------
-# 4. Frontend (deve esistere prima della configurazione di CMake)
+# 4. Frontend (must exist before configuring CMake)
 # -----------------------------------------------------------------------------
-Write-Step "Build del frontend Svelte..."
+Write-Step "Building the Svelte frontend..."
 Push-Location frontend
 npm install
 npm run build
@@ -94,15 +94,15 @@ Pop-Location
 if (Test-Path public) { Remove-Item -Recurse -Force public }
 New-Item -ItemType Directory -Path public | Out-Null
 Copy-Item -Recurse -Force "frontend\dist\*" "public\"
-Write-Ok "  Frontend compilato in public\."
+Write-Ok "  Frontend built into public\."
 
 # -----------------------------------------------------------------------------
-# 5. Toolchain backend (Conan + Ninja)
+# 5. Backend toolchain (Conan + Ninja)
 # -----------------------------------------------------------------------------
-Write-Step "Installazione di Conan e Ninja via pip..."
+Write-Step "Installing Conan and Ninja via pip..."
 python -m pip install --upgrade pip conan ninja
 
-# Funzione per invocare Conan aggirando i problemi di PATH.
+# Function to invoke Conan, working around PATH issues.
 function Invoke-Conan {
     if (Get-Command conan -ErrorAction SilentlyContinue) {
         conan $args
@@ -111,31 +111,31 @@ function Invoke-Conan {
         if ($LASTEXITCODE -eq 0) {
             python -m conan $args
         } else {
-            Write-Error "Modulo Conan non trovato. L'installazione di pip e' fallita."
+            Write-Error "Conan module not found. The pip installation failed."
             exit 1
         }
     }
 }
 
-Write-Step "Configurazione del profilo Conan..."
+Write-Step "Configuring the Conan profile..."
 Invoke-Conan profile detect --force
 
-Write-Step "Download delle dipendenze del backend..."
+Write-Step "Downloading the backend dependencies..."
 Invoke-Conan install . --build=missing -s build_type=Release -s compiler.cppstd=20 -c tools.cmake.cmaketoolchain:generator=Ninja
 
 # -----------------------------------------------------------------------------
-# 6. Build del backend
+# 6. Backend build
 # -----------------------------------------------------------------------------
-Write-Step "Configurazione e compilazione del backend..."
+Write-Step "Configuring and compiling the backend..."
 cmake --preset conan-release
 cmake --build --preset conan-release
 
 # -----------------------------------------------------------------------------
-# Fatto.
+# Done.
 # -----------------------------------------------------------------------------
-Write-Ok "`nSetup completato con successo!"
-Write-Host "Avvia il server con:"
-Write-Host "  build\Release\uno_server.exe          (dalla root del progetto)"
-Write-Host "oppure"
-Write-Host "  cd build\Release; .\uno_server.exe     (asset copiati accanto all'eseguibile)"
-Write-Host "Poi apri https://localhost:9999 (accetta l'avviso sul certificato self-signed)."
+Write-Ok "`nSetup completed successfully!"
+Write-Host "Start the server with:"
+Write-Host "  build\Release\uno_server.exe          (from the project root)"
+Write-Host "or"
+Write-Host "  cd build\Release; .\uno_server.exe     (assets copied next to the executable)"
+Write-Host "Then open https://localhost:9999 (accept the self-signed certificate warning)."

@@ -1,20 +1,20 @@
 #!/bin/bash
 # =============================================================================
-#  Uni-Uno — Setup e build completo (Linux / macOS)
+#  Uni-Uno — Complete setup and build (Linux / macOS)
 #
-#  Eseguendo questo script da una checkout pulita ottieni un eseguibile pronto
-#  all'uso. In sequenza:
-#    1. verifica i prerequisiti di sistema;
-#    2. genera certificati TLS self-signed (se mancanti);
-#    3. genera il file .env con dei segreti casuali (se mancante);
-#    4. compila il frontend Svelte in public/;
-#    5. installa Conan + Ninja e scarica le dipendenze del backend;
-#    6. configura e compila il backend;
-#    7. CMake copia certificati, .env e public/ accanto all'eseguibile.
+#  Running this script from a clean checkout gives you a ready-to-use executable.
+#  In sequence, it:
+#    1. checks the system prerequisites;
+#    2. generates self-signed TLS certificates (if missing);
+#    3. generates the .env file with random secrets (if missing);
+#    4. builds the Svelte frontend into public/;
+#    5. installs Conan + Ninja and downloads the backend dependencies;
+#    6. configures and compiles the backend;
+#    7. CMake copies the certificates, .env and public/ next to the executable.
 # =============================================================================
 set -euo pipefail
 
-# Lavora sempre dalla cartella dello script (la root del progetto).
+# Always work from the script's folder (the project root).
 cd "$(dirname "$0")"
 
 c_info()  { echo -e "\e[36m$*\e[0m"; }
@@ -24,95 +24,95 @@ c_warn()  { echo -e "\e[33m$*\e[0m"; }
 c_err()   { echo -e "\e[31m$*\e[0m" >&2; }
 
 # -----------------------------------------------------------------------------
-# 1. Prerequisiti
+# 1. Prerequisites
 # -----------------------------------------------------------------------------
-c_step "Verifica dei prerequisiti..."
+c_step "Checking prerequisites..."
 
 missing=0
 require() {
     if ! command -v "$1" &>/dev/null; then
-        c_err "  [MANCANTE] $1 — $2"
+        c_err "  [MISSING] $1 — $2"
         missing=1
     else
         echo "  [ok] $1"
     fi
 }
 
-# pip può chiamarsi pip3 o pip: lo gestiamo a parte.
+# pip may be called pip3 or pip: we handle it separately.
 if command -v pip3 &>/dev/null; then PIP_CMD="pip3"
 elif command -v pip &>/dev/null; then PIP_CMD="pip"
 else
-    c_err "  [MANCANTE] pip — installa Python 3 con pip"
+    c_err "  [MISSING] pip — install Python 3 with pip"
     missing=1
 fi
 
-require python3 "installa Python 3 (pacchetto: python3)"
-require cmake   "installa CMake (pacchetto: cmake)"
-require openssl "necessario per generare i certificati TLS (pacchetto: openssl)"
-require node    "installa Node.js (pacchetto: nodejs)"
-require npm     "installa npm (pacchetto: npm)"
+require python3 "install Python 3 (package: python3)"
+require cmake   "install CMake (package: cmake)"
+require openssl "needed to generate the TLS certificates (package: openssl)"
+require node    "install Node.js (package: nodejs)"
+require npm     "install npm (package: npm)"
 if ! command -v g++ &>/dev/null && ! command -v clang++ &>/dev/null; then
-    c_err "  [MANCANTE] g++/clang++ — serve un compilatore C++23 (pacchetto: gcc-c++ o clang)"
+    c_err "  [MISSING] g++/clang++ — a C++23 compiler is required (package: gcc-c++ or clang)"
     missing=1
 else
-    echo "  [ok] compilatore C++"
+    echo "  [ok] C++ compiler"
 fi
 
 if [ "$missing" -ne 0 ]; then
-    c_err "\nMancano dei prerequisiti. Installali e riesegui questo script."
+    c_err "\nSome prerequisites are missing. Install them and rerun this script."
     c_err "  Fedora/RHEL : sudo dnf install gcc-c++ python3 pip cmake openssl nodejs npm"
     c_err "  Ubuntu/Debian: sudo apt install g++ python3 python3-pip cmake openssl nodejs npm"
     exit 1
 fi
-c_ok "Tutti i prerequisiti sono presenti."
+c_ok "All prerequisites are present."
 
 # -----------------------------------------------------------------------------
-# 2. Certificati TLS self-signed
+# 2. Self-signed TLS certificates
 # -----------------------------------------------------------------------------
-c_step "Certificati TLS..."
+c_step "TLS certificates..."
 if [ -f cert.pem ] && [ -f key.pem ]; then
-    echo "  cert.pem e key.pem già presenti — salto la generazione."
+    echo "  cert.pem and key.pem already present — skipping generation."
 else
-    echo "  Genero un certificato self-signed per localhost (valido 365 giorni)..."
+    echo "  Generating a self-signed certificate for localhost (valid 365 days)..."
     openssl req -newkey rsa:2048 -nodes -x509 -days 365 \
         -keyout key.pem -out cert.pem \
         -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
-    c_ok "  Certificati generati."
+    c_ok "  Certificates generated."
 fi
 
 # -----------------------------------------------------------------------------
-# 3. File .env con segreti
+# 3. .env file with secrets
 # -----------------------------------------------------------------------------
-c_step "File di ambiente (.env)..."
+c_step "Environment file (.env)..."
 if [ -f .env ]; then
-    echo "  .env già presente — lo lascio invariato."
+    echo "  .env already present — leaving it unchanged."
 else
-    echo "  Genero .env con segreti casuali..."
+    echo "  Generating .env with random secrets..."
     JWT_SECRET=$(openssl rand -hex 32)
     PASSWORD_PEPPER=$(openssl rand -hex 32)
     {
         echo "JWT_SECRET=${JWT_SECRET}"
         echo "PASSWORD_PEPPER=${PASSWORD_PEPPER}"
     } > .env
-    c_ok "  .env generato."
+    c_ok "  .env generated."
 fi
 
 # -----------------------------------------------------------------------------
-# 4. Frontend (deve esistere prima della configurazione di CMake)
+# 4. Frontend (must exist before configuring CMake)
 # -----------------------------------------------------------------------------
-c_step "Build del frontend Svelte..."
-# Vite è configurato con outDir "../public" ed emptyOutDir: la build scrive
-# direttamente nella cartella public/ alla root del progetto (e la ripulisce).
+c_step "Building the Svelte frontend..."
+# Vite is configured with outDir "../public" and emptyOutDir: the build writes
+# directly into the public/ folder at the project root (and cleans it).
 ( cd frontend && npm install && npm run build )
-c_ok "  Frontend compilato in public/."
+c_ok "  Frontend built into public/."
 
 # -----------------------------------------------------------------------------
-# 5. Toolchain backend (Conan + Ninja)
+# 5. Backend toolchain (Conan + Ninja)
 # -----------------------------------------------------------------------------
-c_step "Installazione di Conan e Ninja via pip..."
+c_step "Installing Conan and Ninja via pip..."
 $PIP_CMD install --upgrade --user conan ninja
 
-# Determina come invocare Conan aggirando i problemi di PATH.
+# Determine how to invoke Conan, working around PATH issues.
 if command -v conan &>/dev/null; then
     CONAN_CMD="conan"
 elif python3 -m conan --version &>/dev/null; then
@@ -120,31 +120,31 @@ elif python3 -m conan --version &>/dev/null; then
 elif [ -x "$HOME/.local/bin/conan" ]; then
     CONAN_CMD="$HOME/.local/bin/conan"
 else
-    c_err "Impossibile trovare l'eseguibile di Conan dopo l'installazione."
-    c_err "Aggiungi ~/.local/bin al PATH e riprova."
+    c_err "Unable to find the Conan executable after installation."
+    c_err "Add ~/.local/bin to your PATH and try again."
     exit 1
 fi
 
-c_step "Configurazione del profilo Conan..."
+c_step "Configuring the Conan profile..."
 $CONAN_CMD profile detect --force
 
-c_step "Download delle dipendenze del backend..."
+c_step "Downloading the backend dependencies..."
 $CONAN_CMD install . --build=missing -s build_type=Release -s compiler.cppstd=20 \
     -c tools.cmake.cmaketoolchain:generator=Ninja
 
 # -----------------------------------------------------------------------------
-# 6. Build del backend
+# 6. Backend build
 # -----------------------------------------------------------------------------
-c_step "Configurazione e compilazione del backend..."
+c_step "Configuring and compiling the backend..."
 cmake --preset conan-release
 cmake --build --preset conan-release
 
 # -----------------------------------------------------------------------------
-# Fatto.
+# Done.
 # -----------------------------------------------------------------------------
-c_ok "\nSetup completato con successo!"
-echo "Avvia il server con:"
-echo "  ./build/Release/uno_server          (dalla root del progetto)"
-echo "oppure"
-echo "  cd build/Release && ./uno_server    (asset copiati accanto all'eseguibile)"
-echo "Poi apri https://localhost:9999 (accetta l'avviso sul certificato self-signed)."
+c_ok "\nSetup completed successfully!"
+echo "Start the server with:"
+echo "  ./build/Release/uno_server          (from the project root)"
+echo "or"
+echo "  cd build/Release && ./uno_server    (assets copied next to the executable)"
+echo "Then open https://localhost:9999 (accept the self-signed certificate warning)."

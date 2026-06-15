@@ -17,7 +17,7 @@ find_package(nlohmann_json REQUIRED)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 add_executable(uno_server ${SOURCES})
 
-# --- Fix per i conflitti di Winsock su Windows ---
+# --- Fix for Winsock conflicts on Windows ---
 if(WIN32)
     target_compile_definitions(uno_server PRIVATE WIN32_LEAN_AND_MEAN)
 endif()
@@ -36,15 +36,15 @@ target_link_libraries(uno_server PRIVATE
     nlohmann_json::nlohmann_json
 )
 
-# --- Copia degli asset di runtime accanto all'eseguibile ---
-# Il server risolve certificati, file .env e cartella public/ a partire dalla
-# directory di lavoro corrente. Copiandoli accanto al binario, l'eseguibile può
-# essere avviato indifferentemente dalla root del progetto oppure direttamente
-# dalla propria cartella di build (es. build/Release/).
+# --- Copy the runtime assets next to the executable ---
+# The server resolves the certificates, .env file and public/ folder starting from
+# the current working directory. By copying them next to the binary, the executable can
+# be launched either from the project root or directly from its own build folder
+# (e.g. build/Release/).
 #
-# Nota: la presenza dei file è valutata in fase di configurazione (CMake), quindi
-# certificati, .env e public/ vanno generati PRIMA di `cmake --preset`. Lo script
-# di setup li crea nell'ordine corretto.
+# Note: the presence of the files is evaluated at configuration time (CMake), so
+# the certificates, .env and public/ must be generated BEFORE `cmake --preset`. The setup
+# script creates them in the correct order.
 set(RUNTIME_FILES cert.pem key.pem .env)
 foreach(asset IN LISTS RUNTIME_FILES)
     if(EXISTS "${CMAKE_SOURCE_DIR}/${asset}")
@@ -52,9 +52,9 @@ foreach(asset IN LISTS RUNTIME_FILES)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${CMAKE_SOURCE_DIR}/${asset}"
                     "$<TARGET_FILE_DIR:uno_server>/${asset}"
-            COMMENT "Copia ${asset} accanto all'eseguibile")
+            COMMENT "Copying ${asset} next to the executable")
     else()
-        message(WARNING "Asset di runtime '${asset}' non trovato: non verrà copiato accanto all'eseguibile.")
+        message(WARNING "Runtime asset '${asset}' not found: it will not be copied next to the executable.")
     endif()
 endforeach()
 
@@ -63,9 +63,9 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/public")
         COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${CMAKE_SOURCE_DIR}/public"
                 "$<TARGET_FILE_DIR:uno_server>/public"
-        COMMENT "Copia la cartella public/ accanto all'eseguibile")
+        COMMENT "Copying the public/ folder next to the executable")
 else()
-    message(WARNING "Cartella 'public/' non trovata: compila prima il frontend (deploy_frontend.sh).")
+    message(WARNING "Folder 'public/' not found: build the frontend first (deploy_frontend.sh).")
 endif()
 
 message(STATUS "Configuration complete for system: ${CMAKE_SYSTEM_NAME}")
