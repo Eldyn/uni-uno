@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-#  Uni-Uno — Complete setup and build (Linux / macOS)
+#  UNI — Complete setup and build (Linux / macOS)
 #
 #  Running this script from a clean checkout gives you a ready-to-use executable.
 #  In sequence, it:
@@ -76,7 +76,7 @@ else
     echo "  Generating a self-signed certificate for localhost (valid 365 days)..."
     openssl req -newkey rsa:2048 -nodes -x509 -days 365 \
         -keyout key.pem -out cert.pem \
-        -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
+        -subj "/C=IT/ST=Italy/L=Uniba/O=uni/CN=localhost"
     c_ok "  Certificates generated."
 fi
 
@@ -144,7 +144,7 @@ cmake --build --preset conan-release
 # -----------------------------------------------------------------------------
 c_ok "\nSetup completed successfully!"
 echo "Start the server with:"
-echo "  ./build/Release/uno_server          (from the project root)"
+echo "  ./build/Release/uni_server          (from the project root)"
 echo "or"
-echo "  cd build/Release && ./uno_server    (assets copied next to the executable)"
+echo "  cd build/Release && ./uni_server    (assets copied next to the executable)"
 echo "Then open https://localhost:9999 (accept the self-signed certificate warning)."

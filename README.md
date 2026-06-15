@@ -1,4 +1,4 @@
-# 🃏 Uni-Uno
+# 🃏 UNI
 
 A secure (HTTPS/WSS), real-time multiplayer implementation of the **UNO** card game,
 with a **C++23 backend** (uWebSockets), **SQLite** persistence and a **Svelte 5
@@ -61,7 +61,7 @@ _Installing the base tools:_
 
 ```bash
 git clone https://github.com/Eldyn/uni-uno.git
-cd uni-uno
+cd uni-uno  # or your chosen folder name
 ```
 
 ### Automatic setup (recommended)
@@ -109,14 +109,14 @@ For local development a self-signed certificate for `localhost` is enough:
 # Linux / macOS / Git Bash
 openssl req -newkey rsa:2048 -nodes -x509 -days 365 \
   -keyout key.pem -out cert.pem \
-  -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
+  -subj "/C=IT/ST=Italy/L=Uniba/O=uni/CN=localhost"
 ```
 
 ```powershell
 # Windows (PowerShell, with OpenSSL in the PATH)
 openssl req -newkey rsa:2048 -nodes -x509 -days 365 `
   -keyout key.pem -out cert.pem `
-  -subj "/C=IT/ST=Italy/L=Uniba/O=uni-uno/CN=localhost"
+  -subj "/C=IT/ST=Italy/L=Uniba/O=uni/CN=localhost"
 ```
 
 #### 2. `.env` file
@@ -178,18 +178,18 @@ next to the executable, you can start it in two equivalent ways:
 
 ```bash
 # Linux / macOS — from the project root
-./build/Release/uno_server
+./build/Release/uni_server
 
 # …or from the build folder (assets already copied next to the binary)
-cd build/Release && ./uno_server
+cd build/Release && ./uni_server
 ```
 
 ```powershell
 # Windows — from the project root
-build\Release\uno_server.exe
+build\Release\uni_server.exe
 
 # …or from the build folder
-cd build\Release; .\uno_server.exe
+cd build\Release; .\uni_server.exe
 ```
 
 The SQLite database (`game.db`) is created automatically on first launch if it does

@@ -1,6 +1,6 @@
-# 🃏 Uni-Uno — Frontend
+# 🃏 UNI — Frontend
 
-Frontend of the **Uni-Uno** project, built with **Svelte 5** (runes) and **TypeScript**,
+Frontend of the **UNI** project, built with **Svelte 5** (runes) and **TypeScript**,
 bundled with **Vite**. It communicates with the C++ backend through a centralized
 **WebSocket** client (fire-and-forget `emit` channel and request/response `emitAndWait`
 channel), with automatic reconnection.
