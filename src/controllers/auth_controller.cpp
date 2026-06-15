@@ -3,6 +3,7 @@
 #include <common/http.hpp>
 #include <common/env.hpp>
 #include <common/ws.hpp>
+#include <common/contract.hpp>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <jwt-cpp/jwt.h>
@@ -70,14 +71,14 @@ void AuthController::HandleRegister(AppResponse* res, AppRequest* /*req*/) {
         std::string email    = data.value("email",    "");
         std::string password = data.value("password", "");
 
-        if (username.size() < kMinUsernameLen || username.size() > kMaxUsernameLen) {
+        if (username.size() < ContractConstants::Get().USERNAME_MIN || username.size() > ContractConstants::Get().USERNAME_MAX) {
             res->writeStatus("422 Unprocessable Entity")
                ->writeHeader("Content-Type", "application/json")
                ->end(json({{"error", "Username must be 3–32 characters"}}).dump());
             return;
         }
 
-        if (password.size() < static_cast<size_t>(kMinPasswordLen)) {
+        if (password.size() < static_cast<size_t>(ContractConstants::Get().PASSWORD_MIN)) {
             res->writeStatus("422 Unprocessable Entity")
                ->writeHeader("Content-Type", "application/json")
                ->end(json({{"error", "Password must be at least 8 characters"}}).dump());
