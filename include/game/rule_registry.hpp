@@ -8,36 +8,36 @@
 
 /**
  * @file rule_registry.hpp
- * @brief Gestione della registrazione e istanziazione dinamica delle regole di gioco.
- * * Questo file definisce un sistema basato su Factory Pattern per permettere la 
- * creazione di regole (GameRule) a runtime partendo dal loro nome testuale (es. dal JSON).
- * Utilizza il meccanismo di auto-registrazione statica per disaccoppiare l'aggiunta 
- * di nuove regole dal codice core del motore.
+ * @brief Management of the dynamic registration and instantiation of game rules.
+ * * This file defines a system based on the Factory Pattern to allow the
+ * creation of rules (GameRule) at runtime starting from their textual name (e.g. from JSON).
+ * It uses a static self-registration mechanism to decouple the addition
+ * of new rules from the core engine code.
  */
 
 namespace game {
 
     /**
      * @typedef RuleFactory
-     * @brief Definisce il tipo di funzione capace di generare una nuova istanza di una regola.
+     * @brief Defines the type of function capable of generating a new instance of a rule.
      * @tag RULE-REG-TYP-001
      */
     using RuleFactory = std::function<std::unique_ptr<GameRule>()>;
 
     /**
      * @class RuleRegistry
-     * @brief Registro globale (Singleton) delle Factory delle regole di gioco.
-     * * Mantiene una mappa che associa una stringa identificativa (il nome della mod/regola)
-     * alla funzione `RuleFactory` in grado di allocare la classe specifica.
+     * @brief Global (Singleton) registry of the game rule factories.
+     * * Maintains a map that associates an identifying string (the name of the mod/rule)
+     * with the `RuleFactory` function able to allocate the specific class.
      * @tag RULE-REG-CLS-001
      */
     class RuleRegistry {
     public:
         /**
-         * @brief Fornisce l'accesso alla mappa globale delle regole registrate.
-         * Utilizza il pattern "Meyers' Singleton" per garantire che la mappa venga 
-         * inizializzata in modo thread-safe al primo utilizzo.
-         * @return std::unordered_map<std::string, RuleFactory>& Riferimento alla mappa delle regole.
+         * @brief Provides access to the global map of registered rules.
+         * Uses the "Meyers' Singleton" pattern to ensure the map is
+         * initialized in a thread-safe manner on first use.
+         * @return std::unordered_map<std::string, RuleFactory>& Reference to the map of rules.
          * @tag RULE-REG-MTH-001
          */
         static std::unordered_map<std::string, RuleFactory>& GetMap() {
@@ -46,11 +46,11 @@ namespace game {
         }
 
         /**
-         * @brief Istanzia una nuova regola di gioco a partire dal suo nome.
-         * * Cerca il nome della regola nella mappa e, se trovata, invoca la sua Factory 
-         * per restituirne un'istanza allocata in memoria dinamica.
-         * @param name L'identificativo testuale della regola (es. "seven_zero").
-         * @return std::unique_ptr<GameRule> Puntatore univoco alla nuova istanza, oppure `nullptr` se la regola non esiste.
+         * @brief Instantiates a new game rule from its name.
+         * * Looks up the rule name in the map and, if found, invokes its Factory
+         * to return an instance allocated in dynamic memory.
+         * @param name The textual identifier of the rule (e.g. "seven_zero").
+         * @return std::unique_ptr<GameRule> Unique pointer to the new instance, or `nullptr` if the rule does not exist.
          * @tag RULE-REG-MTH-002
          */
         static std::unique_ptr<GameRule> Create(const std::string& name) {
@@ -65,22 +65,22 @@ namespace game {
 
     /**
      * @struct RuleRegistrar
-     * @brief Struttura di supporto per l'auto-registrazione delle regole.
-     * * Questa struttura è concepita per essere istanziata globalmente/staticamente nei 
-     * file sorgente (.cpp) delle regole stesse. Al momento dell'inizializzazione del programma,
-     * il costruttore viene eseguito e inietta la regola nel `RuleRegistry`.
+     * @brief Support structure for the self-registration of rules.
+     * * This structure is designed to be instantiated globally/statically in the
+     * source files (.cpp) of the rules themselves. At program initialization time,
+     * the constructor runs and injects the rule into the `RuleRegistry`.
      * @tag RULE-REG-STR-001
      */
     struct RuleRegistrar {
         /**
-         * @brief Costruttore che esegue l'effettiva registrazione della Factory.
-         * @param name Il nome con cui la regola sarà conosciuta nel sistema.
-         * @param factory La funzione in grado di istanziare la regola.
+         * @brief Constructor that performs the actual registration of the Factory.
+         * @param name The name by which the rule will be known in the system.
+         * @param factory The function able to instantiate the rule.
          * @tag RULE-REG-MTH-003
          */
     RuleRegistrar(const std::string& name, RuleFactory factory) {
             RuleRegistry::GetMap()[name] = std::move(factory);
         }
     };
-    
+
 }
