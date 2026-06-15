@@ -1,42 +1,42 @@
 # 🃏 Uni-Uno — Frontend
 
-Frontend del progetto **Uni-Uno**, realizzato con **Svelte 5** (runes) e **TypeScript**,
-buildato con **Vite**. Comunica con il backend C++ tramite un client **WebSocket**
-centralizzato (canale fire-and-forget `emit` e canale richiesta/risposta `emitAndWait`),
-con riconnessione automatica.
+Frontend of the **Uni-Uno** project, built with **Svelte 5** (runes) and **TypeScript**,
+bundled with **Vite**. It communicates with the C++ backend through a centralized
+**WebSocket** client (fire-and-forget `emit` channel and request/response `emitAndWait`
+channel), with automatic reconnection.
 
-## 🧩 Struttura
+## 🧩 Structure
 
-- `src/lib/stores/` — store singleton reattivi, uno per dominio: `auth`, `lobby`, `game`,
+- `src/lib/stores/` — reactive singleton stores, one per domain: `auth`, `lobby`, `game`,
   `navigation`, `toast`, `stats`, `ws`.
-- `src/lib/components/game/` — il tavolo di gioco: `GameBoard`, `PlayerHand`,
-  `OpponentHand`, `GamePiles`, `GameCard`, `FlyingCardsOverlay` (animazioni), `card-bus`.
-- `src/lib/components/lobby/` — schermate e controlli di lobby e impostazioni.
-- `public/` — asset statici (immagini delle carte, audio, font pixel-art).
+- `src/lib/components/game/` — the game table: `GameBoard`, `PlayerHand`,
+  `OpponentHand`, `GamePiles`, `GameCard`, `FlyingCardsOverlay` (animations), `card-bus`.
+- `src/lib/components/lobby/` — lobby and settings screens and controls.
+- `public/` — static assets (card images, audio, pixel-art fonts).
 
-Il riordino delle carte in mano usa il **drag-and-drop** (`@dnd-kit/svelte`).
+Reordering the cards in hand uses **drag-and-drop** (`@dnd-kit/svelte`).
 
-## 📦 Dipendenze di sistema
+## 📦 System dependencies
 
-Servono solo **Node.js** e **npm**:
+You only need **Node.js** and **npm**:
 
 ```bash
 npm install
 ```
 
-## 🛠️ Comandi utili
+## 🛠️ Useful commands
 
 ```bash
-npm run watch    # rebuild automatico ad ogni modifica (output in ../public), da usare col server
-npm run preview  # anteprima locale del build con il dev server di Vite
-npm run build    # build di produzione (output in ../public)
-npm run docs     # genera la documentazione TSDoc (Markdown) in docs/markdown
-npm run pdf      # converte la documentazione TSDoc in frontend-manual.pdf
-npm run format   # formatta il codice con Prettier
-npm run lint     # verifica la formattazione
+npm run watch    # automatic rebuild on every change (output in ../public), to use with the server
+npm run preview  # local preview of the build with the Vite dev server
+npm run build    # production build (output in ../public)
+npm run docs     # generates the TSDoc documentation (Markdown) in docs/markdown
+npm run pdf      # converts the TSDoc documentation into frontend-manual.pdf
+npm run format   # formats the code with Prettier
+npm run lint     # checks the formatting
 
-../deploy_frontend.sh   # build + copia del sito nella cartella servita dal server
+../deploy_frontend.sh   # build + copy of the site into the folder served by the server
 ```
 
-> Per eseguire il gioco completo (server HTTPS + frontend) e per generare i certificati
-> TLS, fai riferimento al [README principale](../README.md).
+> To run the complete game (HTTPS server + frontend) and to generate the TLS
+> certificates, refer to the [main README](../README.md).
