@@ -3,28 +3,28 @@
 
 /**
  * @file pass_hands.hpp
- * @brief Implementazione dell'effetto di rotazione o scambio delle mani di carte.
- * * Questo effetto gestisce lo spostamento fisico delle carte tra i giocatori.
- * Viene tipicamente utilizzato nelle mod "7-0" (dove lo 0 fa ruotare le mani di tutti 
- * nella direzione di gioco) oppure dopo che un giocatore ha scelto un target con cui scambiare.
+ * @brief Implementation of the effect for rotating or swapping hands of cards.
+ * * This effect handles the physical movement of cards between players.
+ * It is typically used in the "7-0" mods (where the 0 rotates everyone's hands
+ * in the direction of play) or after a player has chosen a target to swap with.
  */
 
 namespace game {
 
     /**
      * @class PassHandsEffect
-     * @brief Effetto che esegue lo scambio delle carte in mano ai giocatori.
+     * @brief Effect that performs the swapping of the cards in the players' hands.
      * @tag EFFECT-PASS-001
      */
     class PassHandsEffect : public Effect {
     public:
         /**
-         * @brief Risolve l'effetto scambiando i vettori `hand` all'interno di `GameState::players`.
-         * Se innescato da una rotazione globale (es. regola dello "0"), sposta le mani 
-         * di una posizione seguendo la direzione di gioco corrente.
-         * @param state Lo stato attuale del gioco.
-         * @param match Istanza della partita.
-         * @return EffectResult L'esito dell'operazione.
+         * @brief Resolves the effect by swapping the `hand` vectors within `GameState::players`.
+         * If triggered by a global rotation (e.g. the "0" rule), it moves the hands
+         * by one position following the current direction of play.
+         * @param state The current game state.
+         * @param match The match instance.
+         * @return EffectResult The outcome of the operation.
          * @tag EFFECT-PASS-MTH-001
          */
         EffectResult Resolve(GameState* state, MatchInstance* match) override;
