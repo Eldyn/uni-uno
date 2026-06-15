@@ -1,10 +1,10 @@
 asyncapi: "2.6.0"
 
 info:
-  title: Uni-Uno WebSocket API
+  title: UNI WebSocket API
   version: "1.0.0"
   description: >
-    Bidirectional WebSocket protocol between the Uni-Uno Svelte frontend and
+    Bidirectional WebSocket protocol between the UNI Svelte frontend and
     the uWebSockets C++ backend. Every frame is a JSON object with at minimum
     an `action` field. Client-originated frames may carry an optional
     `request_id` that the server echoes back for request/response correlation.

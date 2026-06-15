@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(UniUno VERSION 1.0 LANGUAGES CXX)
+project(UNI VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -49,18 +49,18 @@ find_package(nlohmann_json REQUIRED)
 
 # --- Main Executable ---
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp")
-add_executable(uno_server ${SOURCES})
+add_executable(uni_server ${SOURCES})
 
 # --- Fix for Winsock conflicts on Windows ---
 if(WIN32)
-    target_compile_definitions(uno_server PRIVATE WIN32_LEAN_AND_MEAN)
+    target_compile_definitions(uni_server PRIVATE WIN32_LEAN_AND_MEAN)
 endif()
 
-target_include_directories(uno_server PRIVATE include src "${CMAKE_BINARY_DIR}/generated")
-add_dependencies(uno_server gen_ws_messages)
+target_include_directories(uni_server PRIVATE include src "${CMAKE_BINARY_DIR}/generated")
+add_dependencies(uni_server gen_ws_messages)
 
 # --- Linking ---
-target_link_libraries(uno_server PRIVATE 
+target_link_libraries(uni_server PRIVATE 
     OpenSSL::SSL 
     OpenSSL::Crypto
     ZLIB::ZLIB
@@ -83,10 +83,10 @@ target_link_libraries(uno_server PRIVATE
 set(RUNTIME_FILES cert.pem key.pem .env)
 foreach(asset IN LISTS RUNTIME_FILES)
     if(EXISTS "${CMAKE_SOURCE_DIR}/${asset}")
-        add_custom_command(TARGET uno_server POST_BUILD
+        add_custom_command(TARGET uni_server POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${CMAKE_SOURCE_DIR}/${asset}"
-                    "$<TARGET_FILE_DIR:uno_server>/${asset}"
+                    "$<TARGET_FILE_DIR:uni_server>/${asset}"
             COMMENT "Copying ${asset} next to the executable")
     else()
         message(WARNING "Runtime asset '${asset}' not found: it will not be copied next to the executable.")
@@ -94,10 +94,10 @@ foreach(asset IN LISTS RUNTIME_FILES)
 endforeach()
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/public")
-    add_custom_command(TARGET uno_server POST_BUILD
+    add_custom_command(TARGET uni_server POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${CMAKE_SOURCE_DIR}/public"
-                "$<TARGET_FILE_DIR:uno_server>/public"
+                "$<TARGET_FILE_DIR:uni_server>/public"
         COMMENT "Copying the public/ folder next to the executable")
 else()
     message(WARNING "Folder 'public/' not found: build the frontend first (deploy_frontend.sh).")
