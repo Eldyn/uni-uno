@@ -1,7 +1,7 @@
 /**
  * @file game.svelte.ts
- * @brief Store globale reattivo per la gestione del tavolo di gioco e dei turni.
- * Decodifica i pacchetti JSON dal WebSocket e aggiorna l'UI del motore di gioco.
+ * @brief Reactive global store for managing the game table and turns.
+ * Decodes the JSON packets from the WebSocket and updates the game engine UI.
  */
 
 import { storeNavigation } from "./navigation.svelte";
@@ -32,91 +32,91 @@ export type CardValue = (typeof VALUE_MAP)[number];
 
 /**
  * @interface Card
- * @brief Rappresentazione frontend di una singola carta.
+ * @brief Frontend representation of a single card.
  */
 export interface Card {
-    /** L'identificativo univoco della carta a 16-bit. */
+    /** The unique 16-bit identifier of the card. */
     id: number;
-    /** Il colore decodificato della carta. */
+    /** The decoded colour of the card. */
     color: CardColor;
-    /** Il valore o l'azione associata alla carta. */
+    /** The value or action associated with the card. */
     value: CardValue;
 }
 
 /**
  * @interface GamePlayer
- * @brief Dati associati ad un giocatore in-game.
- * Se il giocatore non è il client corrente, l'array `hand` sarà undefined e sostituito da `card_count` calcolato dal server.
+ * @brief Data associated with an in-game player.
+ * If the player is not the current client, the `hand` array will be undefined and replaced by `card_count` computed by the server.
  */
 export interface GamePlayer {
-    /** Username del giocatore. */
+    /** Username of the player. */
     username: string;
-    /** Numero totale di carte in mano al giocatore. */
+    /** Total number of cards in the player's hand. */
     card_count: number;
-    /** Indica se il giocatore ha cliccato correttamente su "UNO!". */
+    /** Indicates whether the player has correctly clicked "UNO!". */
     has_called_uno: boolean;
-    /** Le carte fisiche in mano al giocatore (Presente solo per il Local Player). */
+    /** The physical cards in the player's hand (present only for the Local Player). */
     hand?: Card[];
-    /** Indica se il giocatore è un bot controllato dal server. */
+    /** Indicates whether the player is a bot controlled by the server. */
     is_bot: boolean;
 }
 
 /**
  * @interface GameState
- * @brief Fotografia dello stato completo del tavolo in un preciso istante.
+ * @brief Snapshot of the complete table state at a precise instant.
  */
 export interface GameState {
-    /** Colore attualmente attivo per le giocate. */
+    /** Colour currently active for plays. */
     active_color: string;
-    /** Username del giocatore a cui spetta il turno corrente. */
+    /** Username of the player whose turn it currently is. */
     current_turn: string;
-    /** Direzione del gioco (1 per orario, -1 per antiorario). */
+    /** Direction of play (1 for clockwise, -1 for counter-clockwise). */
     play_direction: number;
-    /** La carta attualmente in cima alla pila degli scarti. */
+    /** The card currently on top of the discard pile. */
     top_card?: Card;
-    /** La lista di tutti i giocatori presenti nella partita. */
+    /** The list of all the players present in the match. */
     players: GamePlayer[];
-    /** Carte accumulate (catena +2/+4) che il prossimo giocatore dovrà pescare. */
+    /** Accumulated cards (+2/+4 chain) that the next player will have to draw. */
     pending_draws: number;
-    /** Provenienza dell'ultima carta giocata, usata per animarla dallo slot di origine. */
+    /** Origin of the last played card, used to animate it from its source slot. */
     last_play?: LastPlay;
-    /** Flag che indica se la partita ha raggiunto uno stato terminale. */
+    /** Flag indicating whether the match has reached a terminal state. */
     is_over?: boolean;
-    /** Username del giocatore vincitore, qualora la partita sia finita. */
+    /** Username of the winning player, if the match has ended. */
     winner?: string;
 }
 
 /**
  * @interface LastPlay
- * @brief Descrive chi ha giocato l'ultima carta e da quale slot della mano.
+ * @brief Describes who played the last card and from which slot of the hand.
  */
 export interface LastPlay {
-    /** Username del giocatore che ha effettuato la giocata. */
+    /** Username of the player who made the play. */
     player: string;
-    /** Indice dello slot nella mano da cui la carta è partita. */
+    /** Index of the slot in the hand from which the card departed. */
     hand_index: number;
 }
 
 /**
  * @class StoreGame
- * @brief Sincronizza lo stato frontend con il Game Engine del Server in tempo reale.
+ * @brief Synchronizes the frontend state with the server Game Engine in real time.
  * @tag FRONT-GAME-001
  */
 class StoreGame {
-    /** Lo stato attuale della partita (giocatori, mazzo, carte in tavola). */
+    /** The current state of the match (players, deck, cards on the table). */
     state = $state<GameState | null>(null);
-    /** Indica se il motore di gioco è sospeso in attesa di un input. */
+    /** Indicates whether the game engine is suspended waiting for input. */
     actionRequired = $state<string | null>(null);
-    /** Dati di contesto contestuali allegati alla richiesta di input. */
+    /** Contextual data attached to the input request. */
     actionContext = $state<any>(null);
 
-    /** Secondi rimanenti per il completamento del turno, calcolati localmente. */
+    /** Seconds remaining to complete the turn, computed locally. */
     turnTimeRemaining = $state<number>(15);
 
-    /** Riferimento al timer `setInterval` nativo del browser. */
+    /** Reference to the browser's native `setInterval` timer. */
     #timerInterval: number | null = null;
 
-    /** Proprietà derivata per identificare istantaneamente il giocatore locale. */
+    /** Derived property to instantly identify the local player. */
     localPlayer = $derived(
         this.state?.players.find((p) => p.username === storeAuth.username) ?? null
     );
@@ -128,7 +128,7 @@ class StoreGame {
     }
 
     /**
-     * @brief Interrompe i timer attivi e chiude la schermata partita, ritornando alla lobby.
+     * @brief Stops the active timers and closes the match screen, returning to the lobby.
      * @tag FRONT-GAME-MTH-001
      */
     returnToLobby() {
@@ -139,8 +139,8 @@ class StoreGame {
     }
 
     /**
-     * @brief Registra i listener per gli eventi WebSocket legati al gioco.
-     * Intercetta la fine della partita e gli aggiornamenti di stato inviati dal server.
+     * @brief Registers the listeners for the WebSocket events related to the game.
+     * Intercepts the end of the match and the state updates sent by the server.
      * @tag FRONT-GAME-MTH-002
      */
     #registerListeners() {
@@ -202,7 +202,7 @@ class StoreGame {
     }
 
     /**
-     * @brief Cancella e distrugge il timer del turno correntemente in esecuzione.
+     * @brief Cancels and destroys the currently running turn timer.
      * @tag FRONT-GAME-MTH-003
      */
     #clearTimer() {
@@ -213,9 +213,9 @@ class StoreGame {
     }
 
     /**
-     * @brief Sincronizza il timer locale calcolandolo in base ai millisecondi residui ricevuti dal server.
-     * Avvia un `setInterval` per decrementare il tempo reattivamente sull'UI ogni secondo.
-     * @param remainingMs Il tempo residuo fornito dal payload del server (in ms).
+     * @brief Synchronizes the local timer, computing it from the remaining milliseconds received from the server.
+     * Starts a `setInterval` to decrement the time reactively on the UI every second.
+     * @param remainingMs The remaining time provided by the server payload (in ms).
      * @tag FRONT-GAME-MTH-004
      */
     #syncTurnTimer(remainingMs: number) {
@@ -232,9 +232,9 @@ class StoreGame {
     }
 
     /**
-     * @brief Funzione helper per mappare l'output compatto numerico di una carta nei valori testuali enum.
-     * @param rawCard Il payload grezzo contenente id, color (int) e value (int).
-     * @returns Oggetto di tipo Card formattato.
+     * @brief Helper function to map the compact numeric output of a card to the textual enum values.
+     * @param rawCard The raw payload containing id, color (int) and value (int).
+     * @returns A formatted object of type Card.
      * @tag FRONT-GAME-MTH-005
      */
     #parseCard(rawCard: { id: number; color: number; value: number }): Card {
@@ -246,8 +246,8 @@ class StoreGame {
     }
 
     /**
-     * @brief Invia la mossa per giocare una specifica carta in mano.
-     * @param cardId Identificativo univoco a 16 bit della carta selezionata.
+     * @brief Sends the move to play a specific card in hand.
+     * @param cardId Unique 16-bit identifier of the selected card.
      * @tag FRONT-GAME-MTH-006
      */
     playCard(cardId: number) {
@@ -255,7 +255,7 @@ class StoreGame {
     }
 
     /**
-     * @brief Invia al server la richiesta di pescare una carta dal mazzo centrale.
+     * @brief Sends the request to draw a card from the central deck to the server.
      * @tag FRONT-GAME-MTH-007
      */
     drawCard() {
@@ -263,16 +263,16 @@ class StoreGame {
     }
 
     /**
-     * @brief Dichiara formalmente "UNO!" al server premendo il bottone apposito.
+     * @brief Formally declares "UNO!" to the server by pressing the dedicated button.
      * @tag FRONT-GAME-MTH-008
      */
     callUno() {
-        ws.emit(ClientAction.GameDrawCard); // Nota: Preservata la tua implementazione originale
+        ws.emit(ClientAction.GameDrawCard); // Note: your original implementation has been preserved
     }
 
     /**
-     * @brief Risolve un effetto attualmente sospeso inoltrando l'input utente.
-     * @param value Il valore scelto dall'utente tramite modale (es. il colore per il Jolly).
+     * @brief Resolves a currently suspended effect by forwarding the user input.
+     * @param value The value chosen by the user via modal (e.g. the colour for the Wild).
      * @tag FRONT-GAME-MTH-009
      */
     submitInput(value: string) {

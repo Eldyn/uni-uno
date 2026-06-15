@@ -1,7 +1,7 @@
 /**
  * @file lobby.svelte.ts
- * @brief Store globale reattivo per la gestione delle lobby e delle partite salvate.
- * Gestisce la creazione, l'unione, l'aggiornamento delle impostazioni e la lista pubblica.
+ * @brief Reactive global store for managing lobbies and saved matches.
+ * Handles creation, joining, settings updates and the public list.
  */
 
 import { storeNavigation } from "./navigation.svelte";
@@ -10,157 +10,157 @@ import { ClientAction, ServerAction, ws } from "./ws.svelte";
 
 /**
  * @enum BotTakeoverMode
- * @brief Modalità di comportamento quando un bot sostituisce o viene sostituito.
+ * @brief Behaviour mode when a bot replaces or is replaced by a player.
  */
 export enum BotTakeoverMode {
-    /** Il bot gioca istantaneamente la sua mossa non appena arriva il suo turno. */
+    /** The bot plays its move instantly as soon as its turn arrives. */
     PlayInstantly,
-    /** Il bot attende fino a 5 secondi per il suo turno, o fino alla fine del turno per altri giocatori AFK */
+    /** The bot waits up to 5 seconds for its turn, or until the end of the turn for other AFK players. */
     WaitUntilTurnEnd
 }
 
 /**
  * @interface SavedMatch
- * @brief Dati di base di una partita salvata sul server.
+ * @brief Basic data of a match saved on the server.
  */
 export interface SavedMatch {
-    /** Identificativo univoco del salvataggio nel database. */
+    /** Unique identifier of the save in the database. */
     match_id: string;
-    /** Data e ora del salvataggio. */
+    /** Date and time of the save. */
     saved_at: string;
-    /** Lista degli username dei giocatori presenti in quella partita. */
+    /** List of the usernames of the players present in that match. */
     players: string[];
 }
 
 /**
  * @interface LobbySettings
- * @brief Rappresenta la configurazione e le regole scelte per la lobby.
- * Definisce i parametri della partita e la composizione del mazzo iniziale.
+ * @brief Represents the configuration and rules chosen for the lobby.
+ * Defines the match parameters and the composition of the initial deck.
  */
 export interface LobbySettings {
-    /** Se true, la lobby apparirà nella lista pubblica delle partite. */
+    /** If true, the lobby will appear in the public list of matches. */
     is_public: boolean;
-    /** Array di regole speciali (Mod) attivate per questa partita. */
+    /** Array of special rules (Mods) enabled for this match. */
     active_mods: string[];
-    /** Limite di tempo in millisecondi concesso per completare un turno (es. 15000). */
+    /** Time limit in milliseconds allowed to complete a turn (e.g. 15000). */
     turn_time_limit_ms: number;
 
-    /** Se true, lo stato della partita verrà salvato nel database ad ogni mossa. */
+    /** If true, the match state will be saved to the database on every move. */
     save_state: boolean;
-    /** Se true, l'abbandono volontario di un giocatore eliminerà definitivamente il salvataggio. */
+    /** If true, a player's voluntary quit will permanently delete the save. */
     quit_deletes_match: boolean;
 
-    /** Numero di carte distribuite a ciascun giocatore all'inizio della partita. */
+    /** Number of cards dealt to each player at the start of the match. */
     starting_cards: number;
 
-    /** Numero di bot da inserire automaticamente all'avvio della partita. */
+    /** Number of bots to add automatically when the match starts. */
     bot_count: number;
-    /** Comportamento del bot (es. gioca subito o attende il timer). */
+    /** Bot behaviour (e.g. play immediately or wait for the timer). */
     bot_mode: BotTakeoverMode;
-    /** Se true, i nuovi giocatori umani possono entrare in partita sostituendo un bot. */
+    /** If true, new human players can join an ongoing match by replacing a bot. */
     allow_bot_takeover: boolean;
-    /** Se true, un giocatore umano che abbandona viene rimpiazzato da un bot anziché terminare il gioco. */
+    /** If true, a human player who quits is replaced by a bot instead of ending the game. */
     allow_bot_replacement: boolean;
 
-    /** Copie per colore del numero 0 nel mazzo. */
+    /** Copies per colour of the number 0 in the deck. */
     count_zeros: number;
-    /** Copie per colore dei numeri da 1 a 9 nel mazzo. */
+    /** Copies per colour of the numbers 1 to 9 in the deck. */
     count_numbered: number;
-    /** Copie per colore della carta "Divieto/Salta Turno". */
+    /** Copies per colour of the "Skip" card. */
     count_skips: number;
-    /** Copie per colore della carta "Inverti Giro". */
+    /** Copies per colour of the "Reverse" card. */
     count_reverses: number;
-    /** Copie per colore della carta "Pesca Due (+2)". */
+    /** Copies per colour of the "Draw Two (+2)" card. */
     count_draw_two: number;
-    /** Numero totale di carte Jolly (Cambio Colore) nel mazzo. */
+    /** Total number of Wild (Colour Change) cards in the deck. */
     count_wild: number;
-    /** Numero totale di carte Jolly Pesca Quattro (+4) nel mazzo. */
+    /** Total number of Wild Draw Four (+4) cards in the deck. */
     count_wild_draw_four: number;
 }
 
 /**
  * @interface LobbyMember
- * @brief Rappresenta un singolo giocatore connesso all'interno di una lobby.
+ * @brief Represents a single connected player inside a lobby.
  */
 export interface LobbyMember {
-    /** Il nome visualizzato del giocatore. */
+    /** The display name of the player. */
     username: string;
-    /** Indica se il giocatore è attualmente connesso tramite WebSocket o è in fase di riconnessione. */
+    /** Indicates whether the player is currently connected via WebSocket or is reconnecting. */
     is_connected: boolean;
-    /** Vero se questo giocatore è il proprietario/host della lobby e può avviare la partita. */
+    /** True if this player is the owner/host of the lobby and can start the match. */
     is_host: boolean;
-    /** Vero se questo "membro" è in realtà un account bot gestito dal server. */
+    /** True if this "member" is actually a bot account managed by the server. */
     is_bot: boolean;
 }
 
 /**
  * @interface Lobby
- * @brief Rappresenta una lobby di gioco completa con tutti i suoi dati di stato.
+ * @brief Represents a complete game lobby with all its state data.
  */
 export interface Lobby {
-    /** Il codice univoco alfanumerico di 6 caratteri utilizzato per unirsi. */
+    /** The unique 6-character alphanumeric code used to join. */
     invite_code: string;
-    /** L'username del creatore (Host) della lobby. */
+    /** The username of the creator (Host) of the lobby. */
     host: string;
-    /** Il nome personalizzato della lobby mostrato nella lista pubblica. */
+    /** The custom name of the lobby shown in the public list. */
     name: string;
-    /** Il numero attuale di membri presenti nella lobby (massimo 4). */
+    /** The current number of members in the lobby (maximum 4). */
     member_count: number;
-    /** Lista dettagliata dei giocatori attualmente nella lobby. */
+    /** Detailed list of the players currently in the lobby. */
     members: LobbyMember[];
-    /** Le impostazioni configurate per questa stanza di gioco. */
+    /** The settings configured for this game room. */
     settings: LobbySettings;
 }
 
 /**
  * @interface ListedLobby
- * @brief Dati minimizzati inviati dal server per renderizzare la lista delle lobby pubbliche.
- * Risparmia banda non inviando la lista completa dei membri e le regole dettagliate.
+ * @brief Minimized data sent by the server to render the list of public lobbies.
+ * Saves bandwidth by not sending the full member list and the detailed rules.
  */
 export interface ListedLobby {
-    /** Il nome personalizzato della lobby. */
+    /** The custom name of the lobby. */
     name: string;
-    /** Numero totale di giocatori umani attualmente connessi. */
+    /** Total number of human players currently connected. */
     member_count: number;
-    /** Numero totale di bot presenti in questa lobby. */
+    /** Total number of bots present in this lobby. */
     bot_count: number;
-    /** Il codice di invito per permettere al client di unirsi con un click. */
+    /** The invite code allowing the client to join with one click. */
     invite_code: string;
 }
 
 /**
  * @class StoreLobby
- * @brief Store Singleton che gestisce tutto lo stato relativo alle Lobby e le interazioni WebSocket associate.
+ * @brief Singleton store that manages all lobby-related state and the associated WebSocket interactions.
  * @tag FRONT-LOBBY-001
  */
 class StoreLobby {
-    /** Le partite salvate compatibili con la lista giocatori attuale. Null se non si è in lobby. */
+    /** Saved matches compatible with the current player list. Null if not in a lobby. */
     savedMatches = $state<SavedMatch[] | null>(null);
-    /** La lobby in cui l'utente si trova attualmente. Null se non si è in lobby. */
+    /** The lobby the user is currently in. Null if not in a lobby. */
     current = $state<Lobby | null>(null);
 
-    /** La lista delle lobby pubbliche disponibili per unirsi. */
+    /** The list of public lobbies available to join. */
     available = $state<ListedLobby[]>([]);
 
-    /** True durante il recupero della lista delle lobby pubbliche dal server. */
+    /** True while fetching the list of public lobbies from the server. */
     isLoadingList = $state(false);
 
-    /** True quando è in corso una richiesta di creazione o unione a una lobby. */
+    /** True while a lobby creation or join request is in progress. */
     isLoadingJoin = $state(false);
 
-    /** True quando è in corso il recupero della lista delle partite salvate. */
+    /** True while the list of saved matches is being fetched. */
     isLoadingSavedMatchList = $state(false);
 
     /**
-     * @brief Proprietà derivata per controllare rapidamente se l'utente è in una lobby.
-     * @returns True se l'utente è in una lobby, false altrimenti.
+     * @brief Derived property to quickly check whether the user is in a lobby.
+     * @returns True if the user is in a lobby, false otherwise.
      */
     get isInLobby(): boolean {
         return this.current !== null;
     }
 
     /**
-     * @brief Inizializza lo store e associa gli eventi di connessione di base.
+     * @brief Initializes the store and binds the basic connection events.
      * @tag FRONT-LOBBY-MTH-001
      */
     constructor() {
@@ -171,8 +171,8 @@ class StoreLobby {
     }
 
     /**
-     * @brief Promuove un utente al ruolo di host della lobby.
-     * @param username Il nome del giocatore da promuovere.
+     * @brief Promotes a user to the host role of the lobby.
+     * @param username The name of the player to promote.
      * @tag FRONT-LOBBY-MTH-002
      */
     async promote(username: string): Promise<void> {
@@ -183,8 +183,8 @@ class StoreLobby {
     }
 
     /**
-     * @brief Espelle un giocatore dalla lobby.
-     * @param username Il nome del giocatore da espellere.
+     * @brief Kicks a player from the lobby.
+     * @param username The name of the player to kick.
      * @tag FRONT-LOBBY-MTH-003
      */
     async kick(username: string): Promise<void> {
@@ -195,8 +195,8 @@ class StoreLobby {
     }
 
     /**
-     * @brief Aggiorna le impostazioni della lobby (inclusi nome e visibilità).
-     * @param settings I campi delle impostazioni da modificare.
+     * @brief Updates the lobby settings (including name and visibility).
+     * @param settings The settings fields to modify.
      * @tag FRONT-LOBBY-MTH-004
      */
     async updateSettings(
@@ -210,17 +210,17 @@ class StoreLobby {
                 return;
             }
 
-            storeToast.success("Impostazioni Aggiornate!");
+            storeToast.success("Settings updated!");
         } catch (error) {
             storeToast.error("Failed to update lobby settings.");
         }
     }
 
     /**
-     * @brief Crea una nuova lobby di gioco sul server.
-     * Si connette automaticamente al WebSocket ed emette il payload di creazione.
-     * @param data La configurazione per la nuova lobby.
-     * @returns Una Promise che si risolve al completamento della richiesta di rete.
+     * @brief Creates a new game lobby on the server.
+     * Automatically connects to the WebSocket and emits the creation payload.
+     * @param data The configuration for the new lobby.
+     * @returns A Promise that resolves when the network request completes.
      * @tag FRONT-LOBBY-MTH-005
      */
     async create(data: { is_public: boolean; name: string }): Promise<void> {
@@ -239,9 +239,9 @@ class StoreLobby {
     }
 
     /**
-     * @brief Si unisce a una lobby esistente utilizzando un codice di invito a 6 caratteri.
-     * @param code L'identificatore univoco a 6 caratteri della lobby.
-     * @returns Una Promise che si risolve al completamento del tentativo di unione.
+     * @brief Joins an existing lobby using a 6-character invite code.
+     * @param code The unique 6-character identifier of the lobby.
+     * @returns A Promise that resolves when the join attempt completes.
      * @tag FRONT-LOBBY-MTH-006
      */
     async join(code: string): Promise<void> {
@@ -265,9 +265,9 @@ class StoreLobby {
     }
 
     /**
-     * @brief Recupera dal server la lista aggiornata delle lobby pubbliche disponibili.
-     * Aggiorna l'array di stato `available`.
-     * @returns Una Promise che si risolve quando la lista è stata aggiornata.
+     * @brief Fetches the updated list of available public lobbies from the server.
+     * Updates the `available` state array.
+     * @returns A Promise that resolves when the list has been updated.
      * @tag FRONT-LOBBY-MTH-007
      */
     async fetchList(): Promise<void> {
@@ -286,7 +286,7 @@ class StoreLobby {
     }
 
     /**
-     * @brief Emette una richiesta per abbandonare la lobby corrente.
+     * @brief Emits a request to leave the current lobby.
      * @tag FRONT-LOBBY-MTH-008
      */
     leave(): void {
@@ -294,8 +294,8 @@ class StoreLobby {
     }
 
     /**
-     * @brief Si iscrive a tutti gli eventi WebSocket inviati dal server relativi alle lobby.
-     * Gestisce eventi come l'unione, la ricezione di aggiornamenti o l'espulsione.
+     * @brief Subscribes to all WebSocket events sent by the server related to lobbies.
+     * Handles events such as joining, receiving updates or being evicted.
      * @tag FRONT-LOBBY-PRIV-001
      */
     #registerListeners(): void {
@@ -338,7 +338,7 @@ class StoreLobby {
     }
 
     /**
-     * @brief Recupera dal server i salvataggi pregressi compatibili con i giocatori nella lobby.
+     * @brief Fetches from the server the previous saves compatible with the players in the lobby.
      * @tag FRONT-LOBBY-PRIV-002
      */
     async #fetchSavedMatches(): Promise<void> {
@@ -360,9 +360,9 @@ class StoreLobby {
     }
 
     /**
-     * @brief Tenta silenziosamente di ricollegarsi a una lobby usando un codice sessione memorizzato.
-     * Legge `lobby_code` dal localStorage. Viene innescata automaticamente dopo un ricaricamento o disconnessione.
-     * @returns Una Promise che si risolve al completamento del flusso di riconnessione.
+     * @brief Silently attempts to reconnect to a lobby using a stored session code.
+     * Reads `lobby_code` from localStorage. Triggered automatically after a reload or disconnection.
+     * @returns A Promise that resolves when the reconnection flow completes.
      * @tag FRONT-LOBBY-PRIV-003
      */
     async #tryRejoin(): Promise<void> {
@@ -399,7 +399,7 @@ class StoreLobby {
     }
 
     /**
-     * @brief Ripulisce lo stato attivo della lobby e la memoria locale.
+     * @brief Clears the active lobby state and local storage.
      * @tag FRONT-LOBBY-PRIV-004
      */
     #reset(): void {
