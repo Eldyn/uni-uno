@@ -4,7 +4,7 @@
 	import EnumSelector from "./settings/EnumSelector.svelte";
 	import RulesGrid from "./settings/RulesGrid.svelte";
 	import type { RuleDef } from "./settings/RulesGrid.svelte";
-	import { BotTakeoverMode, type LobbySettings, Rule, storeLobby } from "../../stores/lobby.svelte";
+	import { BotTakeoverMode, type LobbySettings, storeLobby } from "../../stores/lobby.svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
 
 	/**
@@ -91,7 +91,7 @@
 		if (idx !== -1) rules[idx].enabled = enabled;
 		const activeRuleIds = rules.filter((rule) => rule.enabled).map((rule) => rule.id);
 
-		storeLobby.updateSettings({ active_mods: activeRuleIds as Rule[] });
+		storeLobby.updateSettings({ active_mods: activeRuleIds as string[] });
 	}
 </script>
 
