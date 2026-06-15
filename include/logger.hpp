@@ -13,14 +13,14 @@
 
 /**
  * @file logger.hpp
- * @brief Sistema di logging thread-safe e formattato a colori per la console.
+ * @brief Thread-safe, colour-formatted logging system for the console.
  */
 
 /**
  * @struct Logger
- * @brief Fornisce metodi statici per stampare messaggi di log formattati sullo standard output.
- * * Implementa il supporto per i colori ANSI cross-platform (abilitando il VT processing su Windows)
- * e formatta automaticamente i messaggi con timestamp al millisecondo e tag allineati.
+ * @brief Provides static methods to print formatted log messages to standard output.
+ * * Implements cross-platform ANSI colour support (enabling VT processing on Windows)
+ * and automatically formats the messages with millisecond timestamps and aligned tags.
  * @tag LOG-CLS-001
  */
 struct Logger {
@@ -40,7 +40,7 @@ private:
     inline static bool is_initialized = false;
 
     /**
-     * @brief Abilita il supporto ANSI sui terminali Windows.
+     * @brief Enables ANSI support on Windows terminals.
      * @tag LOG-PRIV-001
      */
     static void Init() {
@@ -59,8 +59,8 @@ private:
     }
 
     /**
-     * @brief Genera un timestamp formattato con millisecondi (es. "[14:32:01.045]").
-     * @return std::string Timestamp colorato in grigio.
+     * @brief Generates a timestamp formatted with milliseconds (e.g. "[14:32:01.045]").
+     * @return std::string Timestamp coloured in grey.
      * @tag LOG-PRIV-002
      */
     static std::string timestamp() {
@@ -71,7 +71,7 @@ private:
         time_t t = std::chrono::system_clock::to_time_t(now);
         tm tm_buf;
         #ifdef _WIN32
-            localtime_s(&tm_buf, &t);   // In windows gli argomenti sono swappati
+            localtime_s(&tm_buf, &t);   // On Windows the arguments are swapped
         #else
             localtime_r(&t, &tm_buf);   // POSIX
         #endif
@@ -85,8 +85,8 @@ private:
     }
 
     /**
-     * @brief Funzione core per la formattazione e la stampa.
-     * Utilizza le fold expressions del C++17 per spacchettare in modo efficiente gli argomenti variadici.
+     * @brief Core function for formatting and printing.
+     * Uses C++17 fold expressions to efficiently unpack the variadic arguments.
      * @tag LOG-PRIV-003
      */
     template<typename... Args>
@@ -106,49 +106,49 @@ private:
 
 public:
     /**
-     * @brief Registra un messaggio di informazione generico (Verde).
+     * @brief Logs a generic informational message (Green).
      * @tag LOG-MTH-001
      */
     template<typename... Args>
     static void Info(Args&&... args) { Print(Green, "INFO", std::forward<Args>(args)...); }
 
     /**
-     * @brief Registra un avviso non bloccante (Giallo).
+     * @brief Logs a non-blocking warning (Yellow).
      * @tag LOG-MTH-002
      */
     template<typename... Args>
     static void Warn(Args&&... args) { Print(Yellow, "WARN", std::forward<Args>(args)...); }
 
     /**
-     * @brief Registra un errore critico (Rosso).
+     * @brief Logs a critical error (Red).
      * @tag LOG-MTH-003
      */
     template<typename... Args>
     static void Error(Args&&... args) { Print(Red, "ERROR", std::forward<Args>(args)...); }
 
     /**
-     * @brief Registra un evento specifico del layer WebSocket (Ciano).
+     * @brief Logs an event specific to the WebSocket layer (Cyan).
      * @tag LOG-MTH-004
      */
     template<typename... Args>
     static void WS(Args&&... args) { Print(Cyan, " WS ", std::forward<Args>(args)...); }
 
     /**
-     * @brief Registra un evento specifico del LobbyController (Giallo scuro).
+     * @brief Logs an event specific to the LobbyController (dark Yellow).
      * @tag LOG-MTH-005
      */
     template<typename... Args>
     static void Lobby(Args&&... args) { Print(Yellow, "LOBBY", std::forward<Args>(args)...); }
 
     /**
-     * @brief Registra un evento specifico delle richieste HTTP (Magenta).
+     * @brief Logs an event specific to HTTP requests (Magenta).
      * @tag LOG-MTH-006
      */
     template<typename... Args>
     static void HTTP(Args&&... args) { Print(Magenta, "HTTP", std::forward<Args>(args)...); }
     
     /**
-     * @brief Registra un log di debug base (Bianco).
+     * @brief Logs a basic debug message (White).
      * @tag LOG-MTH-007
      */
     template<typename... Args>
