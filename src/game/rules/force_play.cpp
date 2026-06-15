@@ -9,7 +9,7 @@ namespace game {
         }
     };
 
-    static RuleRegistrar registrar("force_play", []() { 
-        return std::make_unique<ForcePlayRule>(); 
-    });
+    static RuleRegistrar registrar("force_play", []() {
+        return std::make_unique<ForcePlayRule>();
+    }, "Force Play", "If the card you draw is playable, you must play it immediately.");
 }

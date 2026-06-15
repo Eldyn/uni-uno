@@ -4,7 +4,7 @@
 	import EnumSelector from "./settings/EnumSelector.svelte";
 	import RulesGrid from "./settings/RulesGrid.svelte";
 	import type { RuleDef } from "./settings/RulesGrid.svelte";
-	import { BotTakeoverMode, type LobbySettings, storeLobby } from "../../stores/lobby.svelte";
+	import { BotTakeoverMode, type LobbySettings, type RuleDefinition, storeLobby } from "../../stores/lobby.svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
 
 	/**
@@ -33,51 +33,14 @@
 		bot_count: storeLobby.current?.settings.bot_count ?? 0
 	} as LobbySettings);
 
-	// Rules are separate because they're not yet wired to the backend
-	let rules = $state<RuleDef[]>([
-		{
-			id: "draw_stacking",
-			label: "Draw Stacking",
-			description: "Stack +2 and +4 cards.",
-			enabled: false
-		},
-		{
-			id: "seven_zero",
-			label: "Seven-Zero",
-			description: "7 swaps hands; 0 rotates all hands.",
-			enabled: false
-		},
-		{
-			id: "jump_in",
-			label: "Jump In",
-			description: "Play an identical card out of turn.",
-			enabled: false
-		},
-		{
-			id: "no_bluffing",
-			label: "No Bluffing",
-			description: "+4 can only be played if you have no matching color.",
-			enabled: false
-		},
-		{
-			id: "force_play",
-			label: "Force Play",
-			description: "Must play a drawn card if it's valid.",
-			enabled: false
-		},
-		{
-			id: "progressive",
-			label: "Progressive",
-			description: "Players can keep drawing until they get a playable card.",
-			enabled: false
-		}
-	]);
-
-	$effect(() => {
-		rules.forEach((rule) => {
-			rule.enabled = storeLobby.current?.settings.active_mods.indexOf(rule.id) !== -1;
-		});
-	});
+	let rules = $derived<RuleDef[]>(
+		storeLobby.availableRules.map((rule: RuleDefinition) => ({
+			id: rule.id,
+			label: rule.label,
+			description: rule.description,
+			enabled: storeLobby.current?.settings.active_mods.includes(rule.id) ?? false
+		}))
+	);
 
 	function commit(key: SettingsKey, value: boolean | number) {
 		if (!isHost) return;

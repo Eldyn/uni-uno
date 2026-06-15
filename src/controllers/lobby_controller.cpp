@@ -11,6 +11,7 @@
 #include <common/bot_names.hpp>
 #include <common/ws.hpp>
 #include <common/payloads.hpp>
+#include <game/rule_registry.hpp>
 #include <logger.hpp>
 #include <openssl/rand.h>
 #include <algorithm>
@@ -379,6 +380,7 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
         {"settings", lobby.settings},
         {"name", lobby.name}
     };
+    resp["available_rules"] = game::RuleRegistry::GetAvailableRulesJson();
     ctx.socket->send(resp.dump(), ctx.op_code);
 }
 
@@ -486,6 +488,7 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
         {"members",     MemberListJson(lobby)},
         {"settings",    lobby.settings}
     });
+    resp["available_rules"] = game::RuleRegistry::GetAvailableRulesJson();
     ctx.socket->send(resp.dump(), ctx.op_code);
 
     BroadcastUpdate(lobby);
@@ -546,6 +549,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
             {"settings",    lobby.settings},
             {"name",        lobby.name}
         });
+        resp["available_rules"] = game::RuleRegistry::GetAvailableRulesJson();
 
         ctx.socket->send(resp.dump(), ctx.op_code);
 

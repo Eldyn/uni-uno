@@ -9,7 +9,7 @@ namespace game {
         }
     };
 
-    static RuleRegistrar registrar("progressive", []() { 
-        return std::make_unique<ProgressiveRule>(); 
-    });
+    static RuleRegistrar registrar("progressive", []() {
+        return std::make_unique<ProgressiveRule>();
+    }, "Progressive", "Keep drawing cards until you draw one that is playable.");
 }
