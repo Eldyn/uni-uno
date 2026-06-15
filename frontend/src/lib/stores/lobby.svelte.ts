@@ -20,6 +20,19 @@ export enum BotTakeoverMode {
 }
 
 /**
+ * @interface RuleDefinition
+ * @brief Describes a single game rule as provided by the server.
+ */
+export interface RuleDefinition {
+    /** Unique identifier used in active_mods (e.g. "seven_zero"). */
+    id: string;
+    /** Short human-readable name for UI display. */
+    label: string;
+    /** One-sentence explanation of the rule's effect. */
+    description: string;
+}
+
+/**
  * @interface SavedMatch
  * @brief Basic data of a match saved on the server.
  */
@@ -138,6 +151,8 @@ class StoreLobby {
     savedMatches = $state<SavedMatch[] | null>(null);
     /** The lobby the user is currently in. Null if not in a lobby. */
     current = $state<Lobby | null>(null);
+    /** Rule definitions synced from the server on lobby join. */
+    availableRules = $state<RuleDefinition[]>([]);
 
     /** The list of public lobbies available to join. */
     available = $state<ListedLobby[]>([]);
@@ -302,6 +317,7 @@ class StoreLobby {
         ws.on(ServerAction.LobbyJoined, async (data) => {
             const lobby = data.lobby as Lobby;
             this.current = lobby;
+            this.availableRules = (data.available_rules as RuleDefinition[]) ?? [];
 
             localStorage.setItem("lobby_code", lobby.invite_code);
             storeNavigation.goto("lobby");
@@ -390,6 +406,7 @@ class StoreLobby {
             if (!lobby) throw new Error("Invalid lobby data received.");
 
             this.current = lobby;
+            this.availableRules = response.getOr<RuleDefinition[]>("available_rules", []);
             storeNavigation.goto("lobby");
 
             await this.#fetchSavedMatches();
@@ -404,6 +421,7 @@ class StoreLobby {
      */
     #reset(): void {
         this.current = null;
+        this.availableRules = [];
         localStorage.removeItem("lobby_code");
     }
 }

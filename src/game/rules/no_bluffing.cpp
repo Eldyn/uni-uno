@@ -31,7 +31,7 @@ namespace game {
         }
     };
 
-    static RuleRegistrar registrar("no_bluffing", []() { 
-        return std::make_unique<NoBluffingRule>(); 
-    });
+    static RuleRegistrar registrar("no_bluffing", []() {
+        return std::make_unique<NoBluffingRule>();
+    }, "No Bluffing", "+4 can only be played if you have no card matching the current color.");
 }

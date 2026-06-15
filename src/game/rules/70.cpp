@@ -22,7 +22,7 @@ namespace game {
         }
     };
 
-   static RuleRegistrar registrar("seven_zero", []() { 
-        return std::make_unique<SevenZeroRule>(); 
-    });
+   static RuleRegistrar registrar("seven_zero", []() {
+        return std::make_unique<SevenZeroRule>();
+    }, "Seven-Zero", "Playing a 7 swaps your hand with a chosen player; playing a 0 rotates all hands.");
 }

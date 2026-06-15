@@ -153,6 +153,22 @@ components:
           lobby:
             type: object
             description: Full lobby state.
+          available_rules:
+            type: array
+            description: List of rules supported by this server instance.
+            items:
+              type: object
+              required: [id, label, description]
+              properties:
+                id:
+                  type: string
+                  description: Rule identifier used in active_mods.
+                label:
+                  type: string
+                  description: Short human-readable name for UI display.
+                description:
+                  type: string
+                  description: One-sentence explanation of the rule's effect.
 
     LobbyUpdated:
       name: lobby_updated

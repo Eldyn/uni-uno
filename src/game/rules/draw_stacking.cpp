@@ -33,7 +33,7 @@ namespace game {
         }
     };
 
-    static RuleRegistrar registrar("draw_stacking", []() { 
-        return std::make_unique<DrawStackingRule>(); 
-    });
+    static RuleRegistrar registrar("draw_stacking", []() {
+        return std::make_unique<DrawStackingRule>();
+    }, "Draw Stacking", "Stack +2 and +4 draw cards to pass the penalty to the next player.");
 }

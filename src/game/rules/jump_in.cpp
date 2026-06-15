@@ -31,7 +31,7 @@ namespace game {
         }
     };
 
-    static RuleRegistrar registrar("jump_in", []() { 
-        return std::make_unique<JumpInRule>(); 
-    });
+    static RuleRegistrar registrar("jump_in", []() {
+        return std::make_unique<JumpInRule>();
+    }, "Jump In", "Play an identical card (same number and color) out of turn to steal the turn.");
 }
