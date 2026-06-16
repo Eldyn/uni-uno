@@ -60,6 +60,9 @@
 			if (reason === "rate_limited") {
 				storeToast.warning("You're going too fast — please slow down.");
 			} else if (reason) {
+				// NOTE: we don't wanna send invalid move every time they click
+				//       a card. let em chill... For now this is a tape fix.
+				if (reason === "Invalid move") return;
 				storeToast.error(reason);
 			}
 		});
@@ -134,4 +137,3 @@
 		);
 	}
 </style>
-
