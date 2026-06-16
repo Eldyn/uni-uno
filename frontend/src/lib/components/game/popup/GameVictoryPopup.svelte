@@ -11,22 +11,6 @@
     let winnerColor = $derived(winnerIdx !== -1 ? PLAYER_COLORS[winnerIdx % 4] : "#0493de");
 
     let isBot = $derived(winnerName.toLowerCase().includes("bot"));
-
-    // --- Gestione Audio Vittoria/Sconfitta ---
-    $effect(() => {
-        // Seleziona il file in base all'esito
-        const audioSrc = isMe ? "/assets/music/victory.mp3" : "/assets/music/lose.mp3";
-        const gameAudio = new Audio(audioSrc);
-
-        // Starts the audio (it will play over the router's audio)
-        gameAudio.play().catch(err => console.warn("Audio autoplay blocked:", err));
-
-        // Cleanup: stops the audio if the screen is exited
-        return () => {
-            gameAudio.pause();
-            gameAudio.currentTime = 0;
-        };
-    });
 </script>
 
 <div class="modal-overlay victory-overlay">

@@ -1,11 +1,5 @@
 <script lang="ts">
     import { storeGame } from "../../../stores/game.svelte";
-    import { onMount } from "svelte";
-
-    onMount(() => {
-        const audio = new Audio("assets/music/lose.mp3");
-        audio.play().catch(err => console.warn("Impossibile riprodurre l'audio:", err));
-    });
 </script>
 
 <div class="modal-overlay interrupted-overlay">
