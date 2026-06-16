@@ -2,8 +2,8 @@ from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMakeDeps, cmake_layout
 
 
-class UniUnoConan(ConanFile):
-    """Conan recipe for the Uni-Uno C++23 backend.
+class UniConan(ConanFile):
+    """Conan recipe for the UNI C++23 backend.
 
     Equivalent to the former conanfile.txt, but expressed as a recipe so the
     CMakeToolchain generator can disable CMakeUserPresets.json generation. The
