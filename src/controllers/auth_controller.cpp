@@ -20,7 +20,11 @@
 
 using json = nlohmann::json;
 
-AuthController::AuthController(HttpRouter& router) {
+AuthController::AuthController(HttpRouter& router)
+    : trust_proxy_(Env::Get("TRUST_PROXY", "0") != "0"),
+      login_throttle_(std::stoi(Env::Get("LOGIN_MAX_FAILS", "5")),
+                      std::chrono::seconds(std::stoi(Env::Get("LOGIN_LOCKOUT_SEC", "300")))),
+      last_evict_(LoginThrottle::Clock::now()) {
     router.Post("/auth/register", [this](AppResponse* res, AppRequest* req) {
         HandleRegister(res, req);
     });
@@ -158,8 +162,19 @@ void AuthController::HandleRegister(AppResponse* res, AppRequest* /*req*/) {
     });
 }
 
-void AuthController::HandleLogin(AppResponse* response, AppRequest* /*req*/) {
-    http::ReadBody(response, kMaxBodyBytes, [response](const std::string& body) {
+void AuthController::HandleLogin(AppResponse* response, AppRequest* req) {
+    // Resolve the IP synchronously: req is invalid once ReadBody's async
+    // callback runs, so capture what we need by value now.
+    const std::string ip = http::GetClientIp(response, req, trust_proxy_);
+
+    // Bound the throttle map: sweep idle entries at most once a minute.
+    const auto now = LoginThrottle::Clock::now();
+    if (now - last_evict_ >= std::chrono::seconds(60)) {
+        last_evict_ = now;
+        login_throttle_.Evict();
+    }
+
+    http::ReadBody(response, kMaxBodyBytes, [this, response, ip](const std::string& body) {
         json data;
         try {
             data = json::parse(body);
@@ -180,6 +195,18 @@ void AuthController::HandleLogin(AppResponse* response, AppRequest* /*req*/) {
             return;
         }
 
+        // Per-(email,ip) lockout, checked before any DB lookup or PBKDF2 so a
+        // locked-out attacker costs nothing. Per-IP keying avoids letting a
+        // third party lock a victim out by spamming their email.
+        const std::string throttle_key = email + "|" + ip;
+        if (login_throttle_.IsLocked(throttle_key)) {
+            response->writeStatus("429 Too Many Requests")
+               ->writeHeader("Retry-After", "60")
+               ->writeHeader("Content-Type", "application/json")
+               ->end(json({{"error", "Too many failed attempts. Try again later."}}).dump());
+            return;
+        }
+
         auto row_result = Database::Get().QueryOne(
             "SELECT username, pass_hash, salt FROM users WHERE email = ?;",
             {email}
@@ -192,6 +219,7 @@ void AuthController::HandleLogin(AppResponse* response, AppRequest* /*req*/) {
         }
 
         if (!row_result->has_value()) {
+            login_throttle_.RecordFailure(throttle_key);
             response->writeStatus("401 Unauthorized")
                ->writeHeader("Content-Type", "application/json")
                ->end(json({{"error", "Invalid credentials"}}).dump());
@@ -207,12 +235,14 @@ void AuthController::HandleLogin(AppResponse* response, AppRequest* /*req*/) {
         std::string stored = salt_b64 + ":" + hash_b64;
 
         if (!VerifyPassword(password, stored)) {
+            login_throttle_.RecordFailure(throttle_key);
             response->writeStatus("401 Unauthorized")
                ->writeHeader("Content-Type", "application/json")
                ->end(json({{"error", "Invalid credentials"}}).dump());
             return;
         }
 
+        login_throttle_.Reset(throttle_key);
         std::string token = IssueToken(username);
 
         Logger::Info("[Auth] Login successful: " + username);
