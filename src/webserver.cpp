@@ -21,7 +21,9 @@ using std::string, std::string_view, std::ifstream, std::stringstream, std::ios,
 
 
 WebServer::WebServer(int port, string_view key_file, string_view cert_file, string_view db_file, string_view frontend_path)
-    : port_(port), db_file_(db_file), frontend_path_(frontend_path), app_(AppHttp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})) {
+    : port_(port), db_file_(db_file), frontend_path_(frontend_path),
+      trust_proxy_(Env::Get("TRUST_PROXY", "0") != "0"),
+      app_(AppHttp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})) {
     if (!InitDB()) {
         throw runtime_error("Failed to initialise database");
     }
@@ -174,6 +176,8 @@ void WebServer::RegisterRoutes() {
 
             PerSocketData socket_data;
             socket_data.username = payload->username;
+            // Capture the IP before upgrade() invalidates the request object.
+            socket_data.ip = http::GetClientIp(res, req, trust_proxy_);
 
             res->upgrade(std::move(socket_data),
                 req->getHeader("sec-websocket-key"),
