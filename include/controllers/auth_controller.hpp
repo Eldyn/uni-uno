@@ -1,8 +1,10 @@
 #pragma once
+#include <chrono>
 #include <string>
 #include <result.hpp>
 #include <database.hpp>
 #include <http_router.hpp>
+#include <common/login_throttle.hpp>
 
 /**
  * @file auth_controller.hpp
@@ -133,4 +135,10 @@ private:
     static constexpr int kSaltBytes   = 16;         /**< @brief Size in bytes of the cryptographic Salt. @tag CTRL-AUTH-CFG-005 */
     static constexpr int kHashBytes   = 32;         /**< @brief Size in bytes of the resulting Hash. @tag CTRL-AUTH-CFG-006 */
     static constexpr int kIterations  = 200'000;    /**< @brief Number of iterations of the PBKDF2 algorithm (NIST SP 800-132 minimum). @tag CTRL-AUTH-CFG-007 */
+
+    // --- Brute-force protection ---
+
+    bool trust_proxy_;                          /**< Honour X-Forwarded-For for the throttle key. */
+    LoginThrottle login_throttle_;              /**< Failed-login lockout, keyed by email+IP. */
+    LoginThrottle::Clock::time_point last_evict_; /**< Last idle-entry sweep. */
 };

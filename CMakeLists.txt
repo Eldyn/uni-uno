@@ -130,6 +130,7 @@ if(UNI_BUILD_TESTS)
     add_executable(uni_tests
         ${TEST_SOURCES}
         src/common/rate_limiter.cpp
+        src/common/login_throttle.cpp
     )
     target_include_directories(uni_tests PRIVATE include src "${CMAKE_BINARY_DIR}/generated")
     target_link_libraries(uni_tests PRIVATE
