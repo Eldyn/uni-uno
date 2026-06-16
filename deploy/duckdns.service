@@ -1,0 +1,11 @@
+# Oneshot DuckDNS update unit, driven by duckdns.timer.
+# Installed to /etc/systemd/system/ by bootstrap.sh.
+[Unit]
+Description=Update DuckDNS subdomain to this host's public IP
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/duckdns.env
+ExecStart=/opt/uni/duckdns.sh

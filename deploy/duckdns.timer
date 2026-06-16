@@ -1,0 +1,14 @@
+# Runs the DuckDNS update shortly after boot and every 5 minutes thereafter,
+# so the subdomain follows the VM if OCI ever changes its public IP.
+# Installed to /etc/systemd/system/ by bootstrap.sh; enable with:
+#   systemctl enable --now duckdns.timer
+[Unit]
+Description=Periodic DuckDNS update
+
+[Timer]
+OnBootSec=30
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
