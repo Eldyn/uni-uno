@@ -145,10 +145,8 @@ class StoreGame {
      */
     #registerListeners() {
         ws.on(ServerAction.GameOver, (data) => {
-            console.log(data);
             if (!this.state) return;
 
-            console.log("gameover!");
             const winner = data.winner;
             this.state.is_over = true;
             this.state.winner = winner as string;
@@ -171,9 +169,9 @@ class StoreGame {
                 pending_draws: stateJson.pending_draws ?? 0,
                 last_play: stateJson.last_play
                     ? {
-                          player: stateJson.last_play.player,
-                          hand_index: stateJson.last_play.hand_index
-                      }
+                        player: stateJson.last_play.player,
+                        hand_index: stateJson.last_play.hand_index
+                    }
                     : undefined,
                 is_over: undefined,
                 winner: undefined
@@ -191,7 +189,6 @@ class StoreGame {
             }
             this.actionContext = parsedContext;
 
-            console.log(stateJson);
             const remainingMs = stateJson.turn_time_remaining_ms ?? 15000;
             this.#syncTurnTimer(remainingMs);
 
