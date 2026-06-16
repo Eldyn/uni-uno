@@ -10,7 +10,11 @@ bin/
 compile_commands.json
 CMakeUserPresets.json
 
+node_modules/
+
 *.db
+*.sqlite
+db_data/
 public/*
 
 *.pem
