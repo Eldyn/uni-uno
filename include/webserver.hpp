@@ -33,12 +33,14 @@ public:
      * @param keyFile Path to the SSL private key file.
      * @param certFile Path to the SSL certificate file.
      * @param dbFile Path to the SQLite database file.
+     * @param frontendPath Path to the directory holding the built frontend static files.
      * @tag SRV-CORE-001
      */
     explicit WebServer(int port,
-                       std::string_view keyFile  = "key.pem",
-                       std::string_view certFile = "cert.pem",
-                       std::string_view dbFile   = "game.db");
+                       std::string_view keyFile      = "key.pem",
+                       std::string_view certFile     = "cert.pem",
+                       std::string_view dbFile       = "game.db",
+                       std::string_view frontendPath = "public");
 
     /**
      * @brief Destructor. Takes care of releasing any pending resources.
@@ -101,6 +103,7 @@ public:
 private:
     int    port_;           /**< Listening port of the server. */
     string db_file_;        /**< Path of the sqlite DB file. */
+    string frontend_path_;  /**< Path of the directory with built frontend static files. */
 
     uWS::SSLApp app_;       /**< Main uWebSockets instance (SSL/TLS). */
     std::map<string, AppWebSocket*> connections_; /**< Map of connected users (Username -> Socket). */

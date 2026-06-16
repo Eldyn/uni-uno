@@ -19,8 +19,8 @@ using json = nlohmann::json;
 using std::string, std::string_view, std::ifstream, std::stringstream, std::ios, std::runtime_error, std::to_string, std::isalnum;
 
 
-WebServer::WebServer(int port, string_view key_file, string_view cert_file, string_view db_file)
-    : port_(port), db_file_(db_file), app_(uWS::SSLApp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})) {
+WebServer::WebServer(int port, string_view key_file, string_view cert_file, string_view db_file, string_view frontend_path)
+    : port_(port), db_file_(db_file), frontend_path_(frontend_path), app_(uWS::SSLApp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})) {
     if (!InitDB()) {
         throw runtime_error("Failed to initialise database");
     }
@@ -225,7 +225,7 @@ void WebServer::HandleGet(AppResponse *res, AppRequest *req) {
     
     string url = string(req->getUrl());
     string relativePath = (url == "/") ? "index.html" : url.substr(1);
-    fs::path filePath = fs::current_path() / "public" / relativePath;
+    fs::path filePath = fs::path(frontend_path_) / relativePath;
     
     if (fs::exists(filePath) && !fs::is_directory(filePath)) {
         string pathStr = filePath.string();
