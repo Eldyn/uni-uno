@@ -117,6 +117,13 @@ class StoreAuth {
                 const body = await res.json().catch(() => ({}));
                 return { username: body.error ?? "Invalid input." };
             }
+            // 429: per-IP auth rate limiter (shared across all /auth/* routes).
+            if (res.status === 429) {
+                const body = await res.json().catch(() => ({}));
+                return {
+                    username: body.error ?? "Too many attempts — please wait and try again."
+                };
+            }
 
             storeToast.error("Registration failed — please try again.");
             return {};
@@ -161,6 +168,15 @@ class StoreAuth {
             // 401 is always "bad credentials" — don't leak which field is wrong
             if (res.status === 401) {
                 return { email: "Incorrect email or password." };
+            }
+
+            // 429: per-(email,ip) lockout after repeated failures, or the
+            // per-IP auth rate limiter. Surface the server's own message.
+            if (res.status === 429) {
+                const body = await res.json().catch(() => ({}));
+                return {
+                    email: body.error ?? "Too many attempts — please wait and try again."
+                };
             }
 
             storeToast.error("Login failed — please try again.");
