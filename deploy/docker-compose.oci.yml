@@ -1,0 +1,61 @@
+# OCI ARM (Ampere A1) deployment stack.
+#
+# Differs from the root docker-compose.yml in one way: instead of publishing the
+# backend on the host, it puts a Caddy reverse proxy in front that terminates TLS
+# (Let's Encrypt) for a DuckDNS subdomain and proxies plain HTTP to the backend
+# over an internal network. The backend itself stays UNI_ENABLE_SSL=OFF (the
+# Dockerfile default) because Caddy owns TLS — same edge-termination shape as
+# Render/Cloud Run, just self-hosted.
+#
+# Run from the repo root so relative paths (build context, ./db_data) resolve there:
+#   docker compose --project-directory . -f deploy/docker-compose.oci.yml up -d --build
+#
+# Required env (host .env at repo root): JWT_SECRET, PASSWORD_PEPPER, DOMAIN.
+
+services:
+  uni:
+    build:
+      context: ..            # relative to this file → repo root
+      dockerfile: Dockerfile
+      args:
+        UNI_ENABLE_SSL: "OFF"  # Caddy terminates TLS; backend speaks plain HTTP
+    image: uni:latest
+    container_name: uni
+    expose:
+      - "3000"               # internal only — never published to the host
+    environment:
+      PORT: "3000"
+      DB_PATH: /app/data/uni.sqlite
+      FRONTEND_PATH: /app/public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      PASSWORD_PEPPER: ${PASSWORD_PEPPER:?set PASSWORD_PEPPER in .env}
+    volumes:
+      - ./db_data:/app/data  # persistent SQLite — survives container & VM reboots
+    restart: unless-stopped
+    networks:
+      - web
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    ports:
+      - "80:80"              # HTTP-01 ACME challenge + redirect to HTTPS
+      - "443:443"            # HTTPS
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN (e.g. yourname.duckdns.org) in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data     # persisted certs — avoids Let's Encrypt rate limits
+      - caddy_config:/config
+    depends_on:
+      - uni
+    restart: unless-stopped
+    networks:
+      - web
+
+networks:
+  web:
+
+volumes:
+  caddy_data:
+  caddy_config:
