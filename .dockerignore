@@ -1,0 +1,44 @@
+# Build outputs
+build/
+**/build/
+bin/
+**/*.o
+**/*.a
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Frontend bundle (rebuilt in the frontend stage)
+public/
+
+# Conan / CMake local state
+CMakeUserPresets.json
+ConanPresets.json
+
+# Local databases
+*.db
+*.sqlite
+db_data/
+
+# Secrets & certificates (injected at runtime, never baked into the image)
+.env
+certs/
+*.pem
+*.crt
+*.key
+*.p12
+*.pfx
+*.csr
+
+# VCS & docs
+.git/
+.gitignore
+docs/
+frontend/docs/
+
+# Editor
+.vs/
+.vscode/
+.clangd
