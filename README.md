@@ -60,8 +60,8 @@ _Installing the base tools:_
 ### Clone the repository
 
 ```bash
-git clone https://github.com/Eldyn/uni-uno.git
-cd uni-uno  # or your chosen folder name
+git clone https://github.com/Eldyn/uni.git
+cd uni  # or your chosen folder name
 ```
 
 The build is fully standardized and cross-platform — pure **Conan** + **CMake
