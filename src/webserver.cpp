@@ -23,7 +23,12 @@ using std::string, std::string_view, std::ifstream, std::stringstream, std::ios,
 WebServer::WebServer(int port, string_view key_file, string_view cert_file, string_view db_file, string_view frontend_path)
     : port_(port), db_file_(db_file), frontend_path_(frontend_path),
       trust_proxy_(Env::Get("TRUST_PROXY", "0") != "0"),
-      app_(AppHttp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})) {
+      app_(AppHttp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})),
+      http_limiter_(std::stod(Env::Get("RATE_HTTP_BURST", "120")),
+                    std::stod(Env::Get("RATE_HTTP_RPS",   "50"))),
+      auth_limiter_(std::stod(Env::Get("RATE_AUTH_BURST", "10")),
+                    std::stod(Env::Get("RATE_AUTH_RPS",   "0.5"))),
+      last_evict_(RateLimiter::Clock::now()) {
     if (!InitDB()) {
         throw runtime_error("Failed to initialise database");
     }
@@ -140,7 +145,35 @@ bool WebServer::InitDB() {
     return true;
 }
 
+void WebServer::MaybeEvict() {
+    const auto now = RateLimiter::Clock::now();
+    if (now - last_evict_ < std::chrono::seconds(60)) return;
+    last_evict_ = now;
+    http_limiter_.Evict();
+    auth_limiter_.Evict();
+}
+
 void WebServer::RegisterRoutes() {
+    // Per-IP HTTP rate limiting (runs before every router-handled route).
+    // Auth endpoints get a much tighter bucket: they are the brute-force and
+    // PBKDF2 CPU-amplification surface. The static file catch-all is registered
+    // straight on the uWS app (below) and is intentionally left to the edge.
+    http_router_.OnAny([this](AppResponse* res, AppRequest* req) -> bool {
+        MaybeEvict();
+        const std::string ip = http::GetClientIp(res, req, trust_proxy_);
+        const bool is_auth = req->getUrl().starts_with("/auth/");
+        RateLimiter& limiter = is_auth ? auth_limiter_ : http_limiter_;
+
+        if (!limiter.Allow(ip)) {
+            Logger::Warn("[HTTP] 429 rate limited: " + ip);
+            res->writeStatus("429 Too Many Requests")
+               ->writeHeader("Retry-After", "1")
+               ->end();
+            return false;  // chain interrupted; response already sent
+        }
+        return true;
+    });
+
     http_router_.Post("/room", [this](auto *response, auto *request) {
         HandlePost(response, request);
     });
