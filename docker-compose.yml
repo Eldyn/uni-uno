@@ -1,0 +1,24 @@
+services:
+  uni:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: uni:latest
+    container_name: uni
+    ports:
+      - "3000:3000"
+    environment:
+      # Paths (mirror the Dockerfile defaults; kept explicit for clarity).
+      PORT: "3000"
+      DB_PATH: /app/data/uni.sqlite
+      FRONTEND_PATH: /app/public
+      SSL_CERT_PATH: /app/certs/cert.pem
+      SSL_KEY_PATH: /app/certs/key.pem
+      # Secrets — substituted from the host .env file (gitignored). Compose fails
+      # fast if they are unset, so the server never starts without them.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      PASSWORD_PEPPER: ${PASSWORD_PEPPER:?set PASSWORD_PEPPER in .env}
+    volumes:
+      - ./db_data:/app/data
+      - ./certs:/app/certs
+    restart: unless-stopped
