@@ -30,7 +30,8 @@ WebServer::WebServer(int port, string_view key_file, string_view cert_file, stri
                     std::stod(Env::Get("RATE_AUTH_RPS",   "0.5"))),
       ws_limiter_(std::stod(Env::Get("RATE_WS_BURST", "30")),
                   std::stod(Env::Get("RATE_WS_RPS",   "15"))),
-      last_evict_(RateLimiter::Clock::now()) {
+      last_evict_(RateLimiter::Clock::now()),
+      max_conn_per_ip_(std::stoi(Env::Get("MAX_CONN_PER_IP", "10"))) {
     if (!InitDB()) {
         throw runtime_error("Failed to initialise database");
     }
@@ -226,10 +227,22 @@ void WebServer::RegisterRoutes() {
                 return;
             }
 
+            // Capture the IP before upgrade() invalidates the request object.
+            const std::string ip = http::GetClientIp(res, req, trust_proxy_);
+
+            // Cap concurrent connections per IP so one host cannot exhaust the
+            // server's sockets. The counter is incremented here and decremented
+            // in OnSocketClosed.
+            if (max_conn_per_ip_ > 0 && conn_per_ip_[ip] >= max_conn_per_ip_) {
+                Logger::Warn("[WS] Rejected upgrade — connection cap reached for IP " + ip);
+                res->writeStatus("429 Too Many Requests")->end();
+                return;
+            }
+
             PerSocketData socket_data;
             socket_data.username = payload->username;
-            // Capture the IP before upgrade() invalidates the request object.
-            socket_data.ip = http::GetClientIp(res, req, trust_proxy_);
+            socket_data.ip = ip;
+            ++conn_per_ip_[ip];
 
             res->upgrade(std::move(socket_data),
                 req->getHeader("sec-websocket-key"),
@@ -342,6 +355,13 @@ void WebServer::OnSocketClosed(AppWebSocket* socket) {
     }
 
     connections_.erase(socket_data->username);
+
+    // Release this IP's connection slot; drop the entry once it reaches zero.
+    if (auto it = conn_per_ip_.find(socket_data->ip); it != conn_per_ip_.end()) {
+        if (--it->second <= 0) {
+            conn_per_ip_.erase(it);
+        }
+    }
 
     Logger::Log("[WS] Connection closed: ", socket_data->username);
 }

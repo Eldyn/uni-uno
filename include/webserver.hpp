@@ -2,6 +2,7 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <App.h>
 #include <nlohmann/json.hpp>
 #include <database.hpp>
@@ -117,6 +118,9 @@ private:
     RateLimiter auth_limiter_; /**< Stricter per-IP limiter for the auth routes. */
     RateLimiter ws_limiter_;   /**< Per-connection limiter for WebSocket actions. */
     RateLimiter::Clock::time_point last_evict_; /**< Last idle-bucket sweep. */
+
+    int max_conn_per_ip_;      /**< Max concurrent WS connections per IP (0 = off). */
+    std::unordered_map<std::string, int> conn_per_ip_; /**< Live WS count per IP. */
 
     /**
      * @brief Initializes the database connection and applies the schema if necessary.
