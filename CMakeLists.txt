@@ -125,7 +125,12 @@ if(UNI_BUILD_TESTS)
     enable_testing()
 
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "tests/unit/*.cpp")
-    add_executable(uni_tests ${TEST_SOURCES})
+    # Modules under test are compiled into uni_tests directly (the main
+    # executable's TU owns main(), so src cannot be linked wholesale).
+    add_executable(uni_tests
+        ${TEST_SOURCES}
+        src/common/rate_limiter.cpp
+    )
     target_include_directories(uni_tests PRIVATE include src "${CMAKE_BINARY_DIR}/generated")
     target_link_libraries(uni_tests PRIVATE
         doctest::doctest
