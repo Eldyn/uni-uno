@@ -112,7 +112,7 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/public")
                 "$<TARGET_FILE_DIR:uni_server>/public"
         COMMENT "Copying the public/ folder next to the executable")
 else()
-    message(WARNING "Folder 'public/' not found: build the frontend first (deploy_frontend.sh).")
+    message(WARNING "Folder 'public/' not found: build the frontend first (cd frontend && npm run build).")
 endif()
 
 message(STATUS "Configuration complete for system: ${CMAKE_SYSTEM_NAME}")
