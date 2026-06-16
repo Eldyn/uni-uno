@@ -1,6 +1,5 @@
-# 🛠️ Building Uni-Uno
+# 🛠️ Building UNI
 
-Standardized, cross-platform build using **Conan**, **CMake presets** and **npm**.
 The same commands work on Linux, macOS and Windows — CMake's native presets handle
 the platform differences, so there are no OS-specific setup scripts.
 
@@ -11,15 +10,15 @@ For a fully reproducible production environment, see the Docker workflow in
 
 ## Prerequisites
 
-| Tool | Used for |
-|------|----------|
-| **C++23 compiler** (GCC ≥ 13 / Clang ≥ 16 / MSVC 2022) | backend |
-| **CMake** ≥ 3.23 | backend configure/build (presets v3) |
-| **Conan** 2.x | backend dependencies |
-| **Ninja** | backend generator (installed by Conan as a `tool_require`) |
-| **Python 3** + `pip` | installing Conan, contract codegen |
-| **Node.js** + **npm** | frontend only |
-| **OpenSSL** | generating local TLS certificates |
+| Tool                                                   | Used for                                                   |
+| ------------------------------------------------------ | ---------------------------------------------------------- |
+| **C++23 compiler** (GCC ≥ 13 / Clang ≥ 16 / MSVC 2022) | backend                                                    |
+| **CMake** ≥ 3.23                                       | backend configure/build (presets v3)                       |
+| **Conan** 2.x                                          | backend dependencies                                       |
+| **Ninja**                                              | backend generator (installed by Conan as a `tool_require`) |
+| **Python 3** + `pip`                                   | installing Conan, contract codegen                         |
+| **Node.js** + **npm**                                  | frontend only                                              |
+| **OpenSSL** / **Git Bash**                             | generating local TLS certificates                          |
 
 ```bash
 pip install --upgrade conan
@@ -28,10 +27,6 @@ pip install --upgrade conan
 ---
 
 ## 1. Conan profile (one time)
-
-Conan needs a default profile describing your compiler. Create it **without**
-`--force` so an existing profile (and any customisation you've made) is left
-untouched:
 
 ```bash
 conan profile detect
@@ -47,8 +42,7 @@ conan profile detect
 
 ## 2. Frontend
 
-The Vite build writes the static bundle straight into the project-root `public/`
-folder (`outDir: ../public`, `emptyOutDir: true`):
+The Vite build writes the static bundle straight into the project-root's `public/` folder.
 
 ```bash
 cd frontend
@@ -70,17 +64,6 @@ conan install . -pr:a conan/release --build=missing
 
 This resolves and (if needed) builds the C++ dependencies and generates the
 toolchain at `build/Release/generators/conan_toolchain.cmake`.
-
-The committed `conan/release` profile (it `include(default)`s your detected
-profile) pins `build_type=Release`, `compiler.cppstd=23` and the Ninja generator
-for the **whole** dependency graph. Without it, a machine whose default profile
-has a lower `compiler.cppstd` (e.g. `gnu20`) would build the dependencies at the
-wrong standard, and CMake would warn that `conan_toolchain.cmake`'s
-`CMAKE_CXX_STANDARD` was overridden by `CMakeLists.txt`.
-
-> The committed `CMakePresets.json` owns the `conan-release` preset, so the Conan
-> recipe disables `CMakeUserPresets.json` generation (`user_presets_path = False`)
-> to avoid a duplicate-preset clash.
 
 ---
 
@@ -105,17 +88,16 @@ from either the project root or `build/Release`.
 
 The backend reads all paths from the environment, with local-friendly defaults:
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `PORT` | `9999` | listening port |
-| `DB_PATH` | `./build/uni_uno.sqlite` | SQLite database file |
-| `FRONTEND_PATH` | `public` | directory with the built frontend |
-| `SSL_CERT_PATH` | `cert.pem` | TLS certificate |
-| `SSL_KEY_PATH` | `key.pem` | TLS private key |
+| Variable        | Default                  | Purpose                           |
+| --------------- | ------------------------ | --------------------------------- |
+| `PORT`          | `9999`                   | listening port                    |
+| `DB_PATH`       | `./build/uni.sqlite`     | SQLite database file              |
+| `FRONTEND_PATH` | `public`                 | directory with the built frontend |
+| `SSL_CERT_PATH` | `cert.pem`               | TLS certificate                   |
+| `SSL_KEY_PATH`  | `key.pem`                | TLS private key                   |
 
 These can be set in the shell, injected by Docker Compose, or placed in a `.env`
-file at the working directory (also still used for `JWT_SECRET` and
-`PASSWORD_PEPPER`).
+file at the working directory.
 
 ### Local TLS certificate
 
