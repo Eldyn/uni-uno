@@ -67,7 +67,7 @@ public:
      * @param app Reference to the current uWebSockets instance.
      * @tag HTTP-RTR-MTH-004
      */
-    void Attach(uWS::SSLApp& app);
+    void Attach(AppHttp& app);
 
 private:
     /**
