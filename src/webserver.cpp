@@ -229,9 +229,18 @@ void WebServer::HandleGet(AppResponse *res, AppRequest *req) {
     
     string url = string(req->getUrl());
     string relativePath = (url == "/") ? "index.html" : url.substr(1);
-    fs::path filePath = fs::path(frontend_path_) / relativePath;
-    
-    if (fs::exists(filePath) && !fs::is_directory(filePath)) {
+
+    // Resolve both the served root and the requested file to canonical form so
+    // that "../" segments and symlinks are collapsed, then confirm the result
+    // stays inside the root. Without this, a raw request such as
+    // "GET /../../etc/passwd" would escape frontend_path_ and disclose host files.
+    std::error_code ec;
+    fs::path root     = fs::weakly_canonical(fs::path(frontend_path_), ec);
+    fs::path filePath = fs::weakly_canonical(root / relativePath, ec);
+    fs::path rel      = filePath.lexically_relative(root);
+    const bool within_root = !ec && !rel.empty() && *rel.begin() != "..";
+
+    if (within_root && fs::exists(filePath) && !fs::is_directory(filePath)) {
         string pathStr = filePath.string();
         res->writeHeader("Content-Type", GetMimeType(pathStr))
             ->writeHeader("Cache-Control", "no-cache, no-store, must-revalidate")
