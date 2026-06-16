@@ -31,7 +31,7 @@ HttpHandler HttpRouter::WrapWithWildcards(HttpHandler handler) {
     };
 }
 
-void HttpRouter::Attach(uWS::SSLApp& app) {
+void HttpRouter::Attach(AppHttp& app) {
     for (auto& route : routes_) {
         HttpHandler wrapped = WrapWithWildcards(route.handler);
 

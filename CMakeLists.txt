@@ -5,6 +5,11 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Build with TLS (uWS::SSLApp) by default. Turn OFF for plain HTTP when a host
+# terminates TLS at its edge and proxies HTTP to the container (e.g. Render):
+#   cmake --preset conan-release -DUNI_ENABLE_SSL=OFF
+option(UNI_ENABLE_SSL "Build the server with TLS (uWS::SSLApp)" ON)
+
 # --- Contract code generation (hatchbed/asyncapi_gencpp) ---
 # Fetches the generator at configure time, then runs it as a pre-build step.
 # Source of truth: contract/asyncapi.yaml
@@ -60,6 +65,8 @@ add_executable(uni_server ${SOURCES})
 if(WIN32)
     target_compile_definitions(uni_server PRIVATE WIN32_LEAN_AND_MEAN)
 endif()
+
+target_compile_definitions(uni_server PRIVATE UNI_ENABLE_SSL=$<BOOL:${UNI_ENABLE_SSL}>)
 
 target_include_directories(uni_server PRIVATE include src "${CMAKE_BINARY_DIR}/generated")
 add_dependencies(uni_server gen_ws_messages)

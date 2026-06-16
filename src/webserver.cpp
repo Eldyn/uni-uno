@@ -20,13 +20,17 @@ using std::string, std::string_view, std::ifstream, std::stringstream, std::ios,
 
 
 WebServer::WebServer(int port, string_view key_file, string_view cert_file, string_view db_file, string_view frontend_path)
-    : port_(port), db_file_(db_file), frontend_path_(frontend_path), app_(uWS::SSLApp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})) {
+    : port_(port), db_file_(db_file), frontend_path_(frontend_path), app_(AppHttp({.key_file_name = key_file.data(), .cert_file_name = cert_file.data()})) {
     if (!InitDB()) {
         throw runtime_error("Failed to initialise database");
     }
     RegisterRoutes();
-    Logger::Info("Key file: " + string(key_file) + " exists=" + (fs::exists(key_file) ? "yes" : "NO"));
-    Logger::Info("Cert file: " + string(cert_file) + " exists=" + (fs::exists(cert_file) ? "yes" : "NO"));
+    if constexpr (kAppSSL) {
+        Logger::Info("Key file: " + string(key_file) + " exists=" + (fs::exists(key_file) ? "yes" : "NO"));
+        Logger::Info("Cert file: " + string(cert_file) + " exists=" + (fs::exists(cert_file) ? "yes" : "NO"));
+    } else {
+        Logger::Info("TLS disabled (plain HTTP) — UNI_ENABLE_SSL=0");
+    }
     Logger::Info("WebServer constructed");
 }
 
@@ -42,7 +46,7 @@ void WebServer::Run() {
 
     app_.listen(port_, [this](auto *socket) {
         if (socket) {
-            Logger::Log("Server listening on https://localhost:", port_);
+            Logger::Log("Server listening on ", (kAppSSL ? "https" : "http"), "://localhost:", port_);
         } else {
             Logger::Error("Failed to bind to port " + to_string(port_));
         }

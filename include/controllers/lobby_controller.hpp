@@ -297,7 +297,7 @@ private:
     PlayerReplacedCallback player_replaced_callback_;/**< Callback for player replacement. */
 
     ActionRouter& action_router_;                   /**< Reference to the WS action router. */
-    uWS::SSLApp& app_;                              /**< Reference to the uWebSockets instance. */
+    AppHttp& app_;                                  /**< Reference to the uWebSockets instance. */
 
     std::unordered_map<uint32_t, Lobby> lobbies_;   /**< Primary storage of the lobbies. */
     std::unordered_map<std::string, uint32_t> code_to_id_; /**< Secondary index for fast lookup. */

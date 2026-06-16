@@ -74,10 +74,10 @@ public:
 
     /**
      * @brief Retrieves the underlying instance of the uWebSockets application.
-     * @return uWS::SSLApp& The uWS application.
+     * @return AppHttp& The uWS application (SSL or plain per kAppSSL).
      * @tag SRV-CORE-006
      */
-    uWS::SSLApp&  GetApp()            { return app_;         }
+    AppHttp&      GetApp()            { return app_;         }
 
     /**
      * @typedef ConnectionHandler
@@ -105,7 +105,7 @@ private:
     string db_file_;        /**< Path of the sqlite DB file. */
     string frontend_path_;  /**< Path of the directory with built frontend static files. */
 
-    uWS::SSLApp app_;       /**< Main uWebSockets instance (SSL/TLS). */
+    AppHttp app_;           /**< Main uWebSockets instance (SSL or plain per kAppSSL). */
     std::map<string, AppWebSocket*> connections_; /**< Map of connected users (Username -> Socket). */
 
     ActionRouter ws_router_;    /**< Handler for dispatching WebSocket messages. */

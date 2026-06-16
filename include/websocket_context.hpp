@@ -24,11 +24,36 @@ struct PerSocketData {
 };
 
 /**
+ * @def UNI_ENABLE_SSL
+ * @brief Compile-time switch selecting the TLS-enabled uWS app (1) or plain HTTP (0).
+ *
+ * uWebSockets bakes the SSL flag into its types (`HttpResponse<SSL>`,
+ * `WebSocket<SSL, ...>`, `TemplatedApp<SSL>`), so it can only be chosen at
+ * compile time. Defaults to 1 (TLS) for local development with self-signed
+ * certs. Build with `-DUNI_ENABLE_SSL=OFF` to emit plain HTTP — required when a
+ * platform terminates TLS at its edge and proxies HTTP to the container
+ * (e.g. Render, Fly, most reverse proxies).
+ */
+#ifndef UNI_ENABLE_SSL
+#define UNI_ENABLE_SSL 1
+#endif
+
+/** Resolved SSL flag used to parametrise every uWS type below. */
+inline constexpr bool kAppSSL = UNI_ENABLE_SSL;
+
+/**
+ * @typedef AppHttp
+ * @brief The uWS application type: `uWS::SSLApp` when TLS is on, `uWS::App` when off.
+ * @tag WS-CTX-TYP-000
+ */
+using AppHttp = uWS::TemplatedApp<kAppSSL>;
+
+/**
  * @typedef AppWebSocket
- * @brief Alias for the complex uWebSockets socket type configured for SSL and routing.
+ * @brief Alias for the complex uWebSockets socket type configured for routing.
  * @tag WS-CTX-TYP-001
  */
-using AppWebSocket = uWS::WebSocket<true, true, PerSocketData>;
+using AppWebSocket = uWS::WebSocket<kAppSSL, true, PerSocketData>;
 
 /**
  * @typedef AppRequest
@@ -39,10 +64,10 @@ using AppRequest   = uWS::HttpRequest;
 
 /**
  * @typedef AppResponse
- * @brief Alias for the outgoing uWebSockets HTTP response (with SSL support).
+ * @brief Alias for the outgoing uWebSockets HTTP response (TLS flag follows kAppSSL).
  * @tag WS-CTX-TYP-003
  */
-using AppResponse  = uWS::HttpResponse<true>;
+using AppResponse  = uWS::HttpResponse<kAppSSL>;
 
 /**
  * @struct WsContext
