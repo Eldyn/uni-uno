@@ -19,7 +19,12 @@ FetchContent_Declare(
     GIT_SHALLOW    TRUE
 )
 # Populate only (no add_subdirectory) — the package is ROS-specific and only
-# the Python generator script is needed here.
+# the Python generator script is needed here. MakeAvailable would call
+# add_subdirectory and pull in its ROS-specific CMake, so the single-argument
+# FetchContent_Populate is intentional; CMP0169 OLD allows it without warnings.
+if(POLICY CMP0169)
+    cmake_policy(SET CMP0169 OLD)
+endif()
 FetchContent_GetProperties(asyncapi_gencpp)
 if(NOT asyncapi_gencpp_POPULATED)
     FetchContent_Populate(asyncapi_gencpp)
