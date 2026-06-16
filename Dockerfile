@@ -43,8 +43,12 @@ RUN conan profile detect \
     && conan install . -pr:a conan/release --build=missing
 
 # Build the backend with the committed CMake presets.
+# Default to plain HTTP: hosts like Render terminate TLS at the edge and proxy
+# HTTP to the container. Override with --build-arg UNI_ENABLE_SSL=ON for a
+# container that serves TLS directly (requires mounted cert + key).
+ARG UNI_ENABLE_SSL=OFF
 COPY . .
-RUN cmake --preset conan-release \
+RUN cmake --preset conan-release -DUNI_ENABLE_SSL=${UNI_ENABLE_SSL} \
     && cmake --build --preset release
 # → /app/build/Release/uni_server
 
