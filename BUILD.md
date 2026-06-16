@@ -82,6 +82,21 @@ The resulting binary is `build/Release/uni_server`. The build copies `cert.pem`,
 `key.pem`, `.env` and `public/` next to the executable, so it can be launched
 from either the project root or `build/Release`.
 
+### TLS vs plain HTTP (`UNI_ENABLE_SSL`)
+
+uWebSockets bakes the SSL flag into its types, so the transport is chosen at
+compile time. It defaults to **ON** (`uWS::SSLApp`, TLS with a local cert):
+
+```bash
+cmake --preset conan-release -DUNI_ENABLE_SSL=OFF   # plain HTTP (uWS::App)
+```
+
+Build with it **OFF** when a platform terminates TLS at its edge and proxies
+plain HTTP to the container — e.g. **Render**, Fly, or any reverse proxy. The
+frontend adapts automatically (`wss://` over HTTPS pages, `ws://` over HTTP).
+The Docker image builds with `UNI_ENABLE_SSL=OFF` by default for this reason
+(override via `--build-arg UNI_ENABLE_SSL=ON`).
+
 ---
 
 ## 5. Runtime configuration (environment variables)
