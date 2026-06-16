@@ -104,6 +104,7 @@ private:
     int    port_;           /**< Listening port of the server. */
     string db_file_;        /**< Path of the sqlite DB file. */
     string frontend_path_;  /**< Path of the directory with built frontend static files. */
+    bool   trust_proxy_;    /**< Honour X-Forwarded-For (set when behind a proxy). */
 
     AppHttp app_;           /**< Main uWebSockets instance (SSL or plain per kAppSSL). */
     std::map<string, AppWebSocket*> connections_; /**< Map of connected users (Username -> Socket). */

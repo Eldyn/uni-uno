@@ -104,4 +104,34 @@ inline std::optional<std::string> GetCookieValue(std::string_view cookie_header,
     return "";
 }
 
+/**
+ * @brief Resolve the originating client IP for rate-limiting / logging.
+ *
+ * When `trust_proxy` is true the server is assumed to sit behind a single
+ * reverse proxy (e.g. Traefik) that appends the peer address to
+ * `X-Forwarded-For`. In that case the **right-most** entry is the address the
+ * proxy actually observed and is therefore the trustworthy client IP; entries to
+ * its left are client-supplied and spoofable. When `trust_proxy` is false, or the
+ * header is absent, the socket peer address is used.
+ *
+ * @param res Response, used for the socket peer address fallback.
+ * @param req Request, source of the `X-Forwarded-For` header.
+ * @param trust_proxy Whether to honour `X-Forwarded-For` (set behind a proxy).
+ * @return std::string The resolved client IP (may be empty if unavailable).
+ * @tag CMN-HTTP-MTH-004
+ */
+inline std::string GetClientIp(AppResponse* res, AppRequest* req, bool trust_proxy) {
+    if (trust_proxy) {
+        std::string_view xff = req->getHeader("x-forwarded-for");
+        if (!xff.empty()) {
+            size_t comma = xff.rfind(',');
+            std::string_view last = (comma == std::string_view::npos)
+                                        ? xff
+                                        : xff.substr(comma + 1);
+            return std::string(TrimWhitespace(last));
+        }
+    }
+    return std::string(res->getRemoteAddressAsText());
+}
+
 }
