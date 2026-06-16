@@ -65,12 +65,10 @@ channels:
 # Components
 # ---------------------------------------------------------------------------
 components:
-
   # -------------------------------------------------------------------------
   # Messages
   # -------------------------------------------------------------------------
   messages:
-
     # --- Server → Client (payloads described inline — not code-generated) ---
 
     Success:
@@ -132,7 +130,7 @@ components:
                   $ref: "#/components/schemas/LobbyName"
                 members:
                   type: array
-                  maxItems: 10   # -> kMaxLobbyMembers (common/contract.hpp)
+                  maxItems: 4 # -> kMaxLobbyMembers (common/contract.hpp)
                   items:
                     type: object
                     required: [username, is_bot]
@@ -430,7 +428,6 @@ components:
   # Zod generation (Phase 3) and are referenced by the payload schemas below.
   # -------------------------------------------------------------------------
   schemas:
-
     # --- Constraint schemas (single source of truth for validation limits) ---
     # These limits are code-generated into both ends — never hand-edit the
     # mirrors. Backend: scripts/generate_contract_hpp.py -> common/contract.hpp
@@ -438,22 +435,22 @@ components:
 
     Username:
       type: string
-      minLength: 3    # -> kUsernameMin / USERNAME_MIN
-      maxLength: 32   # -> kUsernameMax / USERNAME_MAX
+      minLength: 3 # -> kUsernameMin / USERNAME_MIN
+      maxLength: 32 # -> kUsernameMax / USERNAME_MAX
       pattern: "^[a-zA-Z0-9_]+$"
 
     Password:
       type: string
-      minLength: 8    # -> kPasswordMin / PASSWORD_MIN
+      minLength: 8 # -> kPasswordMin / PASSWORD_MIN
 
     LobbyName:
       type: string
       minLength: 1
-      maxLength: 50   # -> kLobbyNameMax / LOBBY_NAME_MAX
+      maxLength: 50 # -> kLobbyNameMax / LOBBY_NAME_MAX
 
     LobbyCode:
       type: string
-      minLength: 6    # -> kLobbyCodeLen / LOBBY_CODE_LEN
+      minLength: 6 # -> kLobbyCodeLen / LOBBY_CODE_LEN
       maxLength: 6
       pattern: "^[A-Z0-9]+$"
 
