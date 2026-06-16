@@ -49,6 +49,23 @@ add_custom_command(
 )
 add_custom_target(gen_ws_messages DEPENDS "${WS_MESSAGES_H}")
 
+# --- Validation constants (common/contract.hpp) ---
+# Derives <common/contract.hpp> (namespace contract::) from the same AsyncAPI
+# constraint schemas the frontend reads, so the backend's validation limits are
+# never hand-maintained. Mirrors the ws-message generation above.
+# Source of truth: contract/asyncapi.yaml
+# Output:          ${CMAKE_BINARY_DIR}/generated/common/contract.hpp
+set(CONTRACT_HPP_SCRIPT "${CMAKE_SOURCE_DIR}/scripts/generate_contract_hpp.py")
+set(CONTRACT_HPP_OUT    "${CMAKE_BINARY_DIR}/generated/common/contract.hpp")
+add_custom_command(
+    OUTPUT  "${CONTRACT_HPP_OUT}"
+    COMMAND "${Python3_EXECUTABLE}" "${CONTRACT_HPP_SCRIPT}"
+            "${WS_CONTRACT_YAML}" "${CONTRACT_HPP_OUT}"
+    DEPENDS "${WS_CONTRACT_YAML}" "${CONTRACT_HPP_SCRIPT}"
+    COMMENT "Generating validation constants (common/contract.hpp) from asyncapi.yaml"
+)
+add_custom_target(gen_contract_hpp DEPENDS "${CONTRACT_HPP_OUT}")
+
 find_package(OpenSSL REQUIRED)
 find_package(ZLIB REQUIRED)
 find_package(libuv REQUIRED)
@@ -69,7 +86,7 @@ endif()
 target_compile_definitions(uni_server PRIVATE UNI_ENABLE_SSL=$<BOOL:${UNI_ENABLE_SSL}>)
 
 target_include_directories(uni_server PRIVATE include src "${CMAKE_BINARY_DIR}/generated")
-add_dependencies(uni_server gen_ws_messages)
+add_dependencies(uni_server gen_ws_messages gen_contract_hpp)
 
 # --- Linking ---
 target_link_libraries(uni_server PRIVATE 
@@ -139,7 +156,7 @@ if(UNI_BUILD_TESTS)
         doctest::doctest
         nlohmann_json::nlohmann_json
     )
-    add_dependencies(uni_tests gen_ws_messages)
+    add_dependencies(uni_tests gen_ws_messages gen_contract_hpp)
 
     add_test(NAME unit COMMAND uni_tests)
 endif()

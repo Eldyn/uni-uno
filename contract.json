@@ -1,8 +1,0 @@
-{
-    "USERNAME_MIN": 3,
-    "USERNAME_MAX": 32,
-    "PASSWORD_MIN": 8,
-    "LOBBY_NAME_MAX": 50,
-    "LOBBY_CODE_LEN": 6,
-    "MAX_LOBBY_MEMBERS": 10
-}

@@ -132,7 +132,7 @@ components:
                   $ref: "#/components/schemas/LobbyName"
                 members:
                   type: array
-                  maxItems: 10   # MAX_LOBBY_MEMBERS
+                  maxItems: 10   # -> kMaxLobbyMembers (common/contract.hpp)
                   items:
                     type: object
                     required: [username, is_bot]
@@ -432,25 +432,28 @@ components:
   schemas:
 
     # --- Constraint schemas (single source of truth for validation limits) ---
+    # These limits are code-generated into both ends — never hand-edit the
+    # mirrors. Backend: scripts/generate_contract_hpp.py -> common/contract.hpp
+    # (contract::k...). Frontend: scripts/generate-schemas.js -> schemas.ts.
 
     Username:
       type: string
-      minLength: 3    # kMinUsernameLen  (auth_controller.hpp)
-      maxLength: 32   # kMaxUsernameLen  (auth_controller.hpp)
+      minLength: 3    # -> kUsernameMin / USERNAME_MIN
+      maxLength: 32   # -> kUsernameMax / USERNAME_MAX
       pattern: "^[a-zA-Z0-9_]+$"
 
     Password:
       type: string
-      minLength: 8    # kMinPasswordLen  (auth_controller.hpp)
+      minLength: 8    # -> kPasswordMin / PASSWORD_MIN
 
     LobbyName:
       type: string
       minLength: 1
-      maxLength: 50   # LOBBY_NAME_MAX   (contract.json)
+      maxLength: 50   # -> kLobbyNameMax / LOBBY_NAME_MAX
 
     LobbyCode:
       type: string
-      minLength: 6    # LOBBY_CODE_LEN   (contract.json)
+      minLength: 6    # -> kLobbyCodeLen / LOBBY_CODE_LEN
       maxLength: 6
       pattern: "^[A-Z0-9]+$"
 
