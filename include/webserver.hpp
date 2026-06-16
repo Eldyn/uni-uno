@@ -8,6 +8,7 @@
 #include <action_router.hpp>
 #include <http_router.hpp>
 #include <websocket_context.hpp>
+#include <common/rate_limiter.hpp>
 
 /**
  * @file webserver.hpp
@@ -112,12 +113,23 @@ private:
     ActionRouter ws_router_;    /**< Handler for dispatching WebSocket messages. */
     HttpRouter   http_router_;  /**< Handler for dispatching HTTP requests. */
 
+    RateLimiter http_limiter_; /**< Per-IP limiter for general HTTP/API routes. */
+    RateLimiter auth_limiter_; /**< Stricter per-IP limiter for the auth routes. */
+    RateLimiter::Clock::time_point last_evict_; /**< Last idle-bucket sweep. */
+
     /**
      * @brief Initializes the database connection and applies the schema if necessary.
      * @return true if the initialization succeeded, false otherwise.
      * @tag SRV-PRIV-001
      */
     bool InitDB();
+
+    /**
+     * @brief Periodically drops idle rate-limiter buckets (at most once a minute)
+     *        so the per-IP maps cannot grow without bound. Called from middleware.
+     * @tag SRV-PRIV-009
+     */
+    void MaybeEvict();
 
     /**
      * @brief Registers the internal routes and applies the wildcards (middleware) to the uWS app.
