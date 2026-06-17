@@ -34,8 +34,6 @@ npm run docs     # generates the TSDoc documentation (Markdown) in docs/markdown
 npm run pdf      # converts the TSDoc documentation into frontend-manual.pdf
 npm run format   # formats the code with Prettier
 npm run lint     # checks the formatting
-
-../deploy_frontend.sh   # build + copy of the site into the folder served by the server
 ```
 
 > To run the complete game (HTTPS server + frontend) and to generate the TLS
