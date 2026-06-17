@@ -6,7 +6,7 @@
 #   DUCKDNS_SUBDOMAIN=myuni DUCKDNS_TOKEN=xxxx ./deploy/bootstrap.sh
 #
 # It installs Docker + compose, opens the host firewall, generates secrets,
-# wires up the DuckDNS updater, and brings the Caddy + backend stack online.
+# wires up the DuckDNS updater, and brings the Traefik + backend stack online.
 # The OCI Security List ingress rules for 80/443 are NOT done here — they live
 # in the cloud console and must be added separately (see deploy/README.md).
 

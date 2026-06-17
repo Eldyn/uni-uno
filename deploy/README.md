@@ -71,7 +71,7 @@ sudo docker exec uni sqlite3 /app/data/uni.sqlite ".backup /app/data/backup.db"
 - **Build on the VM, not on WSL.** The image is `aarch64`; an x86 image built
   locally will not run on the A1.
 - **TLS needs the DNS to resolve first.** The DuckDNS updater points the
-  subdomain at the VM before Caddy requests a cert. If issuance fails, confirm
+  subdomain at the VM before Traefik requests a cert. If issuance fails, confirm
   `dig yourname.duckdns.org` returns the VM IP and that port 80 is open both
   cloud-side and host-side.
 - **Backups aren't automatic.** The boot volume persists, but enable an OCI
