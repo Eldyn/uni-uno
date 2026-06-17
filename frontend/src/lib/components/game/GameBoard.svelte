@@ -67,8 +67,12 @@
 
 	// Consistent colour logic for the local player too (Human)
 	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"]; // Blue, Green, Red, Yellow
-	let localPlayerIdx = $derived(storeGame.state?.players?.findIndex(p => p.username === storeGame.localPlayer?.username) ?? -1);
-	let localPlayerColor = $derived(localPlayerIdx !== -1 ? PLAYER_COLORS[localPlayerIdx % 4] : "#0493de");
+	let localPlayerIdx = $derived(
+		storeGame.state?.players?.findIndex((p) => p.username === storeGame.localPlayer?.username) ?? -1
+	);
+	let localPlayerColor = $derived(
+		localPlayerIdx !== -1 ? PLAYER_COLORS[localPlayerIdx % 4] : "#0493de"
+	);
 </script>
 
 <FlyingCardsOverlay />
@@ -108,7 +112,10 @@
 			style="top: -5.7em; left: 50%; transform: translateX(-50%);"
 		>
 			{#if storeGame.localPlayer}
-				<div class="box-mask" style="--mask-img: url('/assets/base_player.gif'); --mask-color: {localPlayerColor};"></div>
+				<div
+					class="box-mask"
+					style="--mask-img: url('/assets/base_player.gif'); --mask-color: {localPlayerColor};"
+				></div>
 			{/if}
 		</div>
 		<PlayerHand {playableCardIds} />

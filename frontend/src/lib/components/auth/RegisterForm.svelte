@@ -46,7 +46,6 @@
 </script>
 
 <form onsubmit={handleSubmit} class="auth-form">
-
 	<FormInput
 		id="register-username"
 		label="Username:"
@@ -106,7 +105,7 @@
 		color: white;
 		border: none;
 		border-radius: 6px;
-		font-family: 'FatPixel';
+		font-family: "FatPixel";
 		font-size: 10px;
 		font-weight: 500;
 		cursor: pointer;

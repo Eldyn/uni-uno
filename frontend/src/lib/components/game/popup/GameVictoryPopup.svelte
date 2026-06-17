@@ -1,16 +1,16 @@
 <script lang="ts">
-    import { storeGame } from "../../../stores/game.svelte";
+	import { storeGame } from "../../../stores/game.svelte";
 
-    let winnerName = $derived(storeGame.state?.winner ?? "Unknown");
-    let isMe = $derived(winnerName === storeGame.localPlayer?.username);
+	let winnerName = $derived(storeGame.state?.winner ?? "Unknown");
+	let isMe = $derived(winnerName === storeGame.localPlayer?.username);
 
-    let winnerIdx = $derived(
-        storeGame.state?.players?.findIndex((p) => p.username === winnerName) ?? -1
-    );
-    const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"];
-    let winnerColor = $derived(winnerIdx !== -1 ? PLAYER_COLORS[winnerIdx % 4] : "#0493de");
+	let winnerIdx = $derived(
+		storeGame.state?.players?.findIndex((p) => p.username === winnerName) ?? -1
+	);
+	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"];
+	let winnerColor = $derived(winnerIdx !== -1 ? PLAYER_COLORS[winnerIdx % 4] : "#0493de");
 
-    let isBot = $derived(winnerName.toLowerCase().includes("bot"));
+	let isBot = $derived(winnerName.toLowerCase().includes("bot"));
 </script>
 
 <div class="modal-overlay victory-overlay">

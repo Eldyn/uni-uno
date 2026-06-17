@@ -29,7 +29,11 @@
 </div>
 
 <style>
-	.lobbies-list { position: relative; min-height: 400px; width: 100%; }
+	.lobbies-list {
+		position: relative;
+		min-height: 400px;
+		width: 100%;
+	}
 	.status-container {
 		position: absolute;
 		top: 50px;
@@ -37,7 +41,11 @@
 		width: 100%;
 		text-align: center;
 	}
-	.empty-text { font-size: 18px; color: white; opacity: 0.7; }
+	.empty-text {
+		font-size: 18px;
+		color: white;
+		opacity: 0.7;
+	}
 	.lobbies-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

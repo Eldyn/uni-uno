@@ -134,4 +134,3 @@
 		cursor: not-allowed;
 	}
 </style>
-

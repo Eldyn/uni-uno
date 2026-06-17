@@ -41,9 +41,7 @@
 
 				if (!isFirst && lp) {
 					const slotKey =
-						lp.player === localUser
-							? `local:${top.id}`
-							: `opp:${lp.player}:${lp.hand_index}`;
+						lp.player === localUser ? `local:${top.id}` : `opp:${lp.player}:${lp.hand_index}`;
 					const srcPoint = prevSlotSnapshot.get(slotKey);
 
 					bus.launch({

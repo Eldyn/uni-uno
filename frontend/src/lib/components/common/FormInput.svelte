@@ -40,23 +40,23 @@
 </div>
 
 <style>
-    .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
 
-    label {
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--text-h);
-        font-family: 'Pixel'; 
-    }
+	label {
+		font-size: 14px;
+		font-weight: 500;
+		color: var(--text-h);
+		font-family: "Pixel";
+	}
 
 	input {
 		padding: 10px 12px;
-        border: 2px solid var(--border);
-        border-radius: 6px;
+		border: 2px solid var(--border);
+		border-radius: 6px;
 		font-size: 14px;
 		color: var(--text-h);
 		background: var(--bg);
@@ -116,8 +116,7 @@
 	}
 
 	input[type="password"] {
-        font-family: "Pixel";
+		font-family: "Pixel";
 		font-size: 12px;
-    }
-
+	}
 </style>
