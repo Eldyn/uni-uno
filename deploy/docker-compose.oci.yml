@@ -28,6 +28,10 @@ services:
       PORT: "3000"
       DB_PATH: /app/data/uni.sqlite
       FRONTEND_PATH: /app/public
+      # Traefik is the single trusted hop in front of us, so honour the client IP
+      # it forwards. Without this every request looks like it comes from Traefik's
+      # container IP and all rate-limit / lockout buckets collapse into one.
+      TRUST_PROXY: "1"
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       PASSWORD_PEPPER: ${PASSWORD_PEPPER:?set PASSWORD_PEPPER in .env}
     volumes:
