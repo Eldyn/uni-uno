@@ -49,5 +49,4 @@
 		text-transform: uppercase;
 		text-shadow: 2px 2px 0px #1a1a1a;
 	}
-
 </style>

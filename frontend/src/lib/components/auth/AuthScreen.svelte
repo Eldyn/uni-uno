@@ -52,7 +52,6 @@
 		font-family: "Pixel";
 		background-image: url("/assets/bg_main.png");
 		background-size: cover;
-
 	}
 
 	.auth-container {
@@ -80,7 +79,7 @@
 		font-size: 16px;
 		font-family: "Pixel";
 		font-weight: 500;
-		letter-spacing: 1px; 
+		letter-spacing: 1px;
 		color: var(--text);
 		cursor: pointer;
 		border-bottom: 2px solid transparent;

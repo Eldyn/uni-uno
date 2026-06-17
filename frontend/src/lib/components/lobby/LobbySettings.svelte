@@ -4,7 +4,12 @@
 	import EnumSelector from "./settings/EnumSelector.svelte";
 	import RulesGrid from "./settings/RulesGrid.svelte";
 	import type { RuleDef } from "./settings/RulesGrid.svelte";
-	import { BotTakeoverMode, type LobbySettings, type RuleDefinition, storeLobby } from "../../stores/lobby.svelte";
+	import {
+		BotTakeoverMode,
+		type LobbySettings,
+		type RuleDefinition,
+		storeLobby
+	} from "../../stores/lobby.svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
 
 	/**
@@ -51,9 +56,7 @@
 	function handleRuleChange(id: string, enabled: boolean) {
 		if (!isHost) return;
 		const current = storeLobby.current?.settings.active_mods ?? [];
-		const activeRuleIds = enabled
-			? [...current, id]
-			: current.filter((m) => m !== id);
+		const activeRuleIds = enabled ? [...current, id] : current.filter((m) => m !== id);
 		storeLobby.updateSettings({ active_mods: activeRuleIds });
 	}
 </script>

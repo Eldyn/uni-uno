@@ -12,14 +12,14 @@ import { ws } from "./ws.svelte";
  * @brief List of the screens available in the frontend application.
  */
 export type AppScreen =
-    | "main"
-    | "auth"
-    | "lobbies"
-    | "lobby"
-    | "game"
-    | "settings"
-    | "stats"
-    | "detailedStats";
+	| "main"
+	| "auth"
+	| "lobbies"
+	| "lobby"
+	| "game"
+	| "settings"
+	| "stats"
+	| "detailedStats";
 
 /**
  * @class StoreNavigation
@@ -29,43 +29,43 @@ export type AppScreen =
  * @tag FRONT-NAV-001
  */
 class StoreNavigation {
-    /** The screen currently displayed to the user. */
-    current = $state<AppScreen>("main");
+	/** The screen currently displayed to the user. */
+	current = $state<AppScreen>("main");
 
-    /** Stores the previous screen for 'back' navigation. */
-    #previous: AppScreen | null = null;
+	/** Stores the previous screen for 'back' navigation. */
+	#previous: AppScreen | null = null;
 
-    constructor() {
-        ws.onOpen(() => {
-            const localScreen = localStorage.getItem("currentScreen");
-            if (!localScreen) return;
-            if (!storeAuth.isLoggedIn) {
-                localStorage.removeItem("currentScreen");
-                return;
-            }
+	constructor() {
+		ws.onOpen(() => {
+			const localScreen = localStorage.getItem("currentScreen");
+			if (!localScreen) return;
+			if (!storeAuth.isLoggedIn) {
+				localStorage.removeItem("currentScreen");
+				return;
+			}
 
-            this.goto(localScreen as AppScreen);
-        });
-    }
+			this.goto(localScreen as AppScreen);
+		});
+	}
 
-    /**
-     * @brief Changes the current screen.
-     * Automatically saves the screen to `localStorage`.
-     * @param screen The new destination screen.
-     */
-    goto(screen: AppScreen): void {
-        if (screen === this.current) return;
-        this.#previous = this.current;
-        this.current = screen;
-        localStorage.setItem("currentScreen", screen);
-    }
+	/**
+	 * @brief Changes the current screen.
+	 * Automatically saves the screen to `localStorage`.
+	 * @param screen The new destination screen.
+	 */
+	goto(screen: AppScreen): void {
+		if (screen === this.current) return;
+		this.#previous = this.current;
+		this.current = screen;
+		localStorage.setItem("currentScreen", screen);
+	}
 
-    /**
-     * @brief Returns to the previous screen, if available in memory.
-     */
-    back(): void {
-        if (this.#previous) this.goto(this.#previous);
-    }
+	/**
+	 * @brief Returns to the previous screen, if available in memory.
+	 */
+	back(): void {
+		if (this.#previous) this.goto(this.#previous);
+	}
 }
 
 export const storeNavigation = new StoreNavigation();

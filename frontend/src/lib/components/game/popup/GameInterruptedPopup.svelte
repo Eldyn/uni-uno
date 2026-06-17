@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { storeGame } from "../../../stores/game.svelte";
+	import { storeGame } from "../../../stores/game.svelte";
 </script>
 
 <div class="modal-overlay interrupted-overlay">

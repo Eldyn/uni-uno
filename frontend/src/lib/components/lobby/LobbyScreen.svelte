@@ -58,16 +58,14 @@
 					maxlength="22"
 					use:focusOnMount
 				/>
+			{:else if isHost}
+				<button type="button" class="lobby-title editable" onclick={startEditing}>
+					{storeLobby.current?.name}
+				</button>
 			{:else}
-				{#if isHost}
-					<button type="button" class="lobby-title editable" onclick={startEditing}>
-						{storeLobby.current?.name}
-					</button>
-				{:else}
-					<span class="lobby-title">
-						{storeLobby.current?.name}
-					</span>
-				{/if}
+				<span class="lobby-title">
+					{storeLobby.current?.name}
+				</span>
 			{/if}
 
 			<div class="header-controls">
@@ -83,7 +81,9 @@
 				<div class="saved-matches-mini">
 					<details class="compact-dropdown">
 						<summary class="dropdown-summary">
-							<span class="summary-text">Saved Matches ({storeLobby.savedMatches?.length ?? 0})</span>
+							<span class="summary-text"
+								>Saved Matches ({storeLobby.savedMatches?.length ?? 0})</span
+							>
 						</summary>
 						<div class="dropdown-content-wrapper">
 							<ul class="saved-matches-list">
@@ -126,7 +126,11 @@
 
 									<span class="member-name">{member.username}</span>
 
-									{#if member.is_host}<span style="color: gold; font-size: 1.5rem;font-family: var(--mono);"> 󱟜 </span>{/if}
+									{#if member.is_host}<span
+											style="color: gold; font-size: 1.5rem;font-family: var(--mono);"
+										>
+											󱟜
+										</span>{/if}
 								</div>
 							</div>
 
@@ -351,16 +355,16 @@
 	}
 
 	.start-button:disabled {
-        cursor: not-allowed;
-    }
+		cursor: not-allowed;
+	}
 
-    .start-button:disabled .letter {
-        animation: none; /* Stops the animation */
-        color: #888; /* Grey colour for the text */
-        -webkit-text-stroke: 1.5px #444; /* Dark grey border to match the text */
-        text-shadow: 2px 2px 0px #1a1a1a; /* Fixed static shadow, no jump */
-        transform: translateY(0); /* Ensures the letters stay at the bottom */
-    }
+	.start-button:disabled .letter {
+		animation: none; /* Stops the animation */
+		color: #888; /* Grey colour for the text */
+		-webkit-text-stroke: 1.5px #444; /* Dark grey border to match the text */
+		text-shadow: 2px 2px 0px #1a1a1a; /* Fixed static shadow, no jump */
+		transform: translateY(0); /* Ensures the letters stay at the bottom */
+	}
 
 	.leave-button-fixed {
 		position: fixed;

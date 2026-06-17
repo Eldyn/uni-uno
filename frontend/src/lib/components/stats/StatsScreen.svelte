@@ -199,7 +199,6 @@
 		text-shadow: 2px 2px 0px #000;
 	}
 
-
 	.content {
 		flex: 1;
 		overflow-y: auto;
