@@ -130,6 +130,14 @@ public:
     void SaveMatchStateToDB(Lobby& lobby);
 
     /**
+     * @brief Counts the lobbies whose match is currently in progress (not finished).
+     * Used by the deploy gate to avoid swapping the container mid-game.
+     * @return std::size_t Number of active matches.
+     * @tag LOBBY-CTRL-010
+     */
+    std::size_t ActiveMatchCount() const;
+
+    /**
      * @brief Grace period before a disconnected user is evicted.
      * @tag LOBBY-CFG-001
      */

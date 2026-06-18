@@ -135,6 +135,8 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
         this->OnClose(ws, sd);
     });
 
+    server.SetActiveMatchProvider([this] { return ActiveMatchCount(); });
+
     eviction_timer_ = us_create_timer((us_loop_t*)uWS::Loop::get(), 0, sizeof(LobbyController*));
     *(LobbyController**)us_timer_ext(eviction_timer_) = this;
 
@@ -199,6 +201,13 @@ LobbyController::~LobbyController() {
         us_timer_close(eviction_timer_);
         eviction_timer_ = nullptr;
     }
+}
+
+std::size_t LobbyController::ActiveMatchCount() const {
+    return static_cast<std::size_t>(std::ranges::count_if(lobbies_, [](const auto& entry) {
+        const Lobby& lobby = entry.second;
+        return lobby.match && !lobby.match->IsGameOver();
+    }));
 }
 
 /**
