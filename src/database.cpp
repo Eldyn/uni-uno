@@ -19,6 +19,21 @@ VoidResult Database::Open(std::string_view path) {
     if (sqlite3_open(path.data(), &db_) != SQLITE_OK) {
         return std::unexpected(Error::DatabaseFail(sqlite3_errmsg(db_)));
     }
+
+    // WAL lets a backup reader take a consistent snapshot while the server keeps
+    // writing; the default rollback journal can tear a concurrent file copy.
+    // synchronous=NORMAL is the safe pairing with WAL, and busy_timeout avoids
+    // spurious SQLITE_BUSY when the backup reader and the server briefly overlap.
+    const char* pragmas =
+        "PRAGMA journal_mode=WAL;"
+        "PRAGMA synchronous=NORMAL;"
+        "PRAGMA busy_timeout=5000;";
+    char* err = nullptr;
+    if (sqlite3_exec(db_, pragmas, nullptr, nullptr, &err) != SQLITE_OK) {
+        std::string msg = err ? err : "Unknown error";
+        sqlite3_free(err);
+        return std::unexpected(Error::DatabaseFail(msg));
+    }
     return {};
 }
 
