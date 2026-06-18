@@ -183,6 +183,22 @@ void WebServer::RegisterRoutes() {
         HandlePost(response, request);
     });
 
+    // Internal operational endpoint: reports the number of in-progress matches so
+    // the deploy tooling can hold a redeploy until games drain (state is RAM-only).
+    // Gated by a shared secret (X-Deploy-Token == DEPLOY_STATUS_TOKEN); a missing
+    // or wrong token returns 404 so the endpoint isn't even discoverable, and
+    // Traefik additionally blocks the /internal prefix on the public router.
+    app_.get("/internal/active-games", [this](AppResponse *res, AppRequest *req) {
+        const std::string token = Env::Get("DEPLOY_STATUS_TOKEN", "");
+        if (token.empty() || req->getHeader("x-deploy-token") != token) {
+            res->writeStatus("404 Not Found")->end("File not found");
+            return;
+        }
+        const std::size_t count = active_match_provider_ ? active_match_provider_() : 0;
+        res->writeHeader("Content-Type", "application/json")
+           ->end(json({{"active_matches", count}}).dump());
+    });
+
     app_.get("/*", [this](AppResponse *res, AppRequest *req) {
         HandleGet(res, req);
     });

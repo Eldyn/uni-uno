@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -102,6 +103,17 @@ public:
      */
     void OnConnectionClose(ConnectionHandler handler);
 
+    /**
+     * @brief Supplies the source for the count of in-progress matches.
+     * Wired by the LobbyController (which owns the live lobbies) and read by the
+     * internal `/internal/active-games` route used to gate zero-downtime deploys.
+     * @param provider Callable returning the number of active matches.
+     * @tag SRV-CORE-009
+     */
+    void SetActiveMatchProvider(std::function<std::size_t()> provider) {
+        active_match_provider_ = std::move(provider);
+    }
+
 private:
     int    port_;           /**< Listening port of the server. */
     string db_file_;        /**< Path of the sqlite DB file. */
@@ -190,4 +202,6 @@ private:
 
     std::vector<ConnectionHandler> on_open_hooks_;   /**< List of connection open hooks. */
     std::vector<ConnectionHandler> on_close_hooks_;  /**< List of connection close hooks. */
+
+    std::function<std::size_t()> active_match_provider_; /**< Source for the active-match count (see /internal/active-games). */
 };
