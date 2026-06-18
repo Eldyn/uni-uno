@@ -26,6 +26,8 @@ const watchPublicDirPlugin = {
 	}
 };
 
+const appVersion = fs.readFileSync(path.resolve("../VERSION"), "utf8").trim();
+
 export default defineConfig(({ mode }) => {
 	const isDev = mode === "development";
 	const watch = isDev ? { watch: {} } : {};
@@ -35,6 +37,9 @@ export default defineConfig(({ mode }) => {
 		plugins: [tailwindcss(), svelte(), isDev && watchPublicDirPlugin].filter(Boolean),
 		resolve: {
 			alias: { $lib: path.resolve("./src/lib") }
+		},
+		define: {
+			__APP_VERSION__: JSON.stringify(appVersion)
 		},
 		base: "./",
 		build: {
