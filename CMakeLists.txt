@@ -44,10 +44,11 @@ set(WS_MESSAGES_H      "${CMAKE_BINARY_DIR}/generated/ws/messages.h")
 
 add_custom_command(
     OUTPUT  "${WS_MESSAGES_H}"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "-- Generating WebSocket payload structs from asyncapi.yaml"
     COMMAND "${Python3_EXECUTABLE}" "${WS_GEN_SCRIPT}"
             "${WS_CONTRACT_YAML}" "ws" "${CMAKE_BINARY_DIR}/generated"
     DEPENDS "${WS_CONTRACT_YAML}" "${WS_GEN_SCRIPT}"
-    COMMENT "Generating WebSocket payload structs from asyncapi.yaml (hatchbed/asyncapi_gencpp)"
 )
 add_custom_target(gen_ws_messages DEPENDS "${WS_MESSAGES_H}")
 
@@ -61,10 +62,11 @@ set(CONTRACT_HPP_SCRIPT "${CMAKE_SOURCE_DIR}/scripts/generate_contract_hpp.py")
 set(CONTRACT_HPP_OUT    "${CMAKE_BINARY_DIR}/generated/common/contract.hpp")
 add_custom_command(
     OUTPUT  "${CONTRACT_HPP_OUT}"
+    COMMAND ${CMAKE_COMMAND} -E echo ""
+    COMMAND ${CMAKE_COMMAND} -E echo "-- Generating validation constants from asyncapi.yaml"
     COMMAND "${Python3_EXECUTABLE}" "${CONTRACT_HPP_SCRIPT}"
             "${WS_CONTRACT_YAML}" "${CONTRACT_HPP_OUT}"
     DEPENDS "${WS_CONTRACT_YAML}" "${CONTRACT_HPP_SCRIPT}"
-    COMMENT "Generating validation constants (common/contract.hpp) from asyncapi.yaml"
 )
 add_custom_target(gen_contract_hpp DEPENDS "${CONTRACT_HPP_OUT}")
 
@@ -115,10 +117,12 @@ set(RUNTIME_FILES cert.pem key.pem .env)
 foreach(asset IN LISTS RUNTIME_FILES)
     if(EXISTS "${CMAKE_SOURCE_DIR}/${asset}")
         add_custom_command(TARGET uni_server POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E echo ""
+            COMMAND ${CMAKE_COMMAND} -E echo "-- Copying ${asset}"
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${CMAKE_SOURCE_DIR}/${asset}"
                     "$<TARGET_FILE_DIR:uni_server>/${asset}"
-            COMMENT "Copying ${asset} next to the executable")
+        )
     else()
         message(WARNING "Runtime asset '${asset}' not found: it will not be copied next to the executable.")
     endif()
@@ -126,10 +130,12 @@ endforeach()
 
 if(EXISTS "${CMAKE_SOURCE_DIR}/public")
     add_custom_command(TARGET uni_server POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo ""
+        COMMAND ${CMAKE_COMMAND} -E echo "-- Copying public/ next to the executable"
         COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${CMAKE_SOURCE_DIR}/public"
                 "$<TARGET_FILE_DIR:uni_server>/public"
-        COMMENT "Copying the public/ folder next to the executable")
+    )
 else()
     message(WARNING "Folder 'public/' not found: build the frontend first (cd frontend && npm run build).")
 endif()
