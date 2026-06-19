@@ -11,7 +11,7 @@ namespace game {
 
                 CompactCard top_card = state->discard_pile.back();
 
-                if (GetColor(event.played_card) == GetColor(top_card) && 
+                if (GetType(event.played_card) == GetType(top_card) && 
                     GetValue(event.played_card) == GetValue(top_card)) {
 
                     event.is_valid_play = true;

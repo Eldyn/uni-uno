@@ -144,7 +144,7 @@ void GameController::BroadcastGameState(Lobby* current_lobby) {
     bool is_game_over = current_lobby->match->IsGameOver();
     bool is_waiting_for_input = current_lobby->match->IsWaitingForInput();
     std::string pending_player_username = current_lobby->match->GetPendingPlayer();
-    std::string required_input_type = current_lobby->match->GetPendingInputType();
+    game::Action required_action = current_lobby->match->GetPendingAction();
 
     json game_over_payload;
     if (is_game_over) {
@@ -159,7 +159,7 @@ void GameController::BroadcastGameState(Lobby* current_lobby) {
         response_payload["game_state"] = current_lobby->match->SerializePlayerState(lobby_member.username);
 
         if (is_waiting_for_input && lobby_member.username == pending_player_username) {
-            response_payload["action_required"] = required_input_type;
+            response_payload["action_required"] = static_cast<int>(required_action);
             
             std::string context_string = current_lobby->match->GetPendingInputContext();
             if (!context_string.empty()) {

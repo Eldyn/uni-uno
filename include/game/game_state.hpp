@@ -95,12 +95,12 @@ namespace game {
 
         std::vector<CompactCard> draw_pile;                /**< The deck of cards to draw from. */
         std::vector<CompactCard> discard_pile;             /**< The discard pile in the centre of the table. */
-        Color active_color = Color::kRed;                  /**< Colour currently required to respond (changes with Wild cards). */
+        Type active_type = Type::kRed;                     /**< Type currently required to respond (changes with Wild cards). */
 
         std::deque<std::unique_ptr<Effect>> effect_queue;  /**< Queue of effects to resolve (asynchronous architecture for chained moves). */
 
         std::string pending_player;                        /**< The user who MUST provide an input before the game continues. */
-        std::string pending_input_type;                    /**< Type of input required (e.g. "choose_color"). */
+        Action pending_action = Action::kChooseType;       /**< Action required (meaningful only when pending_player is set). */
         std::string pending_input_context;                 /**< Additional JSON payload to help the client render the input box. */
         std::string provided_input;                        /**< Asynchronous response stored as soon as it is sent by the player for the effect. */
 

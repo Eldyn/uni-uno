@@ -51,7 +51,7 @@ namespace game {
         json state_json;
         
         state_json["status"] = state_.status;
-        state_json["active_color"] = state_.active_color;
+        state_json["active_type"] = state_.active_type;
         state_json["current_player_index"] = state_.current_player_index;
         state_json["play_direction"] = state_.play_direction;
         state_json["rules"] = settings_.active_mods;
@@ -88,7 +88,7 @@ namespace game {
         active_rules_.push_back(std::make_unique<StandardRule>());
 
         state_.status = static_cast<MatchStatus>(saved_state["status"].get<int>());
-        state_.active_color = static_cast<Color>(saved_state["active_color"].get<int>());
+        state_.active_type = static_cast<Type>(saved_state.value("active_type", 0));
         state_.current_player_index = saved_state["current_player_index"].get<int>();
         state_.play_direction = saved_state["play_direction"].get<int>();
 
@@ -174,7 +174,7 @@ namespace game {
             state_.draw_pile.pop_back();
         }
 
-        state_.active_color = GetColor(state_.discard_pile.back());
+        state_.active_type = GetType(state_.discard_pile.back());
         state_.status = MatchStatus::kPlaying;
     }
     
@@ -187,7 +187,7 @@ namespace game {
     
             if (result.status == EffectStatus::kNeedsInput) {
                 state_.pending_player = result.target_player;
-                state_.pending_input_type = result.input_type;
+                state_.pending_action = result.action;
                 state_.pending_input_context = result.input_context;
                 
                 state_.effect_queue.push_front(std::move(current_effect));
@@ -227,12 +227,12 @@ namespace game {
         };
 
         state_.discard_pile.push_back(played_card);
-        state_.active_color = GetColor(played_card);
+        state_.active_type = GetType(played_card);
         current_player->hand.erase(card_iterator);
 
         // INFO: we want to track user stats now :)
         // if (!current_player->is_bot) {
-            Color c = GetColor(played_card);
+            Type c = GetType(played_card);
             Value v = GetValue(played_card);
 
             session_stats_[username].color_counts[static_cast<int>(c)]++;
@@ -427,7 +427,6 @@ bool MatchInstance::DrawCard(const std::string& username) {
             state_.provided_input = input;
             
             state_.pending_player.clear();
-            state_.pending_input_type.clear();
             state_.pending_input_context.clear();
         }
     }
@@ -442,17 +441,16 @@ bool MatchInstance::DrawCard(const std::string& username) {
     void MatchInstance::TakeBotTurn() {
         if (IsGameOver()) return;
 
-        auto greatestColor = [this]() {
+        auto greatestType = [this]() -> Type {
             int counts[4] = {0, 0, 0, 0};
 
             for (const auto& card : state_.players[state_.current_player_index].hand) {
-                const Color color = GetColor(card);
-                if      (color == Color::kWild) continue;
-
-                if      (color == Color::kRed) counts[0]++;
-                else if (color == Color::kBlue) counts[1]++;
-                else if (color == Color::kGreen) counts[2]++;
-                else if (color == Color::kYellow) counts[3]++;
+                const Type t = GetType(card);
+                if      (t == Type::kWild)   continue;
+                if      (t == Type::kRed)    counts[0]++;
+                else if (t == Type::kBlue)   counts[1]++;
+                else if (t == Type::kGreen)  counts[2]++;
+                else if (t == Type::kYellow) counts[3]++;
             }
 
             int max_idx = 0;
@@ -460,8 +458,12 @@ bool MatchInstance::DrawCard(const std::string& username) {
                 if (counts[i] > counts[max_idx]) max_idx = i;
             }
 
-            const char* colors[] = {"RED", "BLUE", "GREEN", "YELLOW"};
-            return colors[max_idx];
+            switch (max_idx) {
+                case 0: return Type::kRed;
+                case 1: return Type::kBlue;
+                case 2: return Type::kGreen;
+                default: return Type::kYellow;
+            }
         };
 
         string bot_username = GetCurrentPlayerUsername();
@@ -482,10 +484,14 @@ bool MatchInstance::DrawCard(const std::string& username) {
 
         // Action 1: resolve any pending input (one response per call)
         if (IsWaitingForInput()) {
-            if (state_.pending_input_type == "play_drawn_card") ProvideInput(state_.pending_player, "PLAY");
-            else if (state_.pending_input_type == "choose_color") ProvideInput(state_.pending_player, greatestColor());
-            else if (state_.pending_input_type == "choose_target") ProvideInput(state_.pending_player, winning_player);
-            else Logger::Error("[MATCH] Bot did not know how to provide input for: ", state_.pending_input_type);
+            if (state_.pending_action == Action::kPlayDrawn)
+                ProvideInput(state_.pending_player, "0");
+            else if (state_.pending_action == Action::kChooseType)
+                ProvideInput(state_.pending_player, std::to_string(static_cast<int>(greatestType())));
+            else if (state_.pending_action == Action::kChooseTarget)
+                ProvideInput(state_.pending_player, winning_player);
+            else
+                Logger::Error("[MATCH] Bot encountered unknown action: ", static_cast<int>(state_.pending_action));
 
             Tick();
             return;
@@ -494,12 +500,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
         // Action 2: choose and play the best card (or draw)
         Player* current_player = GetPlayer(bot_username);
 
-        std::string dominant_color_str = greatestColor();
-        Color dominant_color = Color::kWild;
-        if (dominant_color_str == "RED") dominant_color = Color::kRed;
-        if (dominant_color_str == "BLUE") dominant_color = Color::kBlue;
-        if (dominant_color_str == "GREEN") dominant_color = Color::kGreen;
-        if (dominant_color_str == "YELLOW") dominant_color = Color::kYellow;
+        Type dominant_type = greatestType();
 
         bool found_playable = false;
         int best_score = -9999;
@@ -517,20 +518,20 @@ bool MatchInstance::DrawCard(const std::string& username) {
                 found_playable = true;
                 int current_score = 10;
 
-                Color card_color = GetColor(card);
+                Type card_type = GetType(card);
                 Value card_value = GetValue(card);
 
                 if (current_player->hand.size() == 1) {
                     current_score += 1000;
                 }
 
-                if (card_color != Color::kWild) {
-                    if (card_color == dominant_color) {
+                if (card_type != Type::kWild) {
+                    if (card_type == dominant_type) {
                         current_score += 20;
                     }
-                    if (state_.active_color != dominant_color && card_color == dominant_color) {
+                    if (state_.active_type != dominant_type && card_type == dominant_type) {
                         current_score += 40;
-                    } else if (state_.active_color == dominant_color && card_color != dominant_color) {
+                    } else if (state_.active_type == dominant_type && card_type != dominant_type) {
                         current_score -= 30;
                     }
                 } else {
@@ -581,9 +582,9 @@ bool MatchInstance::DrawCard(const std::string& username) {
     
     void MatchInstance::GenerateDeck() {
         uint16_t unique_card_identifier = 0;
-        Color standard_colors[] = {Color::kRed, Color::kBlue, Color::kGreen, Color::kYellow};
-    
-        for (Color current_color : standard_colors) {
+        Type standard_types[] = {Type::kRed, Type::kBlue, Type::kGreen, Type::kYellow};
+
+        for (Type current_color : standard_types) {
             // Generate Zeros
             for (int i = 0; i < settings_.count_zeros; ++i) {
                 state_.draw_pile.push_back(MakeCard(current_color, Value::k0, unique_card_identifier++));
@@ -614,11 +615,11 @@ bool MatchInstance::DrawCard(const std::string& username) {
 
         // 2. Generate Wild Cards (Color-less)
         for (int i = 0; i < settings_.count_wild; ++i) {
-            state_.draw_pile.push_back(MakeCard(Color::kWild, Value::kWild, unique_card_identifier++));
+            state_.draw_pile.push_back(MakeCard(Type::kWild, Value::kWild, unique_card_identifier++));
         }
 
         for (int i = 0; i < settings_.count_wild_draw_four; ++i) {
-            state_.draw_pile.push_back(MakeCard(Color::kWild, Value::kWildDraw4, unique_card_identifier++));
+            state_.draw_pile.push_back(MakeCard(Type::kWild, Value::kWildDraw4, unique_card_identifier++));
         }
     
         std::random_device random_device;
@@ -641,7 +642,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
     
         root["match_status"] = static_cast<int>(state_.status);
 
-        root["active_color"] = static_cast<int>(state_.active_color);
+        root["active_type"] = static_cast<int>(state_.active_type);
         root["current_turn"] = GetCurrentPlayerUsername();
         root["play_direction"] = state_.play_direction;
         root["discard_pile_size"] = state_.discard_pile.size();
@@ -649,27 +650,27 @@ bool MatchInstance::DrawCard(const std::string& username) {
 
         if (state_.last_play.valid) {
             CompactCard lp = state_.last_play.card;
-            Color lp_display = GetColor(lp);
-            if (lp_display == Color::kWild) lp_display = state_.active_color;
+            Type lp_display = GetType(lp);
+            if (lp_display == Type::kWild) lp_display = state_.active_type;
             root["last_play"] = {
                 {"player", state_.last_play.player},
                 {"hand_index", state_.last_play.hand_index},
                 {"card", {
                     {"id", GetId(lp)},
-                    {"color", static_cast<int>(lp_display)},
+                    {"type", static_cast<int>(lp_display)},
                     {"value", static_cast<int>(GetValue(lp))}
                 }}
             };
         }
-    
+
         if (!state_.discard_pile.empty()) {
             CompactCard top = state_.discard_pile.back();
-            // Wild cards inherit active_color so the card visually shows the chosen colour.
-            Color display_color = GetColor(top);
-            if (display_color == Color::kWild) display_color = state_.active_color;
+            // Wild cards inherit active_type so the card visually shows the chosen type.
+            Type display_type = GetType(top);
+            if (display_type == Type::kWild) display_type = state_.active_type;
             root["top_card"] = {
                 {"id", GetId(top)},
-                {"color", static_cast<int>(display_color)},
+                {"type", static_cast<int>(display_type)},
                 {"value", static_cast<int>(GetValue(top))},
             };
         }
@@ -692,7 +693,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
                     }
                     hand_json.push_back({
                         {"id", GetId(c)},
-                        {"color", static_cast<int>(GetColor(c))},
+                        {"type", static_cast<int>(GetType(c))},
                         {"value", static_cast<int>(GetValue(c))},
                         {"can_play", play_check.is_valid_play}
                     });

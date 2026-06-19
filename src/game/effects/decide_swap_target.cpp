@@ -21,8 +21,8 @@ namespace game {
                 Logger::Info("[Effect] Executing swap between ", p1->username, " and ", p2->username);
                 std::swap(p1->hand, p2->hand);
                 std::swap(p1->has_called_uno, p2->has_called_uno);
-                
-                return {EffectStatus::kResolved, "", ""};
+
+                return {EffectStatus::kResolved};
             }
 
             Logger::Warn("Invalid target for 7 swap: ", target_username);
@@ -35,6 +35,6 @@ namespace game {
             }
         }
 
-        return {EffectStatus::kNeedsInput, "choose_target", username_, action_context.dump()};
+        return {EffectStatus::kNeedsInput, Action::kChooseTarget, username_, action_context.dump()};
     };
 }

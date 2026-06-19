@@ -13,16 +13,16 @@ namespace game {
                 auto player_it = std::ranges::find(state->players, event.player_username, &Player::username);
                 
                 if (player_it != state->players.end()) {
-                    bool has_matching_color = false;
-                    
+                    bool has_matching_type = false;
+
                     for (CompactCard card : player_it->hand) {
-                        if (GetColor(card) == state->active_color) {
-                            has_matching_color = true;
+                        if (GetType(card) == state->active_type) {
+                            has_matching_type = true;
                             break;
                         }
                     }
                     
-                    if (has_matching_color) {
+                    if (has_matching_type) {
                         event.is_valid_play = false;
                         event.is_handled = true; // Stop StandardRule from validating this
                     }

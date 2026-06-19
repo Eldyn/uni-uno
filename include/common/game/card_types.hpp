@@ -6,7 +6,7 @@
  * @file include/common/game/card_types.hpp
  * @brief Defines the fundamental data structures and types for representing the cards in the game.
  *
- * @tag FEAT-CG-001 Compact Card Representation: Use of a 32-bit integer format (CompactCard) to simultaneously store the colour, value and unique ID of the card.
+ * @tag FEAT-CG-001 Compact Card Representation: Use of a 32-bit integer format (CompactCard) to simultaneously store the type, value and unique ID of the card.
  */
 
 namespace game {
@@ -14,23 +14,23 @@ namespace game {
     /**
      * @brief Definition of the CompactCard type.
      * Packs the information of a card within a 32-bit integer.
-     * Binary format: `ccccccccvvvvvvvvuuuuuuuuuuuuuuuu`
-     * - c (8 bits): Colour
+     * Binary format: `ttttttttvvvvvvvvuuuuuuuuuuuuuuuu`
+     * - t (8 bits): Type
      * - v (8 bits): Value
      * - u (16 bits): Unique card ID
      */
     using CompactCard = uint32_t;
 
     /**
-     * @enum Color
-     * @brief Enumerates the possible colours a card can take.
+     * @enum Type
+     * @brief Enumerates the possible types a card can take.
      */
-    enum class Color : uint8_t {
-        kRed = 0,    /**< Red colour */
-        kBlue = 1,   /**< Blue colour */
-        kGreen = 2,  /**< Green colour */
-        kYellow = 3, /**< Yellow colour */
-        kWild = 4    /**< Wild colour (no base colour) */
+    enum class Type : uint8_t {
+        kRed    = 0, /**< Red type */
+        kBlue   = 1, /**< Blue type */
+        kGreen  = 2, /**< Green type */
+        kYellow = 3, /**< Yellow type */
+        kWild   = 4  /**< Wild type (no base type) */
     };
 
     /**
@@ -42,17 +42,17 @@ namespace game {
         kSkip = 10,       /**< Skip card */
         kReverse = 11,    /**< Reverse card */
         kDraw2 = 12,      /**< Draw Two card */
-        kWild = 13,       /**< Wild Colour Change card */
+        kWild = 13,       /**< Wild Type Change card */
         kWildDraw4 = 14   /**< Wild Draw Four card */
     };
 
     /**
-     * @brief Extracts the colour from a compact card (first 8 bits).
+     * @brief Extracts the type from a compact card (first 8 bits).
      * @param c The compact card to analyze.
-     * @return Color The colour decoded from the card.
+     * @return Type The type decoded from the card.
      */
-    inline Color GetColor(CompactCard c) {
-        return static_cast<Color>((c >> 24) & 0xFF);
+    inline Type GetType(CompactCard c) {
+        return static_cast<Type>((c >> 24) & 0xFF);
     }
 
     /**
@@ -74,14 +74,14 @@ namespace game {
     }
 
     /**
-     * @brief Creates a new CompactCard by assembling colour, value and ID.
-     * @param c The colour of the card.
+     * @brief Creates a new CompactCard by assembling type, value and ID.
+     * @param t The type of the card.
      * @param v The value of the card.
      * @param id The unique identifier.
      * @return CompactCard The card packed into a 32-bit integer.
      */
-    inline CompactCard MakeCard(Color c, Value v, uint16_t id) {
-        return (static_cast<CompactCard>(c) << 24) |
+    inline CompactCard MakeCard(Type t, Value v, uint16_t id) {
+        return (static_cast<CompactCard>(t) << 24) |
                (static_cast<CompactCard>(v) << 16) |
                (static_cast<CompactCard>(id) & 0xFFFF);
     }

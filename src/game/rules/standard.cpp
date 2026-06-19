@@ -10,17 +10,17 @@ namespace game {
             return;
         }
 
-        Color played_color = GetColor(event.played_card);
+        Type played_type = GetType(event.played_card);
         Value played_value = GetValue(event.played_card);
-    
-        if (played_color == Color::kWild) {
+
+        if (played_type == Type::kWild) {
             return;
         }
-    
-        // NOTE: We check active_color since the top card might be a Wild.
-        //       since its inherent color is kWild and would return false,
-        //       we use the active_color which is whatever the player chose.
-        if (played_color == state->active_color) {
+
+        // NOTE: We check active_type since the top card might be a Wild.
+        //       since its inherent type is kWild and would return false,
+        //       we use the active_type which is whatever the player chose.
+        if (played_type == state->active_type) {
             return; 
         }
     

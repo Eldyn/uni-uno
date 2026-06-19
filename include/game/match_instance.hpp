@@ -155,11 +155,11 @@ namespace game {
         std::string GetPendingPlayer() const { return state_.pending_player; }
 
         /**
-         * @brief Returns the type of the pending input (e.g. "choose_color").
-         * @return std::string Input code.
+         * @brief Returns the action type the engine is waiting for.
+         * @return Action The required action.
          * @tag MATCH-INST-018
          */
-        std::string GetPendingInputType() const { return state_.pending_input_type; }
+        Action GetPendingAction() const { return state_.pending_action; }
 
         /**
          * @brief Returns contextual JSON text data for the input request.
