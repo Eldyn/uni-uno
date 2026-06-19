@@ -26,9 +26,8 @@ namespace game {
                 event.is_handled = true; // Flag handled so StandardRule doesn't push a skip!
             }
             else if (card_val == Value::kWildDraw4) {
-                state->effect_queue.push_back(std::make_unique<ChooseColorEffect>(event.player_username));
-                state->pending_draws += 4;
-                event.is_handled = true; 
+                state->effect_queue.push_back(std::make_unique<ChooseColorEffect>(event.player_username, 4));
+                event.is_handled = true;
             }
         }
     };
