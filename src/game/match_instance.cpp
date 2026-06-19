@@ -461,214 +461,112 @@ bool MatchInstance::DrawCard(const std::string& username) {
             }
 
             const char* colors[] = {"RED", "BLUE", "GREEN", "YELLOW"};
-
             return colors[max_idx];
         };
 
         string bot_username = GetCurrentPlayerUsername();
-        constexpr int kMaxBotSteps = 10;
-        int steps = 0;
-        
-        while (steps < kMaxBotSteps) {
-            if (GetCurrentPlayerUsername() != bot_username || IsGameOver()) {
-                return;
-            }
 
-            int next_idx = (state_.current_player_index + state_.play_direction + state_.players.size()) % state_.players.size();
-            int next_player_hand_size = state_.players[next_idx].hand.size();
-            std::string winning_player = "";
+        int next_idx = (state_.current_player_index + state_.play_direction + state_.players.size()) % state_.players.size();
+        int next_player_hand_size = state_.players[next_idx].hand.size();
+        std::string winning_player = "";
 
-            size_t lowest_card_count = 999;
-            for (const auto& p : state_.players) {
-                if (p.username != bot_username) {
-                    if (p.hand.size() < lowest_card_count) {
-                        lowest_card_count = p.hand.size();
-                        winning_player = p.username;
-                    }
+        size_t lowest_card_count = 999;
+        for (const auto& p : state_.players) {
+            if (p.username != bot_username) {
+                if (p.hand.size() < lowest_card_count) {
+                    lowest_card_count = p.hand.size();
+                    winning_player = p.username;
                 }
             }
+        }
 
-            // INFO: Action 1
-            //       If we are waiting for input, based on the type we
-            //       provide the best decision that we can "think" of.
-            if (IsWaitingForInput()) {
-                if (state_.pending_input_type == "play_drawn_card") ProvideInput(state_.pending_player, "PLAY");
-                else if (state_.pending_input_type == "choose_color") ProvideInput(state_.pending_player, greatestColor());
-                else if (state_.pending_input_type == "choose_target") ProvideInput(state_.pending_player, winning_player);
-                else Logger::Error("[MATCH] Bot did not know how to provide input for: ", state_.pending_input_type);
+        // Action 1: resolve any pending input (one response per call)
+        if (IsWaitingForInput()) {
+            if (state_.pending_input_type == "play_drawn_card") ProvideInput(state_.pending_player, "PLAY");
+            else if (state_.pending_input_type == "choose_color") ProvideInput(state_.pending_player, greatestColor());
+            else if (state_.pending_input_type == "choose_target") ProvideInput(state_.pending_player, winning_player);
+            else Logger::Error("[MATCH] Bot did not know how to provide input for: ", state_.pending_input_type);
 
-                Tick();
-                steps++;
-                continue;
-            }
-
-            // INFO: Action 2
-            //       We need to play a card! We use heuristics to pick
-            //       the best card worth playing in the current situation
-
-            Player* current_player = GetPlayer(bot_username);
-
-            std::string dominant_color_str = greatestColor();
-            Color dominant_color = Color::kWild;
-            if (dominant_color_str == "RED") dominant_color = Color::kRed;
-            if (dominant_color_str == "BLUE") dominant_color = Color::kBlue;
-            if (dominant_color_str == "GREEN") dominant_color = Color::kGreen;
-            if (dominant_color_str == "YELLOW") dominant_color = Color::kYellow;
-
-            bool found_playable = false;
-            int best_score = -9999;
-            CompactCard best_card;
-
-            for (CompactCard card : current_player->hand) {
-                CardPlayedEvent event = { current_player->username, card, true, false };
-
-                for (auto& rule : active_rules_) {
-                    rule->ValidatePlay(&state_, event);
-                    if (event.is_handled) break;
-                }
-
-                if (event.is_valid_play) {
-                    found_playable = true;
-                    int current_score = 10;
-
-                    Color card_color = GetColor(card);
-                    Value card_value = GetValue(card);
-
-                    // INFO: Heuristic 0 (top priority)
-                    //       Lethal Move: if this is our last card, playing it
-                    //       wins the game outright. Nothing else matters.
-                    if (current_player->hand.size() == 1) {
-                        current_score += 1000;
-                    }
-
-                    // INFO: Heuristic 1
-                    //       Color Affinities: strategically change the discard pile
-                    //       color (or don't) based on which of the two helps us win
-                    if (card_color != Color::kWild) {
-                        if (card_color == dominant_color) {
-                            current_score += 20; // INFO: Good! Dominant color
-                        }
-                    
-                        // INFO: Are we changing the active color on the table?
-                        if (state_.active_color != dominant_color && card_color == dominant_color) {
-                            current_score += 40; // INFO : Good! Changing the pile TO our dominant color
-                        } else if (state_.active_color == dominant_color && card_color != dominant_color) {
-                            current_score -= 30; // INFO:  Crap! Changing the pile FROM our dominant color
-                        }
-                    } else {
-                        // INFO: Mediocre! Don't "waste" wild cards!
-                        current_score -= 15; 
-                    }
-
-                    // INFO: Heuristic 2 
-                    //       Targeted Attacks: strategically use special
-                    //       cards in order to stop winning opponents.
-                    if (card_value == Value::kDraw2 || card_value == Value::kWildDraw4) {
-                        if (next_player_hand_size == 1) {
-                            current_score += 200; // INFO: Best! Stop them from winning!
-                        } else if (next_player_hand_size <= 3) {
-                            current_score += 50;  // INFO: Good! Stop their UNO!
-                        } else if (next_player_hand_size >= 7) {
-                            current_score -= 20;  // INFO: Crap! They are already begging!
-                        }
-                    }
-
-                    if (card_value == Value::kSkip || card_value == Value::kReverse) {
-                        if (next_player_hand_size <= 2) {
-                            current_score += 30; // INFO: Good! Skip people who are close to winning!
-                        }
-                    }
-
-                    // INFO: Heuristic 3 (mod: seven_zero)
-                    //       Exploit hand-swapping/rotation mechanics.
-                    // if (HasMod("seven_zero")) {
-                    //     if (card_value == Value::k7) {
-                    //         if (lowest_card_count < current_player->hand.size()) {
-                    //             current_score += 60 +
-                    //                 static_cast<int>(current_player->hand.size() - lowest_card_count) * 15;
-                    //         } else {
-                    //             current_score -= 20;
-                    //         }
-                    //     } else if (card_value == Value::k0) {
-                    //         int total = static_cast<int>(state_.players.size());
-                    //         int prev_idx = (state_.current_player_index - state_.play_direction + total) % total;
-                    //         size_t incoming_hand_size = state_.players[prev_idx].hand.size();
-                    //
-                    //         if (incoming_hand_size < current_player->hand.size()) {
-                    //             current_score += 30;
-                    //         } else {
-                    //             current_score -= 15;
-                    //         }
-                    //     }
-                    // }
-
-                    // INFO: Heuristic 4 (mod: draw_stacking)
-                    //       Keep pressure chains alive / start new ones.
-                    // if (HasMod("draw_stacking") &&
-                    //     (card_value == Value::kDraw2 || card_value == Value::kWildDraw4)) {
-                    //     current_score += 35;
-                    //
-                    //     if (state_.pending_draws > 0) {
-                    //         current_score += 45;
-                    //     }
-                    //
-                    //     if (next_player_hand_size <= 2) {
-                    //         current_score += 25;
-                    //     }
-                    // }
-
-                    // INFO: Heuristic 5 (mod: no_bluffing)
-                    //       Hoard +4s while we still have a "real" matching color,
-                    //       since playing one when we don't need to just wastes it
-                    //       (and could've been our emergency out later).
-                    // if (HasMod("no_bluffing") && card_value == Value::kWildDraw4) {
-                    //     bool has_other_matching_color = false;
-                    //     for (CompactCard other : current_player->hand) {
-                    //         if (other != card && GetColor(other) == dominant_color) {
-                    //             has_other_matching_color = true;
-                    //             break;
-                    //         }
-                    //     }
-                    //     if (has_other_matching_color) {
-                    //         current_score -= 25;
-                    //     }
-                    // }
-
-                    // INFO: Apply all the Heuristics
-                    if (current_score > best_score) {
-                        best_score = current_score;
-                        best_card = card;
-                    }
-                }
-            }
-
-            // INFO: Action 2.1
-            //       We found a card? We play it.
-            //       We had no playable card? We draw.
-            if (found_playable) {
-                // INFO: Here, we CallUno regardless of hand size,
-                //       but actually, CallUno checks directly!
-                CallUno(bot_username);
-                PlayCard(current_player->username, GetId(best_card));
-            } else {
-                DrawCard(current_player->username);
-            }
-            Tick(); 
-
-            // INFO: Action 2.2
-            //       Our action caused an input prompt (e.g Draw/Play)
-            //       We will be processing it in the next iteration. 
-            if (IsWaitingForInput()) {
-                steps++;
-                continue;
-            }
-            
+            Tick();
             return;
         }
 
-        if (steps >= kMaxBotSteps) {
-            Logger::Error("[MATCH]", "Bot recursion limit exceeded!");
+        // Action 2: choose and play the best card (or draw)
+        Player* current_player = GetPlayer(bot_username);
+
+        std::string dominant_color_str = greatestColor();
+        Color dominant_color = Color::kWild;
+        if (dominant_color_str == "RED") dominant_color = Color::kRed;
+        if (dominant_color_str == "BLUE") dominant_color = Color::kBlue;
+        if (dominant_color_str == "GREEN") dominant_color = Color::kGreen;
+        if (dominant_color_str == "YELLOW") dominant_color = Color::kYellow;
+
+        bool found_playable = false;
+        int best_score = -9999;
+        CompactCard best_card;
+
+        for (CompactCard card : current_player->hand) {
+            CardPlayedEvent event = { current_player->username, card, true, false };
+
+            for (auto& rule : active_rules_) {
+                rule->ValidatePlay(&state_, event);
+                if (event.is_handled) break;
+            }
+
+            if (event.is_valid_play) {
+                found_playable = true;
+                int current_score = 10;
+
+                Color card_color = GetColor(card);
+                Value card_value = GetValue(card);
+
+                if (current_player->hand.size() == 1) {
+                    current_score += 1000;
+                }
+
+                if (card_color != Color::kWild) {
+                    if (card_color == dominant_color) {
+                        current_score += 20;
+                    }
+                    if (state_.active_color != dominant_color && card_color == dominant_color) {
+                        current_score += 40;
+                    } else if (state_.active_color == dominant_color && card_color != dominant_color) {
+                        current_score -= 30;
+                    }
+                } else {
+                    current_score -= 15;
+                }
+
+                if (card_value == Value::kDraw2 || card_value == Value::kWildDraw4) {
+                    if (next_player_hand_size == 1) {
+                        current_score += 200;
+                    } else if (next_player_hand_size <= 3) {
+                        current_score += 50;
+                    } else if (next_player_hand_size >= 7) {
+                        current_score -= 20;
+                    }
+                }
+
+                if (card_value == Value::kSkip || card_value == Value::kReverse) {
+                    if (next_player_hand_size <= 2) {
+                        current_score += 30;
+                    }
+                }
+
+                if (current_score > best_score) {
+                    best_score = current_score;
+                    best_card = card;
+                }
+            }
         }
+
+        if (found_playable) {
+            CallUno(bot_username);
+            PlayCard(current_player->username, GetId(best_card));
+        } else {
+            DrawCard(current_player->username);
+        }
+        Tick();
     }
     
     std::string MatchInstance::GetCurrentPlayerUsername() const {
