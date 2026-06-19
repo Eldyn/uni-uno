@@ -167,8 +167,11 @@ namespace game {
         /**
          * @brief Constructor of the effect.
          * @param target_username The player who played the Wild and must choose the colour.
+         * @param stack_bonus Optional pending_draws increment applied after the colour is confirmed
+         *                    (used by draw_stacking +4 so the penalty is only visible once colour resolves).
          */
-        explicit ChooseColorEffect(const std::string& target_username) : target_username_(target_username) {}
+        explicit ChooseColorEffect(const std::string& target_username, int stack_bonus = 0)
+            : target_username_(target_username), stack_bonus_(stack_bonus) {}
 
         /**
          * @brief Suspends execution while waiting for input from the target. If the input is already present, it updates the global colour.
@@ -187,5 +190,6 @@ namespace game {
         EffectType GetType() const override { return EffectType::kChooseColor; }
     private:
         std::string target_username_; /**< User who must provide the colour choice. */
+        int stack_bonus_ = 0;         /**< Extra draws added to pending_draws after colour resolves. */
     };
 }
