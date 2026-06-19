@@ -92,6 +92,8 @@ class StoreStats {
 
 			if (res.ok) {
 				this.myStats = await res.json();
+			} else {
+				storeToast.error("Failed to load personal statistics.");
 			}
 		} catch {
 			storeToast.error("Failed to load personal statistics.");

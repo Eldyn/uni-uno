@@ -218,6 +218,20 @@ class StoreLobby {
     }
 
     /**
+     * @brief Requests the server to start the match for the current lobby.
+     * Shows an error toast if the server rejects the request.
+     * @tag FRONT-LOBBY-MTH-004A
+     */
+    async startMatch(): Promise<void> {
+        await ws.connect();
+        const response = await ws.emitAndWait(ClientAction.LobbyStartMatch);
+
+        if (!response.ok) {
+            storeToast.error(response.reason);
+        }
+    }
+
+    /**
      * @brief Updates the lobby settings (including name and visibility).
      * @param settings The settings fields to modify.
      * @tag FRONT-LOBBY-MTH-004
@@ -302,6 +316,8 @@ class StoreLobby {
 
             if (response.ok) {
                 this.available = response.get<ListedLobby[]>("lobbies") ?? [];
+            } else {
+                storeToast.error(response.reason ?? "Failed to load lobbies");
             }
         } finally {
             this.isLoadingList = false;

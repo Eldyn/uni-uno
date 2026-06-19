@@ -79,10 +79,13 @@
 	function handleBackToLobbies() {
 		storeNavigation.goto("lobbies");
 	}
+
+	declare const __APP_VERSION__: string;
 </script>
 
 <div id="app">
 	<Toast />
+	<span class="version-badge">v{__APP_VERSION__}</span>
 
 	<audio autoplay loop bind:volume bind:this={audioPlayer}>
 		<source src="/assets/music/lofi.mp3" type="audio/mpeg" />
@@ -117,6 +120,17 @@
 		color: var(--text);
 		background: var(--bg);
 	}
+	.version-badge {
+		position: fixed;
+		bottom: 10px;
+		left: 12px;
+		font-size: 0.65rem;
+		color: #888;
+		z-index: 5;
+		pointer-events: none;
+		user-select: none;
+	}
+
 	:global(button) {
 		/* Removes native smooth rounding */
 		border-radius: 0 !important;

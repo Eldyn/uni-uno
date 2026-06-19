@@ -50,7 +50,6 @@
 	function commit(key: SettingsKey, value: boolean | number) {
 		if (!isHost) return;
 		storeLobby.updateSettings({ [key]: value });
-		console.warn(key, value);
 	}
 
 	function handleRuleChange(id: string, enabled: boolean) {

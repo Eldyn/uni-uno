@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { storeLobby } from "../../stores/lobby.svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
-	import { ClientAction, ws } from "../../stores/ws.svelte";
+
 	import LobbySettings from "./LobbySettings.svelte";
 	import LobbySave from "./LobbySave.svelte";
 
@@ -177,7 +177,7 @@
 			<div class="start-container">
 				<button
 					class="start-button"
-					onclick={() => ws.emit(ClientAction.LobbyStartMatch)}
+					onclick={() => storeLobby.startMatch()}
 					disabled={!isHost || !startable}
 				>
 					<div class="animated-text">
