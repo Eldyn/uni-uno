@@ -12,7 +12,7 @@ namespace game {
     public:
         ~SevenZeroRule() override = default;
 
-        void ValidatePlay(GameState* state, CardPlayedEvent& event) override {}
+        void ValidatePlay(const GameState* state, CardPlayedEvent& event) override {}
 
         void OnCardPlayed(GameState* state, CardPlayedEvent& event) override {
             Value card_value = GetValue(event.played_card);

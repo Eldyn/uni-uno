@@ -50,7 +50,7 @@ namespace game {
          * @param state The current game state.
          * @param event The event carrying the play data. The method should set event.is_valid_play to false if the move is illegal.
          */
-        virtual void ValidatePlay(GameState* state, CardPlayedEvent& event) {}
+        virtual void ValidatePlay(const GameState* state, CardPlayedEvent& event) {}
 
         /**
          * @brief Triggers the consequences arising from a validated play.

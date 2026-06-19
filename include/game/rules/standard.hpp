@@ -32,7 +32,7 @@ namespace game {
          * @param event Event struct containing the details of the play.
          * @tag RULE-STD-MTH-001
          */
-        void ValidatePlay(GameState* state, CardPlayedEvent& event) override;
+        void ValidatePlay(const GameState* state, CardPlayedEvent& event) override;
 
         /**
          * @brief Executes the consequences of a play confirmed as valid.

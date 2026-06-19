@@ -5,7 +5,7 @@
 namespace game {
     class JumpInRule : public GameRule {
     public:
-        void ValidatePlay(GameState* state, CardPlayedEvent& event) override {
+        void ValidatePlay(const GameState* state, CardPlayedEvent& event) override {
             if (event.is_out_of_turn) {
                 if (state->discard_pile.empty()) return;
 

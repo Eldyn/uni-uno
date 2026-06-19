@@ -6,7 +6,7 @@
 namespace game {
     class DrawStackingRule : public GameRule {
     public:
-        void ValidatePlay(GameState* state, CardPlayedEvent& event) override {
+        void ValidatePlay(const GameState* state, CardPlayedEvent& event) override {
             if (state->pending_draws > 0) {
                 Value played_val = GetValue(event.played_card);
                 Value top_val = GetValue(state->discard_pile.back());
@@ -26,6 +26,10 @@ namespace game {
                 event.is_handled = true; // Flag handled so StandardRule doesn't push a skip!
             }
             else if (card_val == Value::kWildDraw4) {
+                // stack_bonus=4: pending_draws is incremented AFTER the colour choice resolves,
+                // so other players don't see the penalty grow before the colour is picked.
+                // Stacking still works because PlayCard is gated by IsWaitingForInput() until
+                // the colour effect resolves and the turn advances to the next player.
                 state->effect_queue.push_back(std::make_unique<ChooseColorEffect>(event.player_username, 4));
                 event.is_handled = true;
             }
