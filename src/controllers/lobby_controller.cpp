@@ -1043,6 +1043,9 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
         response_payload["game_state"] = lobby.match->SerializePlayerState(lobby_member.username);
         lobby_member.socket->send(response_payload.dump(), uWS::OpCode::TEXT);
     }
+
+    auto success = ws::MakeResponse(ws::ServerAction::kSuccess, request_id);
+    context.socket->send(success.dump(), uWS::OpCode::TEXT);
 }
 
 /**

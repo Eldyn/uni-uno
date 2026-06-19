@@ -138,6 +138,8 @@ class StoreGame {
 		this.#clearTimer();
 		this.state = null;
 		this.actionRequired = null;
+		this.actionContext = null;
+		this.turnTimeRemaining = 0;
 		storeNavigation.goto("lobby");
 	}
 
