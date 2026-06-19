@@ -140,6 +140,7 @@ const payloadSchemas = Object.entries(schemas).filter(([name]) => name.endsWith(
 // Build output
 // ---------------------------------------------------------------------------
 const { client: clientActions, server: serverActions } = collectActions();
+const xEnums = data?.components?.["x-enums"] ?? {};
 
 const lines = [
 	"// AUTO-GENERATED — do not edit manually.",
@@ -198,6 +199,21 @@ for (const [key, val] of Object.entries(serverActions)) {
 lines.push("} as const;");
 lines.push("export type ServerActionType = (typeof ServerAction)[keyof typeof ServerAction];");
 lines.push("");
+
+// x-enums
+lines.push("// ---------------------------------------------------------------------------");
+lines.push("// Shared enum constants (Type, Value, Action)");
+lines.push("// ---------------------------------------------------------------------------");
+for (const [enumName, enumDef] of Object.entries(xEnums)) {
+	const entries = Object.entries(enumDef.values ?? {});
+	lines.push(`export const ${enumName} = {`);
+	for (const [key, val] of entries) {
+		lines.push(`    ${key}: ${val},`);
+	}
+	lines.push("} as const;");
+	lines.push(`export type ${enumName} = (typeof ${enumName})[keyof typeof ${enumName}];`);
+	lines.push("");
+}
 
 // Payload schemas
 lines.push("// ---------------------------------------------------------------------------");
