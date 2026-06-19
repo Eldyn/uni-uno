@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 /**
@@ -20,8 +21,19 @@ namespace game {
      */
     enum class EffectStatus {
         kResolved,   /**< The effect was applied successfully and completed. */
-        kNeedsInput, /**< The effect is suspended waiting for input from a player (e.g. colour choice). */
+        kNeedsInput, /**< The effect is suspended waiting for input from a player. */
         kError       /**< An error occurred during resolution. */
+    };
+
+    /**
+     * @enum Action
+     * @brief Identifies the type of player input an effect is waiting for.
+     * Transmitted as an integer on the wire (action_required field).
+     */
+    enum class Action : uint8_t {
+        kChooseType   = 0, /**< Player must choose a card type (formerly "choose_color") */
+        kPlayDrawn    = 1, /**< Player must decide to play or keep a drawn card (formerly "play_drawn_card") */
+        kChooseTarget = 2  /**< Player must choose a target player (formerly "choose_target") */
     };
 
     /**
@@ -29,10 +41,10 @@ namespace game {
      * @brief Structure returned after attempting to resolve an effect.
      */
     struct EffectResult {
-        EffectStatus status;             /**< The resolution status of the effect. */
-        std::string input_type;          /**< The type of input required (if status == kNeedsInput). */
-        std::string target_player;       /**< The player from whom the input is awaited. */
-        std::string input_context = "";  /**< A generic JSON payload with contextual information for the frontend. */
+        EffectStatus status;                        /**< The resolution status of the effect. */
+        Action action = Action::kChooseType;        /**< The action required (meaningful only when status == kNeedsInput). */
+        std::string target_player = "";             /**< The player from whom the input is awaited. */
+        std::string input_context = "";             /**< A generic JSON payload with contextual information for the frontend. */
     };
 
     /**
@@ -45,7 +57,7 @@ namespace game {
         kSkip,              /**< Skipping the turn */
         kPlayCard,          /**< Playing a card */
         kDecideDrawnCard,   /**< Decision about a just-drawn card (play or keep) */
-        kChooseColor,       /**< Choice of a new active colour (e.g. after a Wild) */
+        kChooseColor,       /**< Choice of a new active type (e.g. after a Wild) */
         kReverse,           /**< Reversal of the play order */
         kDecideSwapTarget,  /**< Choice of the target to swap hands with */
         kPassHands,         /**< Effect for passing or swapping hands between players */
