@@ -240,7 +240,8 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
     if (active_lobby->settings.bot_mode == BotTakeoverMode::kPlayInstantly && !is_player_connected) {
         Logger::Info("[MATCH] Bot instant turn for: ", current_player_username);
         active_lobby->match->TakeBotTurn();
-        OnTurnStarted(active_lobby); 
+        BroadcastGameState(active_lobby);
+        OnTurnStarted(active_lobby);
         return;
     }
 
