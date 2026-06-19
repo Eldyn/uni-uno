@@ -8,7 +8,7 @@
 namespace game {
     EffectResult PassHandsEffect::Resolve(GameState* state, MatchInstance* match) {
         int num_players = static_cast<int>(state->players.size());
-        if (num_players <= 1) return {EffectStatus::kResolved, "", ""};
+        if (num_players <= 1) return {EffectStatus::kResolved};
 
         std::vector<std::vector<CompactCard>> new_hands(num_players);
         std::vector<bool> new_uno_status(num_players);
@@ -26,6 +26,6 @@ namespace game {
             state->players[i].has_called_uno = new_uno_status[i];
         }
 
-        return {EffectStatus::kResolved, "", ""};
+        return {EffectStatus::kResolved};
     }
 }
