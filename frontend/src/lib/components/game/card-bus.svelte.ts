@@ -1,4 +1,5 @@
 import { getContext, setContext } from "svelte";
+import type { Card } from "../../stores/game.svelte";
 
 export type ElementRole = "draw-pile" | "discard-pile" | "hand-local" | `hand-opponent-${number}`;
 
@@ -16,10 +17,8 @@ export interface Point {
  */
 export type FlightTarget = { role: ElementRole } | { slot: string } | { point: Point };
 
-export interface CardFlightEvent {
+export interface CardFlightEvent extends Pick<Card, "type" | "value"> {
 	key: number;
-	type: string;
-	value: string;
 	turned: boolean;
 	/** Resolved screen-space origin of the flight. */
 	src: Point;
@@ -93,9 +92,7 @@ export class CardBus {
 	flights = $state<CardFlightEvent[]>([]);
 	#nextKey = 0;
 
-	launch(event: {
-		type: string;
-		value: string;
+	launch(event: Pick<Card, "type" | "value"> & {
 		turned: boolean;
 		from: FlightTarget;
 		to: FlightTarget;
