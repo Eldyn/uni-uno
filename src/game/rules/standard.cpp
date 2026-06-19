@@ -4,7 +4,7 @@
 
 namespace game {
 
-    void StandardRule::ValidatePlay(GameState* state, CardPlayedEvent& event) {
+    void StandardRule::ValidatePlay(const GameState* state, CardPlayedEvent& event) {
         if (event.is_out_of_turn) {
             event.is_valid_play = false;
             return;

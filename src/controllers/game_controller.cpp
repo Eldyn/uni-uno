@@ -239,8 +239,39 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
 
     if (active_lobby->settings.bot_mode == BotTakeoverMode::kPlayInstantly && !is_player_connected) {
         Logger::Info("[MATCH] Bot instant turn for: ", current_player_username);
-        active_lobby->match->TakeBotTurn();
-        BroadcastGameState(active_lobby);
+
+        // Broadcast between each step so every action is visible to connected players.
+        // Guard against infinite recursion: if TakeBotTurn failed to change state
+        // (e.g., a rule bug made PlayCard return false with IsWaitingForInput still
+        // false), stop rather than stack-overflow.
+        constexpr int kMaxInstantSteps = 20;
+        for (int step = 0; step < kMaxInstantSteps; ++step) {
+            if (active_lobby->match->IsGameOver()) break;
+
+            std::string before = active_lobby->match->GetCurrentPlayerUsername();
+            bool was_waiting = active_lobby->match->IsWaitingForInput();
+
+            active_lobby->match->TakeBotTurn();
+            BroadcastGameState(active_lobby);
+
+            // Check whether a connected player's turn has arrived.
+            std::string after = active_lobby->match->GetCurrentPlayerUsername();
+            bool is_now_connected = false;
+            for (const auto& m : active_lobby->members) {
+                if (m.username == after && m.is_connected) { is_now_connected = true; break; }
+            }
+            bool now_is_bot = false;
+            if (auto* p = active_lobby->match->GetPlayer(after)) now_is_bot = p->is_bot;
+
+            if (is_now_connected || now_is_bot) break;
+
+            // Stall detection: if current player didn't change and waiting-state didn't change, stop.
+            if (after == before && active_lobby->match->IsWaitingForInput() == was_waiting) {
+                Logger::Error("[MATCH] kPlayInstantly stall detected — aborting bot loop");
+                break;
+            }
+        }
+
         OnTurnStarted(active_lobby);
         return;
     }

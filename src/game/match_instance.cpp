@@ -649,12 +649,14 @@ bool MatchInstance::DrawCard(const std::string& username) {
 
         if (state_.last_play.valid) {
             CompactCard lp = state_.last_play.card;
+            Color lp_display = GetColor(lp);
+            if (lp_display == Color::kWild) lp_display = state_.active_color;
             root["last_play"] = {
                 {"player", state_.last_play.player},
                 {"hand_index", state_.last_play.hand_index},
                 {"card", {
                     {"id", GetId(lp)},
-                    {"color", static_cast<int>(GetColor(lp))},
+                    {"color", static_cast<int>(lp_display)},
                     {"value", static_cast<int>(GetValue(lp))}
                 }}
             };
@@ -682,12 +684,10 @@ bool MatchInstance::DrawCard(const std::string& username) {
     
             if (p.username == username) {
                 nlohmann::json hand_json = nlohmann::json::array();
-                // ValidatePlay takes non-const GameState* but only reads it here.
-                GameState* mutable_state = const_cast<GameState*>(&state_);
                 for (CompactCard c : p.hand) {
                     CardPlayedEvent play_check = { username, c, true, false };
                     for (auto& rule : active_rules_) {
-                        rule->ValidatePlay(mutable_state, play_check);
+                        rule->ValidatePlay(&state_, play_check);
                         if (play_check.is_handled) break;
                     }
                     hand_json.push_back({

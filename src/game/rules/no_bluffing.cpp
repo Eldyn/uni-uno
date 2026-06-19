@@ -6,7 +6,7 @@
 namespace game {
     class NoBluffingRule : public GameRule {
     public:
-        void ValidatePlay(GameState* state, CardPlayedEvent& event) override {
+        void ValidatePlay(const GameState* state, CardPlayedEvent& event) override {
             if (event.is_out_of_turn) return;
 
             if (GetValue(event.played_card) == Value::kWildDraw4) {
