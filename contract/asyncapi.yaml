@@ -228,8 +228,11 @@ components:
               Opaque per-player serialized game state produced by
               MatchInstance::SerializePlayerState(). Structure owned by the game engine.
           action_required:
-            type: string
-            description: Non-empty when the server awaits a game_submit_input from this player.
+            type: integer
+            description: >
+              Integer index of the Action enum value the server is waiting for.
+              Present only when the server awaits a game_submit_input from this player.
+              0 = ChooseType, 1 = PlayDrawn, 2 = ChooseTarget.
           action_context:
             type: object
             description: Additional context for the required action (e.g. available colours).
@@ -476,7 +479,12 @@ components:
       properties:
         value:
           type: string
-          description: The player's response to a mandatory game prompt (e.g. colour selection).
+          description: >
+            The player's response to a mandatory game prompt, encoded as a string.
+            Semantics depend on the pending Action:
+              - ChooseType (0): integer string "0"–"3" mapping to the Type enum (Red=0, Blue=1, Green=2, Yellow=3).
+              - PlayDrawn (1): "0" = play the drawn card, "1" = keep it.
+              - ChooseTarget (2): the target player's username string.
 
     LobbyCreatePayload:
       type: object
@@ -578,3 +586,46 @@ components:
           type: string
           minLength: 1
           maxLength: 512
+
+  # -------------------------------------------------------------------------
+  # Enum definitions (shared between backend and frontend)
+  # -------------------------------------------------------------------------
+  # These are emitted by generate-schemas.js as TypeScript `as const` objects.
+  # The C++ backend maps these values to its own `k`-prefixed enumerators
+  # (e.g. Type::kRed = 0 <-> Type.Red = 0).
+  # -------------------------------------------------------------------------
+  x-enums:
+    Type:
+      description: Card type category (formerly Color). Transmitted as an integer index.
+      values:
+        Red: 0
+        Blue: 1
+        Green: 2
+        Yellow: 3
+        Wild: 4
+
+    Value:
+      description: Card face value. Transmitted as an integer index.
+      values:
+        "0": 0
+        "1": 1
+        "2": 2
+        "3": 3
+        "4": 4
+        "5": 5
+        "6": 6
+        "7": 7
+        "8": 8
+        "9": 9
+        Skip: 10
+        Reverse: 11
+        Draw2: 12
+        Wild: 13
+        WildDraw4: 14
+
+    Action:
+      description: Input action the server is waiting for. Transmitted as an integer via action_required.
+      values:
+        ChooseType: 0
+        PlayDrawn: 1
+        ChooseTarget: 2
