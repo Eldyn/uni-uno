@@ -18,7 +18,7 @@ export type FlightTarget = { role: ElementRole } | { slot: string } | { point: P
 
 export interface CardFlightEvent {
 	key: number;
-	color: string;
+	type: string;
 	value: string;
 	turned: boolean;
 	/** Resolved screen-space origin of the flight. */
@@ -94,7 +94,7 @@ export class CardBus {
 	#nextKey = 0;
 
 	launch(event: {
-		color: string;
+		type: string;
 		value: string;
 		turned: boolean;
 		from: FlightTarget;
@@ -106,7 +106,7 @@ export class CardBus {
 			...this.flights,
 			{
 				key: this.#nextKey++,
-				color: event.color,
+				type: event.type,
 				value: event.value,
 				turned: event.turned,
 				src,

@@ -45,7 +45,7 @@
 					const srcPoint = prevSlotSnapshot.get(slotKey);
 
 					bus.launch({
-						color: top.color,
+						type: top.type,
 						value: top.value,
 						turned: false,
 						from: srcPoint ? { point: srcPoint } : { role: "discard-pile" },
@@ -69,7 +69,7 @@
 				bus.hide(card.id);
 				setTimeout(() => {
 					bus.launch({
-						color: card.type,
+						type: card.type,
 						value: card.value,
 						turned: true,
 						from: { role: "draw-pile" },
@@ -97,7 +97,7 @@
 					const slotIndex = prev + i;
 					setTimeout(() => {
 						bus.launch({
-							color: "black",
+							type: "black",
 							value: "",
 							turned: true,
 							from: { role: "draw-pile" },
@@ -136,7 +136,7 @@
 		onanimationend={() => bus.land(flight.key)}
 	>
 		<GameCard
-			card={{ id: flight.key, color: flight.color, value: flight.value }}
+			card={{ id: flight.key, type: flight.type, value: flight.value }}
 			turned={flight.turned}
 			style="position: static;"
 		/>
