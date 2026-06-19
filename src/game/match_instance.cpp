@@ -662,9 +662,12 @@ bool MatchInstance::DrawCard(const std::string& username) {
     
         if (!state_.discard_pile.empty()) {
             CompactCard top = state_.discard_pile.back();
+            // Wild cards inherit active_color so the card visually shows the chosen colour.
+            Color display_color = GetColor(top);
+            if (display_color == Color::kWild) display_color = state_.active_color;
             root["top_card"] = {
-                {"id", GetId(top)}, 
-                {"color", static_cast<int>(GetColor(top))}, 
+                {"id", GetId(top)},
+                {"color", static_cast<int>(display_color)},
                 {"value", static_cast<int>(GetValue(top))},
             };
         }
@@ -680,10 +683,16 @@ bool MatchInstance::DrawCard(const std::string& username) {
             if (p.username == username) {
                 nlohmann::json hand_json = nlohmann::json::array();
                 for (CompactCard c : p.hand) {
+                    CardPlayedEvent play_check = { username, c, true, false };
+                    for (auto& rule : active_rules_) {
+                        rule->ValidatePlay(&state_, play_check);
+                        if (play_check.is_handled) break;
+                    }
                     hand_json.push_back({
-                        {"id", GetId(c)}, 
-                        {"color", static_cast<int>(GetColor(c))}, 
-                        {"value", static_cast<int>(GetValue(c))}
+                        {"id", GetId(c)},
+                        {"color", static_cast<int>(GetColor(c))},
+                        {"value", static_cast<int>(GetValue(c))},
+                        {"can_play", play_check.is_valid_play}
                     });
                 }
                 p_json["hand"] = hand_json;
