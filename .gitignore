@@ -28,6 +28,7 @@ public/*
 
 docs/
 frontend/docs
+frontend/src/lib/generated/
 
 key.pem
 cert.pem
