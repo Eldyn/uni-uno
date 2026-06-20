@@ -10,10 +10,7 @@
 			match_id: save.match_id
 		});
 
-		if (!response.ok) {
-			storeToast.error(response.reason || "Failed to delete match");
-			return;
-		}
+		if (!response.ok) return;
 
 		storeToast.success("Saved match deleted");
 	}
