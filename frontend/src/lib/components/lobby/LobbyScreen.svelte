@@ -287,6 +287,9 @@
 		color: white;
 		font-size: 1.5rem;
 		font-family: var(--mono);
+		display: flex;
+		align-items: center;
+		line-height: 1;
 	}
 
 	.saved-matches-mini {
@@ -369,7 +372,7 @@
 	.leave-button-fixed {
 		position: fixed;
 		bottom: 40px;
-		right: 40px;
+		left: 40px;
 		width: 80px;
 		height: 80px;
 		background: #d9534f;
@@ -504,11 +507,15 @@
 	.lobby-title,
 	.name-input {
 		font-family: "FatPixel";
-		font-size: 1.5rem; /* Ridotto da 2.2rem */
+		font-size: 1.5rem;
 		color: white;
 		background: none;
 		border: none;
 		outline: none;
 		text-shadow: 2px 2px 0px #000;
+		padding: 0;
+		margin: 0;
+		display: block;
+		line-height: 1.2;
 	}
 </style>

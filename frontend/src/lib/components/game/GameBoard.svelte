@@ -9,13 +9,6 @@
 
 	createCardBus();
 
-	let playableCardIds = $derived(
-		new Set(
-			(storeGame.localPlayer?.hand ?? [])
-				.filter((card) => card.can_play)
-				.map((card) => card.id)
-		)
-	);
 	const LAYOUT_LEFT = {
 		gridArea: "2 / 1",
 		wrapperTransform: "translate(-5.5em, -2em)",
@@ -124,7 +117,7 @@
 				></div>
 			{/if}
 		</div>
-		<PlayerHand {playableCardIds} />
+		<PlayerHand />
 	</div>
 </div>
 

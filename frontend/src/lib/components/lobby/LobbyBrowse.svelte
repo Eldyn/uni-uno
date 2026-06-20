@@ -123,11 +123,12 @@
 		display: grid;
 		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
-		padding: 0 40px;
-		height: 120px;
+		padding: 16px 40px;
+		min-height: 80px;
 		border-bottom: 2px solid var(--border);
 		background: var(--bg);
 		flex-shrink: 0;
+		overflow: hidden;
 	}
 
 	.main-title-text {
@@ -165,26 +166,6 @@
 
 	.pixel-btn:active:not(:disabled) {
 		transform: scale(0.95);
-	}
-
-	.pixel-corners {
-		/* Removes native smooth rounding */
-		border-radius: 0 !important;
-		/* Cuts the corners in 4-pixel blocky steps */
-		clip-path: polygon(
-			0 4px,
-			4px 4px,
-			4px 0,
-			calc(100% - 4px) 0,
-			calc(100% - 4px) 4px,
-			100% 4px,
-			100% calc(100% - 4px),
-			calc(100% - 4px) calc(100% - 4px),
-			calc(100% - 4px) 100%,
-			4px 100%,
-			4px calc(100% - 4px),
-			0 calc(100% - 4px)
-		);
 	}
 
 	.pixel-btn:disabled {

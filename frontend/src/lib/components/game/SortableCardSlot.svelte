@@ -10,13 +10,11 @@
 		card,
 		index,
 		isHidden,
-		isPlayable,
 		onCardClick
 	}: {
 		card: Card;
 		index: number;
 		isHidden: boolean;
-		isPlayable: boolean;
 		onCardClick: (id: number) => void;
 	} = $props();
 
@@ -36,7 +34,7 @@
 	{@attach sortable.attach}
 	{@attach bus.slotAttachment(`local:${card.id}`)}
 >
-	<GameCard {card} {isHidden} {isPlayable} onCardClick={() => onCardClick(card.id)} />
+	<GameCard {card} {isHidden} onCardClick={() => onCardClick(card.id)} />
 </div>
 
 <style>

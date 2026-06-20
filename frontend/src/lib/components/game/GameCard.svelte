@@ -7,7 +7,7 @@
 		isHidden = false,
 		isDragged = false,
 		isDragTarget = false,
-		isPlayable = false,
+
 		turned = false,
 		style = "",
 		extraClass = "",
@@ -19,7 +19,7 @@
 		isHidden?: boolean;
 		isDragged?: boolean;
 		isDragTarget?: boolean;
-		isPlayable?: boolean;
+
 		turned?: boolean;
 		style?: string;
 		extraClass?: string;
@@ -61,7 +61,7 @@
 
 <div
 	class="card {card.type} {extraClass}"
-	class:card--playable={isPlayable}
+
 	class:card--dragging={isDragged}
 	class:card--drag-target={isDragTarget}
 	class:card--hidden={isHidden}
@@ -94,24 +94,10 @@
 		{/if}
 	</div>
 
-	{#if isPlayable}
-		<div class="playable-glow"></div>
-	{/if}
+
 </div>
 
 <style>
-	:root {
-		--cardSize: 5em;
-		--wildCard: white;
-		--redCard: #dc251c;
-		--yellowCard: #fcf604;
-		--blueCard: #0493de;
-		--greenCard: #018d41;
-		--blackCard: #1f1b18;
-		--lowShadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-		--lowShadowHover: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
-	}
-
 	.card {
 		display: inline-block;
 		border-radius: 0.8em;
@@ -230,47 +216,4 @@
 		outline-offset: 3px;
 	}
 
-	.card--playable {
-		animation: playable-float 1.9s ease-in-out infinite;
-		filter: brightness(1.15) drop-shadow(0 0 5px rgba(255, 255, 255, 0.65));
-	}
-
-	.card--playable:hover {
-		filter: brightness(1.28) drop-shadow(0 0 10px rgba(255, 255, 255, 0.9));
-		animation: none;
-	}
-
-	@keyframes playable-float {
-		0%,
-		100% {
-			transform-origin: left bottom;
-			transform: translateY(0);
-		}
-		50% {
-			transform-origin: left bottom;
-			transform: translateY(-0.4em);
-		}
-	}
-
-	.playable-glow {
-		position: absolute;
-		inset: -3px;
-		border-radius: 0.85em;
-		border: 2px solid rgba(255, 255, 255, 0.82);
-		pointer-events: none;
-		animation: glow-pulse 1.9s ease-in-out infinite;
-		z-index: 20;
-	}
-
-	@keyframes glow-pulse {
-		0%,
-		100% {
-			opacity: 0.55;
-			box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.35);
-		}
-		50% {
-			opacity: 1;
-			box-shadow: 0 0 14px 5px rgba(255, 255, 255, 0.7);
-		}
-	}
 </style>
