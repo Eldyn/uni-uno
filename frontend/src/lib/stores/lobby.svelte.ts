@@ -194,11 +194,9 @@ class StoreLobby {
         await ws.connect();
         const response = await ws.emitAndWait(ClientAction.LobbyPromote, { username });
 
-        if (!response.ok) {
-            storeToast.error(response.reason);
-        } else {
-            storeToast.success(`Promoted ${username}!`);
-        }
+        if (!response.ok) return;
+
+        storeToast.success(`Promoted ${username}!`);
     }
 
     /**
@@ -210,11 +208,9 @@ class StoreLobby {
         await ws.connect();
         const response = await ws.emitAndWait(ClientAction.LobbyKick, { username });
 
-        if (!response.ok) {
-            storeToast.error(response.reason)
-        } else {
-            storeToast.success(`Kicked ${username}!`)
-        }
+        if (!response.ok) return;
+
+        storeToast.success(`Kicked ${username}!`);
     }
 
     /**
@@ -224,11 +220,7 @@ class StoreLobby {
      */
     async startMatch(): Promise<void> {
         await ws.connect();
-        const response = await ws.emitAndWait(ClientAction.LobbyStartMatch);
-
-        if (!response.ok) {
-            storeToast.error(response.reason);
-        }
+        ws.emit(ClientAction.LobbyStartMatch);
     }
 
     /**
@@ -236,20 +228,16 @@ class StoreLobby {
      * @param settings The settings fields to modify.
      * @tag FRONT-LOBBY-MTH-004
      */
-    async updateSettings(
-        settings: Partial<LobbySettings> & Partial<{ name: string }>
-    ): Promise<void> {
+    async updateSettings(settings: Partial<LobbySettings> & Partial<{ name: string }>) {
         try {
             await ws.connect();
             const response = await ws.emitAndWait(ClientAction.LobbyUpdateSettings, settings);
-            if (!response.ok) {
-                storeToast.error(response.reason);
-                return;
-            }
+
+            if (!response.ok) return;
 
             storeToast.success("Settings updated!");
         } catch (error) {
-            storeToast.error("Failed to update lobby settings.");
+            storeToast.error(String(error));
         }
     }
 
@@ -293,9 +281,9 @@ class StoreLobby {
             await ws.connect();
             const response = await ws.emitAndWait(ClientAction.LobbyJoin, { code });
 
-            if (!response.ok) {
-                storeToast.error(response.reason);
-            }
+            if (!response.ok) storeToast.error(response.reason);
+        } catch (error) {
+            storeToast.error(String(error));
         } finally {
             this.isLoadingJoin = false;
         }
@@ -314,11 +302,13 @@ class StoreLobby {
             await ws.connect();
             const response = await ws.emitAndWait(ClientAction.LobbyList);
 
-            if (response.ok) {
-                this.available = response.get<ListedLobby[]>("lobbies") ?? [];
-            } else {
-                storeToast.error(response.reason ?? "Failed to load lobbies");
+            if (!response.ok) {
+                this.available = [];
+                return;
             }
+            this.available = response.get<ListedLobby[]>("lobbies") ?? [];
+        } catch (error) {
+            storeToast.error(String(error));
         } finally {
             this.isLoadingList = false;
         }

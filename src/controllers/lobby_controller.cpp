@@ -754,8 +754,11 @@ void LobbyController::HandleKick(WsContext ctx, const json& message) {
     uint32_t lobby_id = lobby.id;
     bool lobby_still_exists = RemoveMember(lobby_id, username, false, request_id);
 
+
     if (lobby_still_exists) {
         SyncBots(lobbies_.at(lobby_id));
+        auto resp = MakeResponse(ws::ServerAction::kSuccess, request_id);
+        ctx.socket->send(resp.dump(), ctx.op_code);
         BroadcastUpdate(lobbies_.at(lobby_id));
     }
 }
