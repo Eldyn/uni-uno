@@ -34,6 +34,8 @@
 		error={emailError}
 		placeholder="Enter your email"
 		disabled={storeAuth.isLoading}
+		name="email"
+		autocomplete="email"
 	/>
 
 	<FormInput
@@ -44,6 +46,8 @@
 		error={passwordError}
 		placeholder="Enter your password"
 		disabled={storeAuth.isLoading}
+		name="password"
+		autocomplete="current-password"
 	/>
 
 	<button type="submit" disabled={storeAuth.isLoading} class="submit-button">
