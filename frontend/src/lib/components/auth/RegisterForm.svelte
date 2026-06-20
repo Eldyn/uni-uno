@@ -53,6 +53,8 @@
 		error={errors.username}
 		placeholder="Choose a username"
 		disabled={storeAuth.isLoading}
+		name="username"
+		autocomplete="username"
 	/>
 
 	<FormInput
@@ -63,6 +65,8 @@
 		error={errors.email}
 		placeholder="Enter your email"
 		disabled={storeAuth.isLoading}
+		name="email"
+		autocomplete="email"
 	/>
 
 	<FormInput
@@ -73,6 +77,8 @@
 		error={errors.password}
 		placeholder="Create a strong password"
 		disabled={storeAuth.isLoading}
+		name="password"
+		autocomplete="new-password"
 	/>
 
 	<FormInput
@@ -83,6 +89,8 @@
 		error={errors.confirmPassword}
 		placeholder="Confirm your password"
 		disabled={storeAuth.isLoading}
+		name="confirm-password"
+		autocomplete="new-password"
 	/>
 
 	<button type="submit" disabled={storeAuth.isLoading} class="submit-button">
