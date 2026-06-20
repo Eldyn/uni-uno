@@ -15,7 +15,7 @@
 		</div>
 	{:else if lobbies.length === 0}
 		<div class="status-container" transition:fade>
-			<p class="empty-text">No lobbies available.</p>
+			<p class="empty-text">No lobbies available :(</p>
 		</div>
 	{:else}
 		<div class="lobbies-grid">

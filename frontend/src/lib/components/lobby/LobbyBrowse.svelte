@@ -22,7 +22,6 @@
 </script>
 
 <div class="lobbies-screen">
-	<!-- HEADER PRINCIPALE -->
 	<header class="lobbies-header">
 		<div class="header-left">
 			<p class="user-info">Welcome <span class="mono">{storeAuth.username}</span></p>
@@ -51,14 +50,11 @@
 	</header>
 
 	<div class="main-layout">
-		<!-- LEFT SIDE: LIST -->
 		<section class="lobbies-section">
-			<!-- List area (above) -->
 			<div class="lobbies-scroll-area">
 				<LobbyList lobbies={storeLobby.available} isLoading={storeLobby.isLoadingList} />
 			</div>
 
-			<!-- Tasto Refresh (spostato in basso) -->
 			<div class="controls">
 				<button
 					type="button"
@@ -71,12 +67,10 @@
 			</div>
 		</section>
 
-		<!-- SIDEBAR DESTRA -->
 		<aside class="sidebar">
-			<!-- Sezione Create -->
 			<div class="sidebar-section">
 				<div class="sidebar-form-box">
-					<h2 class="sidebar-form-title">Create Lobby</h2>
+					<h2>Create Lobby</h2>
 				</div>
 				<div class="sidebar-content">
 					<LobbyCreateForm />
@@ -85,10 +79,9 @@
 
 			<div class="sidebar-divider"></div>
 
-			<!-- Sezione Join -->
 			<div class="sidebar-section">
 				<div class="sidebar-form-box">
-					<h2 class="sidebar-form-title">Join Lobby</h2>
+					<h2>Join Lobby</h2>
 				</div>
 				<div class="sidebar-content">
 					<LobbyJoinForm />
@@ -99,7 +92,6 @@
 </div>
 
 <style>
-	/* --- SETUP GENERALE (NO SCROLL) --- */
 	:global(body) {
 		margin: 0;
 		overflow: hidden;
@@ -118,7 +110,6 @@
 		width: 100vw;
 	}
 
-	/* --- HEADER --- */
 	.lobbies-header {
 		display: grid;
 		grid-template-columns: 1fr auto 1fr;
@@ -131,18 +122,6 @@
 		overflow: hidden;
 	}
 
-	.main-title-text {
-		font-family: "FatPixel", sans-serif;
-		font-size: 40px;
-		color: var(--text-h);
-		margin: 0;
-		text-transform: uppercase;
-		line-height: 1;
-		text-align: center;
-		letter-spacing: 2px;
-	}
-
-	/* --- BOTTONE PIXEL --- */
 	.pixel-btn {
 		padding: 15px;
 		background: var(--accent);
@@ -177,7 +156,6 @@
 		background: #e91e63;
 	}
 
-	/* --- SIDEBAR --- */
 	.sidebar-form-box {
 		width: 100%;
 		padding: 45px 20px;
@@ -215,7 +193,7 @@
 	}
 
 	.sidebar {
-		width: 400px;
+		width: 500px;
 		background: var(--bg);
 		border-left: 2px solid var(--border);
 		display: flex;
@@ -233,7 +211,6 @@
 		flex-shrink: 0;
 	}
 
-	/* --- ELEMENTI ACCESSORI --- */
 	.user-info {
 		font-size: 18px;
 		color: white;
@@ -249,14 +226,12 @@
 		justify-content: flex-end;
 	}
 
-	/* MODIFICATO PER STARE IN BASSO */
 	.controls {
 		margin-top: 20px;
 		display: flex;
 		justify-content: flex-start;
 	}
 
-	/* --- RESPONSIVE --- */
 	@media (max-width: 1100px) {
 		.main-layout {
 			flex-direction: column;

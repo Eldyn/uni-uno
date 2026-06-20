@@ -59,44 +59,41 @@
 					use:focusOnMount
 				/>
 			{:else if isHost}
-				<button type="button" class="lobby-title editable" onclick={startEditing}>
-					{storeLobby.current?.name}
+				<button type="button" class="lobby-title" onclick={startEditing}>
+					<h1>{storeLobby.current?.name}</h1>
 				</button>
 			{:else}
-				<span class="lobby-title">
+				<h1 class="lobby-title">
 					{storeLobby.current?.name}
-				</span>
+				</h1>
 			{/if}
+		</div>
+		<div class="header-controls">
+			<div class="invite-container">
+				<span class="invite-badge">
+					{showInviteCode ? storeLobby.current?.invite_code : "••••••"}
+				</span>
+				<button class="toggle-code-btn" onclick={() => (showInviteCode = !showInviteCode)}>
+					{showInviteCode ? "󰈉" : "󰈈"}
+				</button>
+			</div>
 
-			<div class="header-controls">
-				<div class="invite-container">
-					<span class="invite-badge">
-						{showInviteCode ? storeLobby.current?.invite_code : "••••••"}
-					</span>
-					<button class="toggle-code-btn" onclick={() => (showInviteCode = !showInviteCode)}>
-						{showInviteCode ? "󰈉" : "󰈈"}
-					</button>
-				</div>
-
-				<div class="saved-matches-mini">
-					<details class="compact-dropdown">
-						<summary class="dropdown-summary">
-							<span class="summary-text"
-								>Saved Matches ({storeLobby.savedMatches?.length ?? 0})</span
-							>
-						</summary>
-						<div class="dropdown-content-wrapper">
-							<ul class="saved-matches-list">
-								{#each storeLobby.savedMatches ?? [] as save}
-									<LobbySave {save} />
-								{/each}
-								{#if (storeLobby.savedMatches?.length ?? 0) === 0}
-									<li style="padding: 10px; color: #666; font-size: 12px;">No saved matches</li>
-								{/if}
-							</ul>
-						</div>
-					</details>
-				</div>
+			<div class="saved-matches-mini">
+				<details class="compact-dropdown">
+					<summary class="dropdown-summary">
+						<span class="summary-text">Saved Matches ({storeLobby.savedMatches?.length ?? 0})</span>
+					</summary>
+					<div class="dropdown-content-wrapper">
+						<ul class="saved-matches-list">
+							{#each storeLobby.savedMatches ?? [] as save}
+								<LobbySave {save} />
+							{/each}
+							{#if (storeLobby.savedMatches?.length ?? 0) === 0}
+								<li style="padding: 10px; color: #666; font-size: 12px;">No saved matches</li>
+							{/if}
+						</ul>
+					</div>
+				</details>
 			</div>
 		</div>
 
@@ -182,7 +179,7 @@
 				>
 					<div class="animated-text">
 						{#each startText as letter, i}
-							<span class="letter" style="--i: {i}">{letter === " " ? "\u00A0" : letter}</span>
+							<h1 class="letter" style="--i: {i}">{letter === " " ? "\u00A0" : letter}</h1>
 						{/each}
 					</div>
 				</button>
@@ -212,8 +209,7 @@
 	.left-panel {
 		display: flex;
 		flex-direction: column;
-		gap: 32px;
-		flex: 1;
+		gap: 2rem;
 	}
 
 	/* AVATAR GIGANTI */
@@ -353,7 +349,6 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		height: 100px;
 		width: 100%;
 	}
 
@@ -362,11 +357,11 @@
 	}
 
 	.start-button:disabled .letter {
-		animation: none; /* Stops the animation */
-		color: #888; /* Grey colour for the text */
-		-webkit-text-stroke: 1.5px #444; /* Dark grey border to match the text */
-		text-shadow: 2px 2px 0px #1a1a1a; /* Fixed static shadow, no jump */
-		transform: translateY(0); /* Ensures the letters stay at the bottom */
+		animation: none;
+		color: #888;
+		-webkit-text-stroke: 1.5px #444;
+		text-shadow: 2px 2px 0px #1a1a1a;
+		transform: translateY(0);
 	}
 
 	.leave-button-fixed {
@@ -504,10 +499,20 @@
 	.on {
 		color: #51cf66;
 	}
+
 	.lobby-title,
 	.name-input {
+		font-size: 56px;
+		letter-spacing: -1.68px;
+		margin: 0;
+		@media (max-width: 1024px) {
+			font-size: 36px;
+		}
+		font-family: var(--heading);
+		font-weight: 500;
+		color: var(--text-h);
+
 		font-family: "FatPixel";
-		font-size: 1.5rem;
 		color: white;
 		background: none;
 		border: none;
@@ -515,7 +520,6 @@
 		text-shadow: 2px 2px 0px #000;
 		padding: 0;
 		margin: 0;
-		display: block;
-		line-height: 1.2;
+		clip-path: none !important; /* Do not use pixel-corners here! */
 	}
 </style>

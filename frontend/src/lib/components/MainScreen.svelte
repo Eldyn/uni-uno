@@ -7,11 +7,9 @@
 	<div class="doodle-bg"></div>
 
 	<header class="logo-container">
-		<h1 class="logo-text">
-			{#each "UNI!" as letter, i}
-				<span class="logo-char" style="--i: {i}">{letter}</span>
-			{/each}
-		</h1>
+		{#each "UNI!" as letter, i}
+			<h1 class="logo-char" style="--i: {i}">{letter}</h1>
+		{/each}
 	</header>
 
 	<main class="button-container">
@@ -46,14 +44,14 @@
 		position: relative;
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
+		justify-content: flex-end;
 		align-items: center;
-		gap: 6rem;
+
+		gap: 2rem;
 		min-height: 100vh;
+		padding-bottom: 6rem;
 		background: var(--bg);
 		overflow: hidden;
-
-		padding-top: 10vh;
 
 		-webkit-font-smoothing: none;
 		-moz-osx-font-smoothing: grayscale;
@@ -97,35 +95,21 @@
 	.logo-container {
 		display: flex;
 		justify-content: center;
-		padding: 5%;
-	}
-
-	.logo-text {
-		font-family: "FatPixel", sans-serif;
-		font-size: 600%;
 		color: #ffffff;
+
 		margin: 0;
 		text-align: center;
 		display: flex;
-		align-items: center; /* Centers the newly expanded children */
+		align-items: center;
 		justify-content: center;
 		gap: 0.4rem;
-
-		/* REMOVE line-height: 1.3; It is squashing the children's boxes */
 	}
 
 	.logo-char {
-		/* Use block instead of inline-block inside a flex container */
+		font-size: 10rem;
 		display: block;
-
-		/* Force the content box to be massive so the broken font fits inside */
-		line-height: 1.8;
-
 		-webkit-text-stroke: 2px #1a1a1a;
-
-		/* Tell the browser to allocate the GPU layer properly from the start */
 		will-change: transform;
-
 		animation: waveBounce 1s ease-in-out infinite;
 		animation-delay: calc(var(--i) * 0.15s);
 	}

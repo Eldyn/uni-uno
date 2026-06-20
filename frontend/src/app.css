@@ -1,184 +1,173 @@
 @import "tailwindcss";
 
 @font-face {
-    font-family: "JetBrainsMono";
-    src: url("/fonts/JetBrainsMono.woff2") format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
+	font-family: "JetBrainsMono";
+	src: url("/fonts/JetBrainsMono.woff2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-    font-family: "FatPixel";
-    src: url("/fonts/fatpixel.woff2") format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
+	font-family: "FatPixel";
+	src: url("/fonts/fatpixel.woff2?v=2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-    font-family: "MonoPixel";
-    src: url("/fonts/monopixel.woff2") format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
+	font-family: "MonoPixel";
+	src: url("/fonts/monopixel.woff2?v=3") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-    font-family: "Pixel";
-    src: url("/fonts/pixel.woff2") format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
+	font-family: "Pixel";
+	src: url("/fonts/pixel.woff2?v=3") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
 }
 
 :root {
-    /* Theme */
-    --text: #6b6375;
-    --text-h: #08060d;
-    --bg: #fff;
-    --border: #e5e4e7;
-    --code-bg: #f4f3ec;
-    --accent: #aa3bff;
-    --accent-bg: rgba(170, 59, 255, 0.1);
-    --accent-border: rgba(170, 59, 255, 0.5);
-    --social-bg: rgba(244, 243, 236, 0.5);
-    --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+	/* Theme */
+	--text: #6b6375;
+	--text-h: #08060d;
+	--bg: #fff;
+	--border: #e5e4e7;
+	--code-bg: #f4f3ec;
+	--accent: #aa3bff;
+	--accent-bg: rgba(170, 59, 255, 0.1);
+	--accent-border: rgba(170, 59, 255, 0.5);
+	--social-bg: rgba(244, 243, 236, 0.5);
+	--shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-    /* Fonts */
-    --sans: system-ui, "Segoe UI", Roboto, sans-serif;
-    --pixel: "Pixel", "MonoPixel", var(--sans);
-    --heading: "FatPixel", system-ui, "Segoe UI", Roboto, sans-serif;
-    --mono: "JetBrainsMono", ui-monospace, Consolas, monospace;
+	/* Fonts */
+	--sans: system-ui, "Segoe UI", Roboto, sans-serif;
+	--pixel: "Pixel", "MonoPixel", var(--sans);
+	--heading: "FatPixel", system-ui, "Segoe UI", Roboto, sans-serif;
+	--mono: "JetBrainsMono", ui-monospace, Consolas, monospace;
 
-    /* Card colours & shadows */
-    --cardSize: 5em;
-    --wildCard: white;
-    --redCard: #dc251c;
-    --yellowCard: #fcf604;
-    --blueCard: #0493de;
-    --greenCard: #018d41;
-    --blackCard: #1f1b18;
-    --lowShadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-    --lowShadowHover: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+	/* Card colours & shadows */
+	--cardSize: 5em;
+	--wildCard: white;
+	--redCard: #dc251c;
+	--yellowCard: #fcf604;
+	--blueCard: #0493de;
+	--greenCard: #018d41;
+	--blackCard: #1f1b18;
+	--lowShadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+	--lowShadowHover: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
 
-    font-size: 18px;
-    font-family: var(--pixel);
-    letter-spacing: 0.18px;
-    color-scheme: light dark;
-    color: var(--text);
-    background: var(--bg);
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+	font-size: 18px;
+	font-family: var(--pixel);
+	letter-spacing: 0.18px;
+	color-scheme: light dark;
+	color: var(--text);
+	background: var(--bg);
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 
-    @media (max-width: 1024px) {
-        font-size: 16px;
-    }
+	@media (max-width: 1024px) {
+		font-size: 16px;
+	}
 }
 
 mono {
-    font-family: "MonoPixel";
+	font-family: "MonoPixel";
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
-        --text: #9ca3af;
-        --text-h: #f3f4f6;
-        --bg: #16171d;
-        --border: #2e303a;
-        --code-bg: #1f2028;
-        --accent: #c084fc;
-        --accent-bg: rgba(192, 132, 252, 0.15);
-        --accent-border: rgba(192, 132, 252, 0.5);
-        --social-bg: rgba(47, 48, 58, 0.5);
-        --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-    }
+	:root {
+		--text: #9ca3af;
+		--text-h: #f3f4f6;
+		--bg: #16171d;
+		--border: #2e303a;
+		--code-bg: #1f2028;
+		--accent: #c084fc;
+		--accent-bg: rgba(192, 132, 252, 0.15);
+		--accent-border: rgba(192, 132, 252, 0.5);
+		--social-bg: rgba(47, 48, 58, 0.5);
+		--shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+	}
 
-    #social .button-icon {
-        filter: invert(1) brightness(2);
-    }
+	#social .button-icon {
+		filter: invert(1) brightness(2);
+	}
 }
 
 @layer utilities {
-    .pixel-corners {
-        border-radius: 0 !important;
-        clip-path: polygon(
-            0 4px,
-            4px 4px,
-            4px 0,
-            calc(100% - 4px) 0,
-            calc(100% - 4px) 4px,
-            100% 4px,
-            100% calc(100% - 4px),
-            calc(100% - 4px) calc(100% - 4px),
-            calc(100% - 4px) 100%,
-            4px 100%,
-            4px calc(100% - 4px),
-            0 calc(100% - 4px)
-        );
-    }
+	.pixel-corners {
+		border-radius: 0 !important;
+		clip-path: polygon(
+			0 4px,
+			4px 4px,
+			4px 0,
+			calc(100% - 4px) 0,
+			calc(100% - 4px) 4px,
+			100% 4px,
+			100% calc(100% - 4px),
+			calc(100% - 4px) calc(100% - 4px),
+			calc(100% - 4px) 100%,
+			4px 100%,
+			4px calc(100% - 4px),
+			0 calc(100% - 4px)
+		);
+	}
 }
 
 body {
-    margin: 0;
+	margin: 0;
 }
 
 button {
-    border-radius: 0 !important;
-    clip-path: polygon(
-        0 4px,
-        4px 4px,
-        4px 0,
-        calc(100% - 4px) 0,
-        calc(100% - 4px) 4px,
-        100% 4px,
-        100% calc(100% - 4px),
-        calc(100% - 4px) calc(100% - 4px),
-        calc(100% - 4px) 100%,
-        4px 100%,
-        4px calc(100% - 4px),
-        0 calc(100% - 4px)
-    );
+	border-radius: 0 !important;
+	clip-path: polygon(
+		0 4px,
+		4px 4px,
+		4px 0,
+		calc(100% - 4px) 0,
+		calc(100% - 4px) 4px,
+		100% 4px,
+		100% calc(100% - 4px),
+		calc(100% - 4px) calc(100% - 4px),
+		calc(100% - 4px) 100%,
+		4px 100%,
+		4px calc(100% - 4px),
+		0 calc(100% - 4px)
+	);
 }
 
-h1,
-h2 {
-    font-family: var(--heading);
-    font-weight: 500;
-    color: var(--text-h);
+h1, h2, h3, h4, h5, h6 {
+	font-family: var(--heading);
+	font-weight: 500;
+	color: var(--text-h);
+	margin: 0;
 }
 
-h1 {
-    font-size: 56px;
-    letter-spacing: -1.68px;
-    margin: 0;
-    @media (max-width: 1024px) {
-        font-size: 36px;
-    }
-}
-h2 {
-    font-size: 24px;
-    line-height: 118%;
-    letter-spacing: -0.24px;
-    margin: 0 0 8px;
-    @media (max-width: 1024px) {
-        font-size: 20px;
-    }
-}
+h1 { font-size: 3rem; }
+h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1rem; }
+h6 { font-size: 0.875rem; }
 p {
-    margin: 0;
+	margin: 0;
 }
 
 code,
 #app {
-    width: 100%;
-    height: 100vh;
-    margin: 0 auto;
-    color-scheme: light dark;
-    color: var(--text);
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
+	width: 100%;
+	height: 100vh;
+	margin: 0 auto;
+	color-scheme: light dark;
+	color: var(--text);
+	background: var(--bg);
+	display: flex;
+	flex-direction: column;
 }
