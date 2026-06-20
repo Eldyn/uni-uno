@@ -7,8 +7,10 @@
 #include "common/lobby.hpp"
 #include "common/ws.hpp"
 #include "common/payloads.hpp"
+#include "common/env.hpp"
 #include "logger.hpp"
 #include <App.h>
+#include <algorithm>
 
 using json = nlohmann::json;
 
@@ -19,6 +21,12 @@ using json = nlohmann::json;
  */
 GameController::GameController(WebServer& server, LobbyController& lobby_controller)
     : action_router_(server.GetActionRouter()), lobby_controller_(lobby_controller) {
+    try {
+        bot_instant_delay_ms_ = std::max(0, std::stoi(Env::Get("BOT_TURN_DELAY_MS", "1000")));
+    } catch (...) {
+        bot_instant_delay_ms_ = 1000;
+    }
+    Logger::Info("[Game] Bot instant turn delay: ", bot_instant_delay_ms_, "ms");
 
     action_router_.On(ws::ClientAction::kGamePlayCard, [this](WsContext context, const json& message) {
         HandlePlayCard(context, message);
@@ -208,7 +216,7 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
     game::Player* current_player = active_lobby->match->GetPlayer(current_player_username);
 
     if (current_player->is_bot) {
-        int bot_thinking_ms = active_lobby->settings.bot_mode == BotTakeoverMode::kPlayInstantly ? 1 : 1500 + (std::rand() % 3000);
+        int bot_thinking_ms = active_lobby->settings.bot_mode == BotTakeoverMode::kPlayInstantly ? bot_instant_delay_ms_ : 1500 + (std::rand() % 3000);
         
         auto end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(active_lobby->settings.turn_time_limit_ms);
         active_lobby->match->SetTurnEndTime(end_time);
