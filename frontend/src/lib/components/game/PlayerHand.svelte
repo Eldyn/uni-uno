@@ -7,7 +7,6 @@
 	import SortableCardSlot from "./SortableCardSlot.svelte";
 	import { useCardBus } from "./card-bus.svelte";
 
-	let { playableCardIds = new Set<number>() }: { playableCardIds?: Set<number> } = $props();
 
 	const bus = useCardBus();
 	let handEl = $state<HTMLElement | null>(null);
@@ -84,8 +83,7 @@
 				{card}
 				{index}
 				isHidden={bus.hiddenCardIds.has(card.id)}
-				isPlayable={playableCardIds.has(card.id)}
-				onCardClick={handleCardClick}
+onCardClick={handleCardClick}
 			/>
 		{/each}
 	</div>

@@ -38,25 +38,6 @@
 </form>
 
 <style>
-	.pixel-corners {
-		/* Removes native smooth rounding */
-		border-radius: 0 !important;
-		/* Cuts the corners in 4-pixel blocky steps */
-		clip-path: polygon(
-			0 4px,
-			4px 4px,
-			4px 0,
-			calc(100% - 4px) 0,
-			calc(100% - 4px) 4px,
-			100% 4px,
-			100% calc(100% - 4px),
-			calc(100% - 4px) calc(100% - 4px),
-			calc(100% - 4px) 100%,
-			4px 100%,
-			4px calc(100% - 4px),
-			0 calc(100% - 4px)
-		);
-	}
 	.create-form {
 		display: flex;
 		flex-direction: column;

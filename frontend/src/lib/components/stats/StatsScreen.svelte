@@ -146,27 +146,6 @@
 		z-index: 0;
 	}
 
-	/* Pixelated Corners Trick */
-	.pixel-corners {
-		/* removes native smooth rounding */
-		border-radius: 0 !important;
-		/* cuts the corners in 4-pixel blocky steps */
-		clip-path: polygon(
-			0 4px,
-			4px 4px,
-			4px 0,
-			calc(100% - 4px) 0,
-			calc(100% - 4px) 4px,
-			100% 4px,
-			100% calc(100% - 4px),
-			calc(100% - 4px) calc(100% - 4px),
-			calc(100% - 4px) 100%,
-			4px 100%,
-			4px calc(100% - 4px),
-			0 calc(100% - 4px)
-		);
-	}
-
 	.profile-section h2,
 	.top-bar h1 {
 		line-height: 1.3;
