@@ -1,12 +1,26 @@
 #!/usr/bin/env python3
 """
-Generates the C++ validation-constants header (namespace ``contract``) from
+Generates the C++ contract header (namespace ``contract``) from
 contract/asyncapi.yaml.
 
-The AsyncAPI constraint schemas are the single source of truth for validation
-limits. This script is the backend counterpart to the frontend's
-scripts/generate-schemas.js, which derives the same numbers for the Svelte
-client — keeping C++ and TypeScript limits in lock-step with zero hand-editing.
+The contract is the single source of truth. This generator is fully
+data-driven: it never hardcodes schema names, field paths, or enum members.
+It discovers two declarative conventions anywhere in the document and emits
+their C++ mirrors:
+
+  * ``x-constants`` — a map ``{ jsonSchemaKeyword: BaseName }`` attached to any
+    schema node. The sibling keyword's value is emitted as
+    ``inline constexpr int k<BaseName>``.
+        Username: { minLength: 3, x-constants: { minLength: UsernameMin } }
+        ->  inline constexpr int kUsernameMin = 3;
+
+  * ``x-enums`` — named enums under ``components/x-enums``. Each becomes a C++
+    ``enum class <Name>`` with ``k``-prefixed enumerators. Enums whose values
+    are strings (wire codes) additionally get a ``k<Name>Str`` map from
+    enumerator to wire string.
+
+Adding a new constant or enum is a contract-only edit; this script does not
+change. It is the backend counterpart to frontend/scripts/generate-schemas.js.
 
 Usage: generate_contract_hpp.py <asyncapi.yaml> <output.hpp>
 """
@@ -15,36 +29,66 @@ import sys
 
 import yaml
 
-# Constraint schema (components/schemas) -> {schema field: C++ constant name}.
-# Insertion order here is the order the constants are emitted.
-CONSTRAINT_MAP = {
-    "Username":  {"minLength": "kUsernameMin", "maxLength": "kUsernameMax"},
-    "Password":  {"minLength": "kPasswordMin"},
-    "LobbyName": {"maxLength": "kLobbyNameMax"},
-    "LobbyCode": {"minLength": "kLobbyCodeLen"},
-}
-
-# MAX_LOBBY_MEMBERS is expressed as a maxItems constraint on the lobby members
-# array inside the LobbyList server message rather than as a named schema.
-MAX_MEMBERS_PATH = [
-    "LobbyList", "payload", "properties", "lobbies",
-    "items", "properties", "members", "maxItems",
-]
-
 
 def die(msg):
     sys.stderr.write(f"[generate-contract-hpp] error: {msg}\n")
     sys.exit(1)
 
 
-def walk(node, path):
-    for key in path:
-        if not isinstance(node, dict):
-            return None
-        node = node.get(key)
-        if node is None:
-            return None
-    return node
+def walk_constants(node, out):
+    """Recursively collect (k-name, int value) from every x-constants map.
+
+    ``out`` is a dict used as an insertion-ordered set (first occurrence wins),
+    so callers control emission order by the order they seed the walk.
+    """
+    if isinstance(node, dict):
+        annotations = node.get("x-constants")
+        if isinstance(annotations, dict):
+            for keyword, base_name in annotations.items():
+                if keyword not in node:
+                    die(f"x-constants references '{keyword}' but the sibling "
+                        f"keyword is absent (constant '{base_name}')")
+                out.setdefault("k" + base_name, node[keyword])
+        for key, value in node.items():
+            if key == "x-constants":
+                continue
+            walk_constants(value, out)
+    elif isinstance(node, list):
+        for item in node:
+            walk_constants(item, out)
+
+
+def render_enum(name, definition):
+    """Render a single x-enum as C++ lines. Returns (lines, needs_map)."""
+    values = definition.get("values") or {}
+    if not values:
+        die(f"x-enum '{name}' has no values")
+
+    is_string = any(isinstance(v, str) for v in values.values())
+    lines = []
+    if definition.get("description"):
+        lines.append(f"    // {definition['description']}")
+
+    if is_string:
+        # String-valued enums (wire codes): sequential enumerators + a
+        # enumerator -> wire-string map for (de)serialization.
+        lines.append(f"    enum class {name} : uint8_t {{")
+        for key in values:
+            lines.append(f"        k{key},")
+        lines.append("    };")
+        lines.append("")
+        lines.append(f"    inline const std::unordered_map<{name}, std::string> "
+                     f"k{name}Str {{")
+        for key, val in values.items():
+            lines.append(f'        {{ {name}::k{key}, "{val}" }},')
+        lines.append("    };")
+    else:
+        lines.append(f"    enum class {name} : uint8_t {{")
+        for key, val in values.items():
+            lines.append(f"        k{key} = {int(val)},")
+        lines.append("    };")
+
+    return lines, is_string
 
 
 def main():
@@ -56,40 +100,49 @@ def main():
         data = yaml.safe_load(f)
 
     components = data.get("components") or {}
-    schemas = components.get("schemas") or {}
-    messages = components.get("messages") or {}
 
-    consts = {}  # name -> int value (insertion-ordered)
+    # Seed the constant walk schemas-first, then messages, then the rest of the
+    # document so emission order is stable and human-friendly.
+    consts = {}
+    walk_constants(components.get("schemas"), consts)
+    walk_constants(components.get("messages"), consts)
+    walk_constants(data, consts)
 
-    for schema_name, field_map in CONSTRAINT_MAP.items():
-        schema = schemas.get(schema_name)
-        if schema is None:
-            die(f"constraint schema '{schema_name}' not found in {src}")
-        for field, const_name in field_map.items():
-            if field not in schema:
-                die(f"'{schema_name}.{field}' not found in {src}")
-            consts[const_name] = schema[field]
+    x_enums = components.get("x-enums") or {}
 
-    max_members = walk(messages, MAX_MEMBERS_PATH)
-    if max_members is None:
-        die("could not locate maxItems for lobby members (kMaxLobbyMembers); "
-            "expected at components/messages/" + "/".join(MAX_MEMBERS_PATH))
-    consts["kMaxLobbyMembers"] = max_members
+    needs_string_headers = any(
+        any(isinstance(v, str) for v in (d.get("values") or {}).values())
+        for d in x_enums.values()
+    )
 
-    width = max(len(name) for name in consts)
     lines = [
         "#pragma once",
         "",
         "// AUTO-GENERATED — do not edit by hand.",
-        "// Source:     contract/asyncapi.yaml (constraint schemas)",
+        "// Source:     contract/asyncapi.yaml (x-constants + x-enums)",
         "// Generator:  scripts/generate_contract_hpp.py (run by CMake target gen_contract_hpp)",
         "//",
-        "// These are the same validation limits the frontend derives via",
+        "// Same single source of truth the frontend derives via",
         "// scripts/generate-schemas.js, so C++ and TypeScript never drift.",
-        "namespace contract {",
+        "",
+        "#include <cstdint>",
     ]
-    for name, value in consts.items():
-        lines.append(f"    inline constexpr int {name.ljust(width)} = {int(value)};")
+    if needs_string_headers:
+        lines.append("#include <string>")
+        lines.append("#include <unordered_map>")
+    lines.append("")
+    lines.append("namespace contract {")
+
+    if consts:
+        width = max(len(name) for name in consts)
+        for name, value in consts.items():
+            lines.append(f"    inline constexpr int {name.ljust(width)} = {int(value)};")
+
+    for enum_name, definition in x_enums.items():
+        lines.append("")
+        enum_lines, _ = render_enum(enum_name, definition)
+        lines.extend(enum_lines)
+
     lines.append("}  // namespace contract")
     lines.append("")
     text = "\n".join(lines)

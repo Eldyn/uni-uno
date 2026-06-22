@@ -130,7 +130,8 @@ components:
                   $ref: "#/components/schemas/LobbyName"
                 members:
                   type: array
-                  maxItems: 4 # -> kMaxLobbyMembers (common/contract.hpp)
+                  maxItems: 4
+                  x-constants: { maxItems: MaxLobbyMembers }
                   items:
                     type: object
                     required: [username, is_bot]
@@ -438,9 +439,10 @@ components:
 
     Username:
       type: string
-      minLength: 3 # -> kUsernameMin / USERNAME_MIN
-      maxLength: 32 # -> kUsernameMax / USERNAME_MAX
+      minLength: 3
+      maxLength: 32
       pattern: "^[a-zA-Z0-9_]+$"
+      x-constants: { minLength: UsernameMin, maxLength: UsernameMax }
 
     PlayerRef:
       type: string
@@ -449,18 +451,21 @@ components:
 
     Password:
       type: string
-      minLength: 8 # -> kPasswordMin / PASSWORD_MIN
+      minLength: 8
+      x-constants: { minLength: PasswordMin }
 
     LobbyName:
       type: string
       minLength: 1
-      maxLength: 50 # -> kLobbyNameMax / LOBBY_NAME_MAX
+      maxLength: 50
+      x-constants: { maxLength: LobbyNameMax }
 
     LobbyCode:
       type: string
-      minLength: 6 # -> kLobbyCodeLen / LOBBY_CODE_LEN
+      minLength: 6
       maxLength: 6
       pattern: "^[A-Z0-9]+$"
+      x-constants: { minLength: LobbyCodeLen }
 
     # --- Client → Server payload schemas (C++ structs generated from these) ---
     # Fields 'action' and 'request_id' are envelope fields handled by the router
