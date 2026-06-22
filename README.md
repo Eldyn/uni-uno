@@ -151,6 +151,12 @@ See [`ATTRIBUTION.md`](ATTRIBUTION.md) for the full list of third-party assets. 
 
 ## ⚠️ Disclaimer
 
-This project is an independent, non-commercial work. It is **not affiliated with,
-endorsed by, or sponsored by Mattel, Inc. or the UNO® brand**. UNO® is a registered
-trademark of Mattel, Inc. All trademarks are the property of their respective owners.
+This project is an independent work. It is **not affiliated with, endorsed by, or
+sponsored by Mattel, Inc. or the UNO® brand**. UNO® is a registered trademark of
+Mattel, Inc. All trademarks are the property of their respective owners.
+
+## 📄 License
+
+UNI's original code and assets are released under [CC0 1.0 Universal](LICENSE)
+(public domain) — use them freely, including commercially. Third-party assets
+remain under their own licenses; see [`ATTRIBUTION.md`](ATTRIBUTION.md).
