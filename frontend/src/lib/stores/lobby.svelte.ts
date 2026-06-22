@@ -194,7 +194,10 @@ class StoreLobby {
         await ws.connect();
         const response = await ws.emitAndWait(ClientAction.LobbyPromote, { username });
 
-        if (!response.ok) return;
+        if (!response.ok) {
+            storeToast.error(response.message);
+            return;
+        }
 
         storeToast.success(`Promoted ${username}!`);
     }
@@ -208,7 +211,10 @@ class StoreLobby {
         await ws.connect();
         const response = await ws.emitAndWait(ClientAction.LobbyKick, { username });
 
-        if (!response.ok) return;
+        if (!response.ok) {
+            storeToast.error(response.message);
+            return;
+        }
 
         storeToast.success(`Kicked ${username}!`);
     }
@@ -220,7 +226,10 @@ class StoreLobby {
      */
     async startMatch(): Promise<void> {
         await ws.connect();
-        ws.emit(ClientAction.LobbyStartMatch);
+        const response = await ws.emitAndWait(ClientAction.LobbyStartMatch);
+        if (!response.ok) {
+            storeToast.error(response.message);
+        }
     }
 
     /**
@@ -256,7 +265,7 @@ class StoreLobby {
             const response = await ws.emitAndWait(ClientAction.LobbyCreate, data);
 
             if (!response.ok) {
-                storeToast.error(response.reason);
+                storeToast.error(response.message);
             }
         } finally {
             this.isLoadingJoin = false;
@@ -281,7 +290,7 @@ class StoreLobby {
             await ws.connect();
             const response = await ws.emitAndWait(ClientAction.LobbyJoin, { code });
 
-            if (!response.ok) storeToast.error(response.reason);
+            if (!response.ok) storeToast.error(response.message);
         } catch (error) {
             storeToast.error(String(error));
         } finally {
@@ -411,7 +420,7 @@ class StoreLobby {
             if (!response.ok) {
                 this.#reset();
                 if (response.action !== ServerAction.LobbyEvicted) {
-                    storeToast.error(`Could not rejoin lobby: ${response.reason}`);
+                    storeToast.error(`Could not rejoin lobby: ${response.message}`);
                 }
                 return;
             }

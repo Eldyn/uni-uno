@@ -11,6 +11,8 @@
 	import { onMount } from "svelte";
 	import { storeNavigation } from "./lib/stores/navigation.svelte";
 	import { ws } from "./lib/stores/ws.svelte";
+	import { ErrorCode } from "./lib/generated/schemas";
+	import { errorText } from "./lib/stores/errors";
 	import { storeToast } from "./lib/stores/toast.svelte";
 	import { storeAuth } from "./lib/stores/auth.svelte";
 	import { storeLobby as _storeLobby } from "./lib/stores/lobby.svelte";
@@ -43,20 +45,15 @@
 		}
 
 		ws.on("error", (data) => {
-			console.error(data);
-			const reason = data.reason as string | undefined;
+			const code = data.code as string | undefined;
+			const text = errorText(code, data.detail as string | undefined);
 
-			if (!reason) return;
+			if (!text) return; // intentionally silent (e.g. invalid_move)
 
-			switch (reason) {
-				case "rate_limited":
-					storeToast.warning("You're going too fast — please slow down.");
-					break;
-				case "invalid_move":
-					break;
-				default:
-					storeToast.error(reason);
-					break;
+			if (code === ErrorCode.RateLimited) {
+				storeToast.warning(text);
+			} else {
+				storeToast.error(text);
 			}
 		});
 	});
