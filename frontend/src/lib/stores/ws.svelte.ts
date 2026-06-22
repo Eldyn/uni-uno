@@ -306,12 +306,19 @@ export class WebSocketClient {
 		const action = data.action as string;
 		const requestId = data.request_id as string;
 
+		let consumedByRequest = false;
 		if (requestId && this.pendingRequests.has(requestId)) {
 			const pending = this.pendingRequests.get(requestId)!;
 			this.pendingRequests.delete(requestId);
 			clearTimeout(pending.timer);
 			pending.resolve(new WsResponse(data));
+			consumedByRequest = true;
 		}
+
+		// An error already delivered to its awaiter (emitAndWait) is handled by
+		// the caller; don't also fan it out to the global "error" middleware, or
+		// the toast would fire twice. The middleware is for unsolicited errors.
+		if (action === "error" && consumedByRequest) return;
 
 		if (action) {
 			this.onHandlers.get(action)?.forEach((h) => h(data));
