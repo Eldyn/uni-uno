@@ -48,12 +48,21 @@
 				color: #fff;
 				font-family: system-ui, "Segoe UI", Roboto, sans-serif;
 				text-align: center;
+				/* Match the app's hero so the oversized logo doesn't add a scrollbar. */
+				overflow: hidden;
 			}
 
+			/* Mirror the in-app MainScreen logo (same FatPixel face + 10rem size) so
+			   the splash paints the SAME large LCP element early. Otherwise the app's
+			   bigger logo, mounting only after the JS bundle, becomes a later/larger
+			   LCP — ~7s on throttled mobile. FatPixel is preloaded below. */
 			#seo-splash h1 {
 				margin: 0;
-				font-size: clamp(3.5rem, 18vw, 9rem);
-				letter-spacing: 0.1em;
+				font-family: "FatPixel", system-ui, "Segoe UI", Roboto, sans-serif;
+				font-size: 10rem;
+				line-height: 1;
+				letter-spacing: 0.4rem;
+				white-space: nowrap;
 				color: #fff;
 				-webkit-text-stroke: 2px #1a1a1a;
 				text-shadow: 5px 5px 0 #1a1a1a;
@@ -111,6 +120,15 @@
          and a preload without it would not match the later font request. -->
 		<link rel="preload" href="/fonts/JetBrainsMono.woff2" as="font" type="font/woff2" crossorigin />
 		<link rel="preload" href="/fonts/pixel.woff2" as="font" type="font/woff2" crossorigin />
+		<!-- FatPixel backs both the splash logo (the LCP element) and the in-app
+		     hero, so preload it. URL/query must match app.css's @font-face. -->
+		<link
+			rel="preload"
+			href="/fonts/fatpixel.woff2?v=2"
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
 	</head>
 
 	<body>
