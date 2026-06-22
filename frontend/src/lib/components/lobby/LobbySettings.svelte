@@ -11,6 +11,14 @@
 		storeLobby
 	} from "../../stores/lobby.svelte";
 	import { storeAuth } from "../../stores/auth.svelte";
+	import {
+		STARTING_CARDS_MIN,
+		STARTING_CARDS_MAX,
+		TURN_TIME_MIN_MS,
+		TURN_TIME_MAX_MS,
+		BOT_COUNT_MIN,
+		BOT_COUNT_MAX
+	} from "../../generated/schemas";
 
 	/**
 	 * The subset of lobby settings keys this panel can modify.
@@ -110,8 +118,8 @@
 		id="card-count"
 		label="Starting Hand Size"
 		value={settings.starting_cards}
-		min={2}
-		max={20}
+		min={STARTING_CARDS_MIN}
+		max={STARTING_CARDS_MAX}
 		disabled={!isHost}
 		format={(v) => `${v} cards`}
 		oncommit={(v) => commit("starting_cards", v)}
@@ -123,8 +131,8 @@
 		id="turn-timer"
 		label="Turn Timer"
 		value={settings.turn_time_limit_ms / 1000}
-		min={1}
-		max={30}
+		min={TURN_TIME_MIN_MS / 1000}
+		max={TURN_TIME_MAX_MS / 1000}
 		disabled={!isHost}
 		format={(v) => `${v}s`}
 		oncommit={(v) => commit("turn_time_limit_ms", v * 1000)}
@@ -136,8 +144,8 @@
 		id="bot-count"
 		label="Bot Count"
 		value={settings.bot_count}
-		min={0}
-		max={3}
+		min={BOT_COUNT_MIN}
+		max={BOT_COUNT_MAX}
 		disabled={!isHost}
 		oncommit={(v) => commit("bot_count", v)}
 	/>
