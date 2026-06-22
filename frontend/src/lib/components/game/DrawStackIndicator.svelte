@@ -19,7 +19,8 @@
 		top: 38%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		z-index: 8000;
+		/* Above FlyingCardsOverlay (8000), below the end popups (10000). */
+		z-index: 9000;
 		pointer-events: none;
 		display: flex;
 		flex-direction: column;

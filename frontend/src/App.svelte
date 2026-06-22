@@ -1,12 +1,18 @@
 <script lang="ts">
-	import DetailedStatsScreen from "./lib/components/stats/DetailedStatsScreen.svelte";
-	import AuthScreen from "./lib/components/auth/AuthScreen.svelte";
-	import GameScreen from "./lib/components/game/GameScreen.svelte";
-	import LobbyScreen from "./lib/components/lobby/LobbyScreen.svelte";
-	import LobbyBrowse from "./lib/components/lobby/LobbyBrowse.svelte";
-	import StatsScreen from "./lib/components/stats/StatsScreen.svelte";
 	import MainScreen from "./lib/components/MainScreen.svelte";
 	import Toast from "./lib/components/common/Toast.svelte";
+
+	// INFO: Screens are lazy-loaded such that our website loads fast instead
+	//       of downloading ALL the resources before even showing our landing.
+	//       AuthScreen is kept separate because it is the only one taking props.
+	const loadAuthScreen = () => import("./lib/components/auth/AuthScreen.svelte");
+	const lazyScreens = {
+		lobbies: () => import("./lib/components/lobby/LobbyBrowse.svelte"),
+		lobby: () => import("./lib/components/lobby/LobbyScreen.svelte"),
+		game: () => import("./lib/components/game/GameScreen.svelte"),
+		stats: () => import("./lib/components/stats/StatsScreen.svelte"),
+		detailedStats: () => import("./lib/components/stats/DetailedStatsScreen.svelte")
+	} as const;
 
 	import { onMount } from "svelte";
 	import { storeNavigation } from "./lib/stores/navigation.svelte";
@@ -16,10 +22,21 @@
 	import { storeToast } from "./lib/stores/toast.svelte";
 	import { storeAuth } from "./lib/stores/auth.svelte";
 	import { storeLobby as _storeLobby } from "./lib/stores/lobby.svelte";
+	// Eagerly construct the game store so its WebSocket listeners (state capture
+	// and the lobby→game switch) are live from boot. Otherwise it would only load
+	// with the lazy GameScreen chunk and miss the match's first state broadcast,
+	// leaving the board empty (rebeccapurple playmat, no cards).
+	import { storeGame as _storeGame } from "./lib/stores/game.svelte";
 
 	// 1. Variables for audio management
 	let volume = 0.05;
 	let audioPlayer: HTMLAudioElement;
+
+	// Warm the lazy GameScreen chunk while in a lobby so the match starts without
+	// a blank frame when the first state broadcast switches to the game screen.
+	$effect(() => {
+		if (storeNavigation.current === "lobby") lazyScreens.game();
+	});
 
 	onMount(async () => {
 		if (audioPlayer) {
@@ -66,6 +83,7 @@
 		storeNavigation.goto("lobbies");
 	}
 
+	//@ts-ignore
 	declare const __APP_VERSION__: string;
 </script>
 
@@ -80,17 +98,13 @@
 	{#if storeNavigation.current === "main"}
 		<MainScreen />
 	{:else if storeNavigation.current === "auth"}
-		<AuthScreen onAuthSuccess={handleAuthSuccess} />
-	{:else if storeNavigation.current === "lobbies"}
-		<LobbyBrowse />
-	{:else if storeNavigation.current === "lobby"}
-		<LobbyScreen />
-	{:else if storeNavigation.current === "game"}
-		<GameScreen />
-	{:else if storeNavigation.current === "stats"}
-		<StatsScreen />
-	{:else if storeNavigation.current === "detailedStats"}
-		<DetailedStatsScreen />
+		{#await loadAuthScreen() then { default: AuthScreen }}
+			<AuthScreen onAuthSuccess={handleAuthSuccess} />
+		{/await}
+	{:else if storeNavigation.current in lazyScreens}
+		{#await lazyScreens[storeNavigation.current as keyof typeof lazyScreens]() then { default: Screen }}
+			<Screen />
+		{/await}
 	{/if}
 </div>
 

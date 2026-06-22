@@ -1,4 +1,5 @@
 <script lang="ts">
+	import TintedSprite from "$lib/components/common/TintedSprite.svelte";
 	import { storeGame } from "../../../stores/game.svelte";
 
 	let winnerName = $derived(storeGame.state?.winner ?? "Unknown");
@@ -13,23 +14,21 @@
 	let isBot = $derived(winnerName.toLowerCase().includes("bot"));
 </script>
 
-<div class="modal-overlay victory-overlay">
+<div class="modal-overlay">
 	<div class="cute-modal-content">
-		<h2 class={isMe ? "text-victory" : "text-defeat"}>
+		<h1 class={isMe ? "text-victory" : "text-defeat"}>
 			{isMe ? "VICTORY!" : "YOU LOST!"}
-		</h2>
+		</h1>
 
 		<div class="avatar-wrapper">
-			{#if isBot}
-				<img src="/assets/bot_animated.gif" alt="Bot" class="box-avatar" />
-			{:else}
-				<div class="box-mask" style="--mask-color: {winnerColor};"></div>
-			{/if}
+			<TintedSprite
+				src={isBot ? "/assets/bot_animated.gif" : "/assets/base_player.gif"}
+				color={winnerColor}
+			/>
 		</div>
 
-		<h2>Winner: <br /><span class="winner-highlight">{winnerName}</span></h2>
-		<p>All cards have been played successfully.</p>
-		<button type="button" class="action-btn pixel-btn" onclick={() => storeGame.returnToLobby()}>
+		<h2>Winner: <span class="winner-highlight">{winnerName}</span></h2>
+		<button type="button" class="pixel-btn pixel-corners" onclick={() => storeGame.returnToLobby()}>
 			Back to Lobby
 		</button>
 	</div>
@@ -45,7 +44,7 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		z-index: 300;
+		z-index: 10000;
 		background: rgba(0, 0, 0, 0.75);
 		backdrop-filter: blur(4px);
 	}
@@ -69,9 +68,9 @@
 		border: 4px solid var(--accent);
 		box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.6);
 		color: var(--text-h);
-		max-width: 380px;
+		max-width: max-content;
 		width: 90%;
-		box-sizing: border-box; /* <-- ADD THIS */
+		box-sizing: border-box;
 		animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 		display: flex;
 		flex-direction: column;
@@ -93,9 +92,6 @@
 		width: 80px; /* Scaled down slightly */
 		height: 80px;
 		margin: 0 auto 20px auto; /* Centered properly */
-		border-radius: 35%;
-		background-color: rgba(255, 255, 255, 0.05);
-		box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
 		padding: 10px;
 		display: flex;
 		justify-content: center;
