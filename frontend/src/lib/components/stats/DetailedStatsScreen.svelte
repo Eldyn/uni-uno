@@ -60,7 +60,7 @@
 			} else if (type === "colorswitch" || type === "draw4") {
 				color = "wild";
 				value = type === "draw4" ? "+4" : "colorswitch";
-				label = type === "draw4" ? "WILD +4" : "WILD";
+				label = type === "draw4" ? "JOLLY +4" : "JOLLY";
 				textCol = "var(--accent)";
 			} else if (type === "draw2") {
 				value = "+2";

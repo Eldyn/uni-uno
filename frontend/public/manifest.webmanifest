@@ -1,0 +1,17 @@
+{
+	"name": "UNI! Free Online Card Game",
+	"short_name": "UNI!",
+	"description": "A free, open-source online card game for up to 4 players. Play in real time, right in your browser.",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#16171d",
+	"theme_color": "#aa3bff",
+	"icons": [
+		{
+			"src": "/assets/logo.png",
+			"sizes": "926x926",
+			"type": "image/png",
+			"purpose": "any"
+		}
+	]
+}

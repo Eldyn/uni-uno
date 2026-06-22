@@ -1,0 +1,246 @@
+/* Shared styling for UNI's static content pages (how-to-play, faq, about).
+   Standalone from the SPA bundle: these pages are served as plain HTML so they
+   stay crawlable with zero JavaScript. Mirrors the app's theme tokens. */
+
+@font-face {
+	font-family: "FatPixel";
+	src: url("/fonts/fatpixel.woff2?v=2") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: "Pixel";
+	src: url("/fonts/pixel.woff2?v=3") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: "MonoPixel";
+	src: url("/fonts/monopixel.woff2?v=3") format("woff2");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
+:root {
+	--text: #6b6375;
+	--text-h: #08060d;
+	--bg: #fff;
+	--surface: #faf9f7;
+	--border: #e5e4e7;
+	--accent: #aa3bff;
+	--accent-bg: rgba(170, 59, 255, 0.1);
+	--redCard: #dc251c;
+	--yellowCard: #fcf604;
+	--blueCard: #0493de;
+	--greenCard: #018d41;
+
+	--heading: "FatPixel", system-ui, "Segoe UI", Roboto, sans-serif;
+	--body: "Pixel", "MonoPixel", system-ui, "Segoe UI", Roboto, sans-serif;
+
+	color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--text: #9ca3af;
+		--text-h: #f3f4f6;
+		--bg: #16171d;
+		--surface: #1f2028;
+		--border: #2e303a;
+		--accent: #c084fc;
+		--accent-bg: rgba(192, 132, 252, 0.15);
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	font-size: 18px;
+}
+@media (max-width: 1024px) {
+	html {
+		font-size: 16px;
+	}
+}
+
+body {
+	margin: 0;
+	font-family: var(--body);
+	color: var(--text);
+	background: var(--bg);
+	line-height: 1.7;
+	-webkit-font-smoothing: none;
+	font-smooth: never;
+}
+
+h1,
+h2,
+h3 {
+	font-family: var(--heading);
+	color: var(--text-h);
+	line-height: 2;
+	margin: 2.2rem 0 0.8rem;
+	text-align: center;
+	border-bottom: 2px solid var(--border);
+}
+
+h1 {
+	font-size: 2rem;
+	margin-top: 0.5rem;
+}
+h2 {
+	font-size: 1.4rem;
+	padding-bottom: 0.3rem;
+}
+h3 {
+	font-size: 1.1rem;
+}
+
+a {
+	color: var(--accent);
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+
+p,
+li {
+	font-size: 1rem;
+}
+
+ul,
+ol {
+	padding-left: 1.4rem;
+}
+li {
+	margin: 0.4rem 0;
+}
+
+/* Layout */
+.wrap {
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 0 1.2rem;
+}
+
+/* Header / nav */
+.site-header {
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+.site-header .wrap {
+	display: flex;
+	align-items: center;
+	gap: 1.2rem;
+	flex-wrap: wrap;
+	padding-top: 0.8rem;
+	padding-bottom: 0.8rem;
+}
+.brand {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-family: var(--heading);
+	color: var(--text-h);
+	font-size: 1.2rem;
+}
+.brand img {
+	width: 32px;
+	height: 32px;
+	image-rendering: pixelated;
+}
+.site-nav {
+	display: flex;
+	gap: 1rem;
+	margin-left: auto;
+	flex-wrap: wrap;
+}
+.site-nav a {
+	color: var(--text);
+}
+.site-nav a:hover,
+.site-nav a[aria-current="page"] {
+	color: var(--accent);
+}
+
+/* Hero CTA */
+.cta {
+	display: block;
+	width: fit-content;
+	margin: 1.4rem auto;
+	padding: 0.7rem 1.4rem;
+	background: var(--accent);
+	color: #fff;
+	border-radius: 8px;
+	font-family: var(--heading);
+}
+.cta:hover {
+	text-decoration: none;
+	opacity: 0.9;
+}
+
+/* Card colour chips for rules */
+.chips {
+	display: flex;
+	justify-content: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	margin: 0.6rem 0;
+}
+.chip {
+	width: 1.4rem;
+	height: 2rem;
+	border-radius: 4px;
+	border: 2px solid rgba(0, 0, 0, 0.15);
+}
+.chip.red {
+	background: var(--redCard);
+}
+.chip.yellow {
+	background: var(--yellowCard);
+}
+.chip.blue {
+	background: var(--blueCard);
+}
+.chip.green {
+	background: var(--greenCard);
+}
+
+main {
+	padding: 1.5rem 0 3rem;
+}
+
+/* FAQ */
+.faq h2 {
+	border: none;
+	margin-bottom: 0.2rem;
+}
+
+/* Footer */
+.site-footer {
+	border-top: 1px solid var(--border);
+	background: var(--surface);
+	font-size: 0.9rem;
+	padding: 1.5rem 0;
+}
+.site-footer .wrap {
+	display: flex;
+	gap: 1rem 1.5rem;
+	flex-wrap: wrap;
+	align-items: center;
+}
+.site-footer nav {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+.site-footer .muted {
+	color: var(--text);
+	margin-left: auto;
+}
