@@ -64,16 +64,16 @@
 				<p class="loading-text">Something seems to have gone wrong!</p>
 			{:else}
 				<div class="leaderboard-list">
-					{#each storeStats.leaderboard as player, index}
+					{#each storeStats.leaderboard as player}
 						<div
 							class="leaderboard-row pixel-corners"
 							class:is-me={player.username === storeStats.myStats?.username}
 						>
 							<div
 								class="rank-col"
-								class:first={index === 0}
-								class:second={index === 1}
-								class:third={index === 2}
+								class:first={player.rank === 1}
+								class:second={player.rank === 2}
+								class:third={player.rank === 3}
 							>
 								#{player.rank}
 							</div>
