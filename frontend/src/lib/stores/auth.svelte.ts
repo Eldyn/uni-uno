@@ -47,14 +47,19 @@ class StoreAuth {
 	 */
 	async checkSession(): Promise<boolean> {
 		try {
-			const res = await fetch("/auth/me", {
-				credentials: "include",
-				headers: { "Content-Type": "application/json" }
-			});
+			// Prefer the prefetch kicked off inline in index.html (runs in parallel
+			// with the JS bundle download). Fall back to a fresh request if absent.
+			const prefetched = (window as unknown as { __authMe?: Promise<unknown> }).__authMe;
+			const data = prefetched
+				? await prefetched
+				: await fetch("/auth/me", {
+						credentials: "include",
+						headers: { "Content-Type": "application/json" }
+					}).then((res) => (res.ok ? res.json() : null));
 
-			if (res.ok) {
-				const data = await res.json();
-				this.#setLoggedIn(data.username, data.avatar || "");
+			if (data && typeof data === "object") {
+				const { username, avatar } = data as { username: string; avatar?: string };
+				this.#setLoggedIn(username, avatar || "");
 				return true;
 			}
 

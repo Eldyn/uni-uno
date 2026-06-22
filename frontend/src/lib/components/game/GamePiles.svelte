@@ -7,6 +7,10 @@
 
 	const bus = useCardBus();
 
+	// Register the *stable* pile wrappers (sized to a card in CSS below) rather
+	// than the top card itself: the discard top card is wrapped in {#key} and so
+	// is destroyed/recreated on every play, which would race the overlay's flight
+	// effect and fall back to screen centre. The wrappers persist for the match.
 	let drawPileEl = $state<HTMLElement | null>(null);
 	let discardPileEl = $state<HTMLElement | null>(null);
 
@@ -51,9 +55,9 @@
 	</div>
 
 	<div id="discard_pile" bind:this={discardPileEl}>
-		{#if storeGame.state?.top_card}
-			{#key storeGame.state.top_card.id}
-				<GameCard card={storeGame.state.top_card} extraClass="top-card" style="left: 0;" />
+		{#if bus.discardTop}
+			{#key bus.discardTop.id}
+				<GameCard card={bus.discardTop} extraClass="top-card" style="left: 0;" />
 			{/key}
 		{:else}
 			<GameCard
@@ -90,6 +94,10 @@
 		position: absolute;
 		left: 5em;
 		top: 7em;
+		/* Size to a card so the flight bus measures the card's centre, not a
+		   collapsed 0×0 corner (children below are absolutely positioned). */
+		width: var(--cardSize);
+		height: calc(var(--cardSize) * 1.5357);
 	}
 
 	#draw_pile :global(.card.top-card),
@@ -129,6 +137,10 @@
 		position: absolute;
 		left: 12em;
 		top: 7.4em;
+		/* Size to a card so the flight bus measures the card's centre, not a
+		   collapsed 0×0 corner (children below are absolutely positioned). */
+		width: var(--cardSize);
+		height: calc(var(--cardSize) * 1.5357);
 	}
 
 	#discard_pile :global(.card.top-card),

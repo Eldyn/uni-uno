@@ -2,6 +2,19 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
+
+		<!-- Kick the session check off during HTML parse, in parallel with the JS
+		     bundle download, instead of letting it chain after the bundle runs.
+		     auth.svelte.ts awaits this promise instead of issuing its own fetch. -->
+		<script>
+			window.__authMe = fetch("/auth/me", {
+				credentials: "include",
+				headers: { "Content-Type": "application/json" }
+			})
+				.then((r) => (r.ok ? r.json() : null))
+				.catch(() => undefined);
+		</script>
+
 		<meta name="google-site-verification" content="pi5b9DDctNKSXtVT0-SsWRSCD_qtU-P-6EtLow_a5Rg" />
 		<link rel="icon" href="/favicon.ico" sizes="any" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -16,6 +29,47 @@
 		<link rel="canonical" href="https://unii.duckdns.org/" />
 		<link rel="manifest" href="/manifest.webmanifest" />
 		<meta name="theme-color" content="#aa3bff" />
+
+		<!-- Critical splash styles: inlined so the brand hero below can paint
+		     immediately as the LCP element, without waiting for the JS bundle to
+		     run. Uses a system font fallback so text paints with zero font wait.
+		     main.js clears #app the moment the Svelte app mounts. -->
+		<style>
+			#seo-splash {
+				min-height: 100vh;
+				margin: 0;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				gap: 1rem;
+				padding: 2rem 1.2rem;
+				background: #16171d;
+				color: #fff;
+				font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+				text-align: center;
+			}
+
+			#seo-splash h1 {
+				margin: 0;
+				font-size: clamp(3.5rem, 18vw, 9rem);
+				letter-spacing: 0.1em;
+				color: #fff;
+				-webkit-text-stroke: 2px #1a1a1a;
+				text-shadow: 5px 5px 0 #1a1a1a;
+			}
+
+			#seo-splash p {
+				margin: 0;
+				max-width: 40rem;
+				color: #cbd5e1;
+			}
+
+			#seo-splash nav a {
+				color: #c084fc;
+				text-decoration: none;
+			}
+		</style>
 
 		<!-- Open Graph (Discord, WhatsApp, Slack, Facebook) -->
 		<meta property="og:title" content="UNI! | Free Online Multiplayer Card Game" />
@@ -61,25 +115,24 @@
 
 	<body>
 		<div id="app">
-			<!-- Static fallback: shown in the initial HTML for search crawlers and
-			     no-JS visitors, then cleared by main.js the moment the Svelte app
-			     mounts. Gives the homepage real, crawlable text and internal links
-			     to the content pages without affecting the running app. -->
-			<noscript-fallback style="display: block; max-width: 760px; margin: 0 auto; padding: 2rem 1.2rem; font-family: system-ui, sans-serif; text-align: center;">
-				<h1>UNI!, a free online multiplayer card game</h1>
+			<!-- Static splash: paints immediately as the LCP element for the first
+			     paint and gives crawlers/no-JS visitors real, crawlable text plus
+			     internal links. main.js clears #app the moment the Svelte app
+			     mounts, so the running app never stacks on top of it. -->
+			<div id="seo-splash">
+				<h1>UNI!</h1>
 				<p>
-					UNI! is a free, open-source card game you can play in your browser with up to 4
-					players in real time. It's a fast, friendly take on the classic colour-and-number
-					card game genre.
+					UNI! is a free, open-source online multiplayer card game. Play in your browser with up to
+					4 players in real time — a fast, friendly take on the classic colour-and-number card game
+					genre.
 				</p>
-				<p>
-					<a href="/how-to-play.html">How to play UNI!</a> ·
-					<a href="/faq.html">FAQ</a> ·
+				<nav>
+					<a href="/how-to-play.html">How to play UNI!</a> · <a href="/faq.html">FAQ</a> ·
 					<a href="/about.html">About</a> ·
 					<a href="https://github.com/Eldyn/uni">GitHub</a>
-				</p>
+				</nav>
 				<p>Loading the game… if it doesn't start, enable JavaScript in your browser.</p>
-			</noscript-fallback>
+			</div>
 		</div>
 		<script type="module" src="/src/main.js"></script>
 	</body>

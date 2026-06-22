@@ -23,7 +23,8 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		z-index: 300;
+		/* Above DrawStackIndicator (8000) and FlyingCardsOverlay (9999). */
+		z-index: 10000;
 		background: rgba(0, 0, 0, 0.75);
 		backdrop-filter: blur(4px);
 	}
