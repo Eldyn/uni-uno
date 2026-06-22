@@ -1,18 +1,18 @@
 <script lang="ts">
-	import { storeGame, Action, TYPE_MAP } from "../../../stores/game.svelte";
+	import { storeGame, Action } from "../../../stores/game.svelte";
 
 	const TYPE_BUTTONS = [
-		{ name: "red",    typeIndex: 0 },
+		{ name: "red", typeIndex: 0 },
 		{ name: "yellow", typeIndex: 3 },
-		{ name: "green",  typeIndex: 2 },
-		{ name: "blue",   typeIndex: 1 },
+		{ name: "green", typeIndex: 2 },
+		{ name: "blue", typeIndex: 1 }
 	] as const;
 </script>
 
 {#if storeGame.actionRequired === Action.ChooseType}
 	<div class="inline-action-container">
 		<div class="cute-bubble">
-			<h2 class="choose-color-text">Choose Type</h2>
+			<h2 class="choose-color-text">Choose Color!</h2>
 			<br />
 			<div class="color-buttons">
 				{#each TYPE_BUTTONS as { name, typeIndex }}
