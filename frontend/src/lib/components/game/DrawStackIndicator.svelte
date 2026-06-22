@@ -16,10 +16,9 @@
 <style>
 	.draw-stack-overlay {
 		position: fixed;
-		top: 38%;
+		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		/* Above FlyingCardsOverlay (8000), below the end popups (10000). */
 		z-index: 9000;
 		pointer-events: none;
 		display: flex;
@@ -30,14 +29,14 @@
 
 	.draw-stack-badge {
 		font-family: "FatPixel", sans-serif;
-		font-size: 5.5rem;
+		font-size: 10rem;
 		line-height: 1;
 		color: #ffd23f;
 		text-shadow:
 			0 0 10px rgba(255, 100, 0, 0.9),
 			4px 4px 0 #b02a00,
 			-2px -2px 0 #b02a00;
-		/* Re-keyed (and replayed) every time `pending` changes. */
+
 		animation: badge-pop 0.45s cubic-bezier(0.18, 1.4, 0.4, 1) both;
 	}
 

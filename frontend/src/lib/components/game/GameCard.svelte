@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { type Card, type CardValue, type CardType } from "../../stores/game.svelte";
+	import TintedSprite from "../common/TintedSprite.svelte";
 
 	let {
 		card,
@@ -61,7 +62,6 @@
 
 <div
 	class="card {card.type} {extraClass}"
-
 	class:card--dragging={isDragged}
 	class:card--drag-target={isDragTarget}
 	class:card--hidden={isHidden}
@@ -85,16 +85,18 @@
 		{:else}
 			<img src="assets/cards/background.png" alt="" class="layer-bg" />
 			{#if imgSrc && tint}
-				<div class="layer-mask" style="--mask-img: url('{imgSrc}')"></div>
+				<div class="layer-mask">
+					<TintedSprite src={imgSrc} color="var(--card-color)" fit="100% 100%" />
+				</div>
 			{:else}
 				<img src={imgSrc} alt="" class="layer-bg" />
 			{/if}
 
-			<div class="layer-mask" style="--mask-img: url('/assets/cards/border.png')"></div>
+			<div class="layer-mask">
+				<TintedSprite src="/assets/cards/border.png" color="var(--card-color)" fit="100% 100%" />
+			</div>
 		{/if}
 	</div>
-
-
 </div>
 
 <style>
@@ -154,19 +156,8 @@
 	.layer-mask {
 		position: absolute;
 		inset: 0;
-		width: 100%;
-		height: 100%;
-		background-color: var(--card-color);
 		z-index: 2;
 		pointer-events: none;
-		-webkit-mask-image: var(--mask-img);
-		-webkit-mask-size: 100% 100%;
-		-webkit-mask-repeat: no-repeat;
-		-webkit-mask-position: center;
-		mask-image: var(--mask-img);
-		mask-size: 100% 100%;
-		mask-repeat: no-repeat;
-		mask-position: center;
 	}
 
 	.layer-text {
@@ -215,5 +206,4 @@
 		outline: 2px dashed rgba(255, 255, 255, 0.85);
 		outline-offset: 3px;
 	}
-
 </style>

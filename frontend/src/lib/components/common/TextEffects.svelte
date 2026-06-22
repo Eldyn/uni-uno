@@ -5,20 +5,25 @@
 		text,
 		effect = "none" as Effect,
 		class: className = "",
+		// Font family for the rendered text (e.g. "FatPixel" or "var(--heading)").
+		// Needed because the chars are <span>s, so they don't inherit element
+		// rules like `h1 { font-family: ... }`.
+		font = "",
 		// undulate
-		frequency = 0.12,  // seconds of phase offset per character
-		amplitude = 10,    // px vertical displacement
-		speed = 1.2,       // seconds per full cycle
+		frequency = 0.12, // seconds of phase offset per character
+		amplitude = 10, // px vertical displacement
+		speed = 1.2, // seconds per full cycle
 		// shine
-		shineSpeed = 2.5,  // seconds per sweep
+		shineSpeed = 2.5, // seconds per sweep
 		shineColor = "rgba(255, 255, 255, 0.85)",
 		// shake
 		shakeIntensity = 3, // max px displacement
-		shakeSpeed = 0.4    // seconds per shake cycle
+		shakeSpeed = 0.4 // seconds per shake cycle
 	}: {
 		text: string;
 		effect?: Effect;
 		class?: string;
+		font?: string;
 		frequency?: number;
 		amplitude?: number;
 		speed?: number;
@@ -29,49 +34,51 @@
 	} = $props();
 
 	const chars = $derived(text.split(""));
+	const fontStyle = $derived(font ? `font-family: ${font};` : "");
 </script>
 
 {#if effect === "shine"}
 	<span
 		class="shine {className}"
-		style="--shine-speed: {shineSpeed}s; --shine-color: {shineColor}"
-	>{text}</span>
+		style="{fontStyle} --shine-speed: {shineSpeed}s; --shine-color: {shineColor}">{text}</span
+	>
 {:else if effect === "undulate"}
 	<span
 		class="char-wrap {className}"
-		style="--amp: {amplitude}px; --speed: {speed}s; --freq: {frequency}s"
+		style="{fontStyle} --amp: {amplitude}px; --speed: {speed}s; --freq: {frequency}s"
 	>
 		{#each chars as char, i}
-			<span
-				class="char undulate-char"
-				style="--i: {i}"
-				aria-hidden={i > 0 ? "true" : undefined}
-			>{char === " " ? " " : char}</span>
+			<span class="char undulate-char" style="--i: {i}" aria-hidden={i > 0 ? "true" : undefined}
+				>{char === " " ? " " : char}</span
+			>
 		{/each}
 		<span class="sr-only">{text}</span>
 	</span>
 {:else if effect === "shake"}
 	<span
 		class="char-wrap {className}"
-		style="--amp: {shakeIntensity}px; --speed: {shakeSpeed}s"
+		style="{fontStyle} --amp: {shakeIntensity}px; --speed: {shakeSpeed}s"
 	>
 		{#each chars as char, i}
-			<span
-				class="char shake-char"
-				style="--i: {i}"
-				aria-hidden={i > 0 ? "true" : undefined}
-			>{char === " " ? " " : char}</span>
+			<span class="char shake-char" style="--i: {i}" aria-hidden={i > 0 ? "true" : undefined}
+				>{char === " " ? " " : char}</span
+			>
 		{/each}
 		<span class="sr-only">{text}</span>
 	</span>
 {:else}
-	<span class={className}>{text}</span>
+	<span class={className} style={fontStyle}>{text}</span>
 {/if}
 
 <style>
 	.char-wrap {
 		display: inline-flex;
 		align-items: center;
+		/* Reserve real layout room equal to the animation travel so a translated
+		   char is never clipped by the wrapper or an ancestor that sizes/clips to
+		   this box (e.g. a flex button). */
+		padding: var(--amp, 10px);
+		overflow: visible;
 	}
 
 	.char {
@@ -87,7 +94,8 @@
 	}
 
 	@keyframes undulate {
-		0%, 100% {
+		0%,
+		100% {
 			transform: translateY(0);
 		}
 		50% {
@@ -112,8 +120,12 @@
 	}
 
 	@keyframes shine-sweep {
-		from { background-position: 200% center; }
-		to   { background-position: -100% center; }
+		from {
+			background-position: 200% center;
+		}
+		to {
+			background-position: -100% center;
+		}
 	}
 
 	/* ── Shake ────────────────────────────────────────────── */
@@ -124,14 +136,30 @@
 	}
 
 	@keyframes shake {
-		0%   { transform: translate(0, 0); }
-		15%  { transform: translate(calc(var(--amp, 3px) * -1), calc(var(--amp, 3px) * 0.5)); }
-		30%  { transform: translate(calc(var(--amp, 3px) * 0.8), calc(var(--amp, 3px) * -0.6)); }
-		45%  { transform: translate(calc(var(--amp, 3px) * -0.5), calc(var(--amp, 3px) * -0.9)); }
-		60%  { transform: translate(calc(var(--amp, 3px) * 0.9), calc(var(--amp, 3px) * 0.3)); }
-		75%  { transform: translate(calc(var(--amp, 3px) * -0.7), calc(var(--amp, 3px) * 0.7)); }
-		90%  { transform: translate(calc(var(--amp, 3px) * 0.4), calc(var(--amp, 3px) * -0.4)); }
-		100% { transform: translate(0, 0); }
+		0% {
+			transform: translate(0, 0);
+		}
+		15% {
+			transform: translate(calc(var(--amp, 3px) * -1), calc(var(--amp, 3px) * 0.5));
+		}
+		30% {
+			transform: translate(calc(var(--amp, 3px) * 0.8), calc(var(--amp, 3px) * -0.6));
+		}
+		45% {
+			transform: translate(calc(var(--amp, 3px) * -0.5), calc(var(--amp, 3px) * -0.9));
+		}
+		60% {
+			transform: translate(calc(var(--amp, 3px) * 0.9), calc(var(--amp, 3px) * 0.3));
+		}
+		75% {
+			transform: translate(calc(var(--amp, 3px) * -0.7), calc(var(--amp, 3px) * 0.7));
+		}
+		90% {
+			transform: translate(calc(var(--amp, 3px) * 0.4), calc(var(--amp, 3px) * -0.4));
+		}
+		100% {
+			transform: translate(0, 0);
+		}
 	}
 
 	/* Accessible label for screen readers (per-char aria-hidden is set above) */

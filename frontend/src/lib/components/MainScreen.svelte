@@ -1,15 +1,22 @@
 <script lang="ts">
 	import { storeNavigation } from "../stores/navigation.svelte";
 	import { storeAuth } from "../stores/auth.svelte";
+	import TextEffects from "./common/TextEffects.svelte";
 </script>
 
 <div class="screen-container">
 	<div class="doodle-bg"></div>
 
 	<header class="logo-container">
-		{#each "UNI!" as letter, i}
-			<h1 class="logo-char" style="--i: {i}">{letter}</h1>
-		{/each}
+		<TextEffects
+			text="UNI!"
+			effect="undulate"
+			class="logo-text"
+			font="var(--heading)"
+			amplitude={20}
+			speed={1}
+			frequency={0.15}
+		/>
 	</header>
 
 	<main class="button-container">
@@ -105,26 +112,11 @@
 		gap: 0.4rem;
 	}
 
-	.logo-char {
+	.logo-container :global(.logo-text) {
+		gap: 0.4rem;
 		font-size: 10rem;
-		display: block;
 		-webkit-text-stroke: 2px #1a1a1a;
-		will-change: transform;
-		animation: waveBounce 1s ease-in-out infinite;
-		animation-delay: calc(var(--i) * 0.15s);
-	}
-
-	/* Animazione a rimbalzo singolo carattere */
-	@keyframes waveBounce {
-		0%,
-		100% {
-			transform: translateY(0);
-			text-shadow: 5px 5px 0px #1a1a1a;
-		}
-		50% {
-			transform: translateY(-20px); /* Push upwards */
-			text-shadow: 5px 25px 0px #1a1a1a; /* The shadow stretches downwards */
-		}
+		text-shadow: 5px 5px 0px #1a1a1a;
 	}
 
 	.button-container {

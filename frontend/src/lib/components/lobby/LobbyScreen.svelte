@@ -4,6 +4,8 @@
 
 	import LobbySettings from "./LobbySettings.svelte";
 	import LobbySave from "./LobbySave.svelte";
+	import TintedSprite from "../common/TintedSprite.svelte";
+	import TextEffects from "../common/TextEffects.svelte";
 
 	let isHost = $derived(storeAuth.username === storeLobby.current?.host);
 	let startable = $derived((storeLobby.current?.members.length ?? 0) >= 2);
@@ -14,7 +16,6 @@
 	let activeMenu = $state<string | null>(null);
 
 	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"];
-	const startText = "START!";
 
 	function toggleMenu(username: string, event: Event) {
 		event.stopPropagation();
@@ -101,10 +102,13 @@
 			<ul class="members">
 				{#each storeLobby.current?.members ?? [] as member, i}
 					<li class="member">
-						<div
-							class="member-avatar"
-							style="--mask-color: {member.is_bot ? '#666' : PLAYER_COLORS[i % 4]};"
-						></div>
+						<div class="member-avatar">
+							<TintedSprite
+								src="/assets/base_player.gif"
+								color={member.is_bot ? "#666" : PLAYER_COLORS[i % 4]}
+								fit="contain"
+							/>
+						</div>
 
 						<div class="member-info-group">
 							<div class="member-details">
@@ -178,9 +182,15 @@
 					disabled={!isHost || !startable}
 				>
 					<div class="animated-text">
-						{#each startText as letter, i}
-							<h1 class="letter" style="--i: {i}">{letter === " " ? "\u00A0" : letter}</h1>
-						{/each}
+						<TextEffects
+							text="START!"
+							effect="undulate"
+							class="start-letters"
+							font="FatPixel"
+							amplitude={15}
+							speed={1}
+							frequency={0.1}
+						/>
 					</div>
 				</button>
 			</div>
@@ -216,15 +226,6 @@
 	.member-avatar {
 		width: 128px;
 		height: 128px;
-		background-color: var(--mask-color);
-		-webkit-mask-image: url("/assets/base_player.gif");
-		-webkit-mask-size: contain;
-		-webkit-mask-repeat: no-repeat;
-		-webkit-mask-position: center;
-		mask-image: url("/assets/base_player.gif");
-		mask-size: contain;
-		mask-repeat: no-repeat;
-		mask-position: center;
 		flex-shrink: 0;
 	}
 
@@ -286,6 +287,7 @@
 		display: flex;
 		align-items: center;
 		line-height: 1;
+		width: 2rem;
 	}
 
 	.saved-matches-mini {
@@ -356,11 +358,11 @@
 		cursor: not-allowed;
 	}
 
-	.start-button:disabled .letter {
-		animation: none;
+	.start-button:disabled :global(.start-letters) {
 		color: #888;
-		-webkit-text-stroke: 1.5px #444;
-		text-shadow: 2px 2px 0px #1a1a1a;
+	}
+	.start-button:disabled :global(.start-letters .char) {
+		animation: none;
 		transform: translateY(0);
 	}
 
@@ -398,26 +400,11 @@
 		display: flex;
 		gap: 5px;
 		font-family: "FatPixel";
-		font-size: 1.8rem;
+		font-size: 3rem;
 		color: white;
 		letter-spacing: 6px;
-	}
-	.letter {
-		display: inline-block;
 		-webkit-text-stroke: 1.5px #1a1a1a;
-		animation: waveBounce 1s ease-in-out infinite;
-		animation-delay: calc(var(--i) * 0.1s);
-	}
-	@keyframes waveBounce {
-		0%,
-		100% {
-			transform: translateY(0);
-			text-shadow: 2px 2px 0px #1a1a1a;
-		}
-		50% {
-			transform: translateY(-15px);
-			text-shadow: 2px 15px 0px #1a1a1a;
-		}
+		text-shadow: 2px 2px 0px #1a1a1a;
 	}
 
 	.members {
