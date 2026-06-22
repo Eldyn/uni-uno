@@ -38,6 +38,41 @@ function toPascal(s) {
 		.join("");
 }
 
+/** 'UsernameMin' → 'USERNAME_MIN' */
+function pascalToUpperSnake(s) {
+	return s
+		.replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+		.replace(/([A-Z]+)([A-Z][a-z])/g, "$1_$2")
+		.toUpperCase();
+}
+
+/**
+ * Recursively collect every `x-constants` annotation into `out`
+ * (UPPER_SNAKE name → value). First occurrence wins, so callers control
+ * emission order by the order they seed the walk.
+ */
+function collectConstants(node, out) {
+	if (Array.isArray(node)) {
+		for (const item of node) collectConstants(item, out);
+		return;
+	}
+	if (!node || typeof node !== "object") return;
+
+	const annotations = node["x-constants"];
+	if (annotations && typeof annotations === "object") {
+		for (const [keyword, baseName] of Object.entries(annotations)) {
+			const name = pascalToUpperSnake(baseName);
+			if (node[keyword] !== undefined && !(name in out)) {
+				out[name] = node[keyword];
+			}
+		}
+	}
+	for (const [key, value] of Object.entries(node)) {
+		if (key === "x-constants") continue;
+		collectConstants(value, out);
+	}
+}
+
 /** Collect client/server action strings from channels. */
 function collectActions() {
 	const client = {};
@@ -55,16 +90,6 @@ function collectActions() {
 		}
 	}
 	return { client, server };
-}
-
-/** Extract minLength/maxLength/pattern from a schema for constant export. */
-function extractConstraints(schema) {
-	const out = {};
-	if (schema.minLength !== undefined) out.minLength = schema.minLength;
-	if (schema.maxLength !== undefined) out.maxLength = schema.maxLength;
-	if (schema.minimum !== undefined) out.minimum = schema.minimum;
-	if (schema.maximum !== undefined) out.maximum = schema.maximum;
-	return out;
 }
 
 /**
@@ -122,16 +147,11 @@ function schemaToZod(schemaName, schema) {
 	return `z.object({\n${fields.join(",\n")}\n})`;
 }
 
-// ---------------------------------------------------------------------------
-// Constraint schema constant names (name → {MIN, MAX, ...})
-// ---------------------------------------------------------------------------
-const CONSTRAINT_SCHEMAS = ["Username", "Password", "LobbyName", "LobbyCode"];
-const CONSTRAINT_CONST_MAP = {
-	Username: { minLength: "USERNAME_MIN", maxLength: "USERNAME_MAX" },
-	Password: { minLength: "PASSWORD_MIN" },
-	LobbyName: { maxLength: "LOBBY_NAME_MAX" },
-	LobbyCode: { minLength: "LOBBY_CODE_LEN", maxLength: "LOBBY_CODE_LEN" }
-};
+// Constraint schemas: named scalar schemas (not objects/arrays) reused inside
+// payloads. Detected generically from the contract — no hardcoded list.
+const constraintSchemas = Object.entries(schemas).filter(
+	([, schema]) => schema.type !== "object" && schema.type !== "array"
+);
 
 // Payload schemas to generate (all schemas ending in "Payload")
 const payloadSchemas = Object.entries(schemas).filter(([name]) => name.endsWith("Payload"));
@@ -153,19 +173,14 @@ const lines = [
 	"// ---------------------------------------------------------------------------"
 ];
 
-// Emit numeric constants from constraint schemas (deduplicate by const name)
-const emittedConsts = new Set();
-for (const name of CONSTRAINT_SCHEMAS) {
-	const schema = schemas[name];
-	if (!schema) continue;
-	const constMap = CONSTRAINT_CONST_MAP[name] ?? {};
-	const constraints = extractConstraints(schema);
-	for (const [key, constName] of Object.entries(constMap)) {
-		if (constraints[key] !== undefined && !emittedConsts.has(constName)) {
-			lines.push(`export const ${constName} = ${constraints[key]} as const;`);
-			emittedConsts.add(constName);
-		}
-	}
+// Emit constants from every x-constants annotation. Seed schemas-first, then
+// messages, then the rest of the document, for stable human-friendly order.
+const constants = {};
+collectConstants(schemas, constants);
+collectConstants(messages, constants);
+collectConstants(data, constants);
+for (const [name, value] of Object.entries(constants)) {
+	lines.push(`export const ${name} = ${value} as const;`);
 }
 lines.push("");
 
@@ -173,9 +188,7 @@ lines.push("");
 lines.push("// ---------------------------------------------------------------------------");
 lines.push("// Constraint schemas (reused inside payload schemas)");
 lines.push("// ---------------------------------------------------------------------------");
-for (const name of CONSTRAINT_SCHEMAS) {
-	const schema = schemas[name];
-	if (!schema) continue;
+for (const [name, schema] of constraintSchemas) {
 	lines.push(`export const ${name}Schema = ${propToZod(schema)};`);
 	lines.push(`export type ${name} = z.infer<typeof ${name}Schema>;`);
 }
@@ -208,7 +221,8 @@ for (const [enumName, enumDef] of Object.entries(xEnums)) {
 	const entries = Object.entries(enumDef.values ?? {});
 	lines.push(`export const ${enumName} = {`);
 	for (const [key, val] of entries) {
-		lines.push(`    ${key}: ${val},`);
+		const rendered = typeof val === "number" ? val : `'${val}'`;
+		lines.push(`    ${key}: ${rendered},`);
 	}
 	lines.push("} as const;");
 	lines.push(`export type ${enumName} = (typeof ${enumName})[keyof typeof ${enumName}];`);
