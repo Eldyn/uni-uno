@@ -21,10 +21,11 @@
 		</h1>
 
 		<div class="avatar-wrapper">
-			<TintedSprite
-				src={isBot ? "/assets/bot_animated.gif" : "/assets/base_player.gif"}
-				color={winnerColor}
-			/>
+			{#if isBot}
+				<img src="/assets/bot_animated.git" alt="Bot" />
+			{:else}
+				<TintedSprite src="/assets/base_player.gif" color={winnerColor} />
+			{/if}
 		</div>
 
 		<h2>Winner: <span class="winner-highlight">{winnerName}</span></h2>
@@ -96,22 +97,6 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-	}
-
-	.box-avatar {
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
-		display: block;
-	}
-	.box-mask {
-		width: 100%;
-		height: 100%;
-		background-color: var(--mask-color);
-		-webkit-mask-image: url("/assets/base_player.gif");
-		-webkit-mask-size: contain;
-		-webkit-mask-repeat: no-repeat;
-		-webkit-mask-position: center;
 	}
 
 	.cute-modal-content h2 {

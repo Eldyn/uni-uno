@@ -6,6 +6,7 @@
 	import GamePiles from "./GamePiles.svelte";
 	import FlyingCardsOverlay from "./FlyingCardsOverlay.svelte";
 	import DrawStackIndicator from "./DrawStackIndicator.svelte";
+	import TintedSprite from "../common/TintedSprite.svelte";
 
 	createCardBus();
 
@@ -111,10 +112,7 @@
 			style="top: -5.7em; left: 50%; transform: translateX(-50%);"
 		>
 			{#if storeGame.localPlayer}
-				<div
-					class="box-mask"
-					style="--mask-img: url('/assets/base_player.gif'); --mask-color: {localPlayerColor};"
-				></div>
+				<TintedSprite src="/assets/base_player.gif" color={localPlayerColor} fit="100% 100%" />
 			{/if}
 		</div>
 		<PlayerHand />
@@ -202,17 +200,4 @@
 		box-shadow: 0 0 20px 6px rgba(255, 255, 255, 0.75);
 	}
 
-	.box-mask {
-		width: 100%;
-		height: 100%;
-		background-color: var(--mask-color);
-		-webkit-mask-image: var(--mask-img);
-		-webkit-mask-size: 100% 100%;
-		-webkit-mask-repeat: no-repeat;
-		-webkit-mask-position: center;
-		mask-image: var(--mask-img);
-		mask-size: 100% 100%;
-		mask-repeat: no-repeat;
-		mask-position: center;
-	}
 </style>

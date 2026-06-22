@@ -1,5 +1,6 @@
 <script lang="ts">
 	import GameCard from "./GameCard.svelte";
+	import TintedSprite from "../common/TintedSprite.svelte";
 	import { useCardBus, type ElementRole } from "./card-bus.svelte";
 	import { storeGame, Action, type GamePlayer } from "../../stores/game.svelte";
 
@@ -77,10 +78,7 @@
 			{#if isBot}
 				<img src="/assets/bot_animated.gif" alt="Bot" class="box-avatar" />
 			{:else}
-				<div
-					class="box-mask"
-					style="--mask-img: url('/assets/base_player.gif'); --mask-color: {playerColor};"
-				></div>
+				<TintedSprite src="/assets/base_player.gif" color={playerColor} fit="100% 100%" />
 			{/if}
 		{/if}
 		<div class="player-label" class:is-top={isTop}>
@@ -159,20 +157,6 @@
 		height: 100%;
 		object-fit: contain;
 		display: block;
-	}
-
-	.box-mask {
-		width: 100%;
-		height: 100%;
-		background-color: var(--mask-color);
-		-webkit-mask-image: var(--mask-img);
-		-webkit-mask-size: 100% 100%;
-		-webkit-mask-repeat: no-repeat;
-		-webkit-mask-position: center;
-		mask-image: var(--mask-img);
-		mask-size: 100% 100%;
-		mask-repeat: no-repeat;
-		mask-position: center;
 	}
 
 	.player-label {

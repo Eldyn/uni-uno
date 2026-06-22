@@ -1,6 +1,12 @@
 <script lang="ts">
-	export let src: string;
-	export let color: string;
+	let {
+		src,
+		color,
+		// Sizing for both the mask and the blended background. Mirrors the
+		// per-site mask-size the masked elements used before (e.g. "100% 100%"
+		// to stretch, "contain" to fit, "cover" by default).
+		fit = "cover"
+	}: { src: string; color: string; fit?: string } = $props();
 </script>
 
 <div
@@ -8,6 +14,7 @@
 	style="
 		--sprite-img: url('{src}');
 		--sprite-color: {color};
+		--sprite-fit: {fit};
 	"
 ></div>
 
@@ -27,10 +34,10 @@
 		mask-image: var(--sprite-img);
 
 		/* Adaptive Scaling */
-		background-size: cover;
+		background-size: var(--sprite-fit, cover);
 		background-position: center;
-		-webkit-mask-size: cover;
-		mask-size: cover;
+		-webkit-mask-size: var(--sprite-fit, cover);
+		mask-size: var(--sprite-fit, cover);
 		-webkit-mask-position: center;
 		mask-position: center;
 		-webkit-mask-repeat: no-repeat;
