@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.15)
 
 file(STRINGS "${CMAKE_SOURCE_DIR}/VERSION" UNI_VERSION)
-project(UNI VERSION ${UNI_VERSION} LANGUAGES CXX)
+# VERSION may carry a SemVer pre-release/build suffix (e.g. 0.2.0-rc.1); strip it
+# for project(), which only accepts a numeric major[.minor[.patch[.tweak]]].
+string(REGEX REPLACE "[-+].*$" "" UNI_VERSION_NUMERIC "${UNI_VERSION}")
+project(UNI VERSION ${UNI_VERSION_NUMERIC} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
