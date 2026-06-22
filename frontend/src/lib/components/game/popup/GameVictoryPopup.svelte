@@ -22,7 +22,7 @@
 
 		<div class="avatar-wrapper">
 			{#if isBot}
-				<img src="/assets/bot_animated.git" alt="Bot" />
+				<img src="/assets/bot_animated.gif" alt="Bot" />
 			{:else}
 				<TintedSprite src="/assets/base_player.gif" color={winnerColor} />
 			{/if}
