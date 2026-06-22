@@ -17,6 +17,7 @@ export {
 } from "$lib/generated/schemas";
 
 import type { ClientPayloads, ServerActionType } from "$lib/generated/schemas";
+import { errorText } from "./errors";
 import { z } from "zod";
 import {
 	GamePlayCardMessageSchema,
@@ -86,8 +87,14 @@ export class WsResponse<T extends Record<string, unknown> = Record<string, unkno
 		this.ok = this.action !== "error";
 	}
 
-	get reason(): string {
-		return (this.data.reason as string) || "Unknown Server Error";
+	/** The raw ErrorCode wire string, when this is an error frame. */
+	get code(): string | undefined {
+		return this.data.code as string | undefined;
+	}
+
+	/** Human-readable text for this response, resolved from its error code. */
+	get message(): string {
+		return errorText(this.code, this.data.detail as string | undefined);
 	}
 
 	get<V>(key: string): V | null {
