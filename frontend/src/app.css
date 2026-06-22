@@ -64,14 +64,14 @@
 
 	font-size: 18px;
 	font-family: var(--pixel);
-	letter-spacing: 0.18px;
+	letter-spacing: 0;
 	color-scheme: light dark;
 	color: var(--text);
 	background: var(--bg);
 	font-synthesis: none;
-	text-rendering: optimizeLegibility;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
+	font-smooth: never;
+	-webkit-font-smoothing: none;
+	-moz-osx-font-smoothing: unset;
 
 	@media (max-width: 1024px) {
 		font-size: 16px;
@@ -123,6 +123,15 @@ mono {
 
 body {
 	margin: 0;
+}
+
+img {
+	image-rendering: pixelated;
+	image-rendering: crisp-edges;
+}
+
+svg {
+	shape-rendering: crispEdges;
 }
 
 button {
