@@ -4,6 +4,7 @@
  * Decodes the JSON packets from the WebSocket and updates the game engine UI.
  */
 
+import { z } from "zod";
 import { storeNavigation } from "./navigation.svelte";
 import { ClientAction, ServerAction, ws } from "./ws.svelte";
 import { storeAuth } from "./auth.svelte";
@@ -30,6 +31,32 @@ const VALUE_MAP = [
 
 export type CardType = (typeof TYPE_MAP)[number];
 export type CardValue = (typeof VALUE_MAP)[number];
+
+const RawCardSchema = z.object({
+	id: z.number().int(),
+	type: z.number().int().min(0).max(4),
+	value: z.number().int().min(0).max(14),
+	can_play: z.boolean().optional()
+});
+
+const RawPlayerSchema = z.object({
+	username: z.string(),
+	card_count: z.number().int(),
+	has_called_uno: z.boolean(),
+	hand: z.array(RawCardSchema).optional(),
+	is_bot: z.boolean()
+});
+
+const RawGameStateSchema = z.object({
+	active_type: z.number().int().min(0).max(4),
+	current_turn: z.string(),
+	play_direction: z.number(),
+	top_card: RawCardSchema.optional(),
+	players: z.array(RawPlayerSchema),
+	pending_draws: z.number().int().default(0),
+	last_play: z.object({ player: z.string(), hand_index: z.number().int() }).optional(),
+	turn_time_remaining_ms: z.number().optional()
+});
 
 /**
  * @interface Card
@@ -167,24 +194,24 @@ class StoreGame {
 
 		ws.on(ServerAction.GameStateUpdated, (data: any) => {
 			this.#clearActionPending();
-			const stateJson = data.game_state;
+			const parsed = RawGameStateSchema.safeParse(data.game_state);
+			if (!parsed.success) {
+				console.error("[GameStateUpdated] payload validation failed:", parsed.error.message);
+				return;
+			}
+			const stateJson = parsed.data;
 
 			this.state = {
-				active_type: TYPE_MAP[stateJson.active_type] || "green",
+				active_type: TYPE_MAP[stateJson.active_type],
 				current_turn: stateJson.current_turn,
 				play_direction: stateJson.play_direction,
 				top_card: stateJson.top_card ? this.#parseCard(stateJson.top_card) : undefined,
-				players: stateJson.players.map((p: any) => ({
+				players: stateJson.players.map((p) => ({
 					...p,
-					hand: p.hand ? p.hand.map((card: any) => this.#parseCard(card)) : undefined
+					hand: p.hand ? p.hand.map((card) => this.#parseCard(card)) : undefined
 				})),
-				pending_draws: stateJson.pending_draws ?? 0,
-				last_play: stateJson.last_play
-					? {
-							player: stateJson.last_play.player,
-							hand_index: stateJson.last_play.hand_index
-						}
-					: undefined,
+				pending_draws: stateJson.pending_draws,
+				last_play: stateJson.last_play,
 				is_over: undefined,
 				winner: undefined
 			};
@@ -254,11 +281,11 @@ class StoreGame {
 	 * @returns A formatted object of type Card.
 	 * @tag FRONT-GAME-MTH-005
 	 */
-	#parseCard(rawCard: { id: number; type: number; value: number; can_play?: boolean }): Card {
+	#parseCard(rawCard: z.infer<typeof RawCardSchema>): Card {
 		return {
 			id: rawCard.id,
-			type: TYPE_MAP[rawCard.type] || "wild",
-			value: VALUE_MAP[rawCard.value] || "",
+			type: TYPE_MAP[rawCard.type],
+			value: VALUE_MAP[rawCard.value],
 			can_play: rawCard.can_play
 		};
 	}
