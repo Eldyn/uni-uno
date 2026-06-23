@@ -2,6 +2,18 @@
 	import { storeNavigation } from "../stores/navigation.svelte";
 	import { storeAuth } from "../stores/auth.svelte";
 	import TextEffects from "./common/TextEffects.svelte";
+
+	let logoutPending = $state(false);
+
+	async function handleLogout() {
+		if (logoutPending) return;
+		logoutPending = true;
+		try {
+			await storeAuth.logout();
+		} finally {
+			logoutPending = false;
+		}
+	}
 </script>
 
 <div class="screen-container">
@@ -36,7 +48,10 @@
 					<button class="btn menu-btn pixel-corners" onclick={() => storeNavigation.goto("stats")}>
 						Stats
 					</button>
-					<button class="btn menu-btn pixel-corners" onclick={() => storeAuth.logout()}
+					<button
+						class="btn menu-btn pixel-corners"
+						onclick={handleLogout}
+						disabled={logoutPending}
 						>Logout</button
 					>
 				</div>

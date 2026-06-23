@@ -14,7 +14,7 @@
 		detailedStats: () => import("./lib/components/stats/DetailedStatsScreen.svelte")
 	} as const;
 
-	import { onMount } from "svelte";
+	import { onMount, onDestroy } from "svelte";
 	import { storeNavigation } from "./lib/stores/navigation.svelte";
 	import { ws } from "./lib/stores/ws.svelte";
 	import { ErrorCode } from "./lib/generated/schemas";
@@ -32,6 +32,9 @@
 	let volume = 0.05;
 	let audioPlayer: HTMLAudioElement;
 
+	let _audioInteractionHandler: (() => void) | null = null;
+	let _unsubError: (() => void) | null = null;
+
 	// Warm the lazy GameScreen chunk while in a lobby so the match starts without
 	// a blank frame when the first state broadcast switches to the game screen.
 	$effect(() => {
@@ -41,13 +44,14 @@
 	onMount(async () => {
 		if (audioPlayer) {
 			audioPlayer.play().catch(() => {
-				const startAudioOnInteraction = () => {
+				_audioInteractionHandler = () => {
 					audioPlayer.play();
-					document.removeEventListener("click", startAudioOnInteraction);
-					document.removeEventListener("keydown", startAudioOnInteraction);
+					document.removeEventListener("click", _audioInteractionHandler!);
+					document.removeEventListener("keydown", _audioInteractionHandler!);
+					_audioInteractionHandler = null;
 				};
-				document.addEventListener("click", startAudioOnInteraction);
-				document.addEventListener("keydown", startAudioOnInteraction);
+				document.addEventListener("click", _audioInteractionHandler);
+				document.addEventListener("keydown", _audioInteractionHandler);
 			});
 		}
 
@@ -61,7 +65,7 @@
 			}
 		}
 
-		ws.on("error", (data) => {
+		_unsubError = ws.on("error", (data) => {
 			const code = data.code as string | undefined;
 			const text = errorText(code, data.detail as string | undefined);
 
@@ -73,6 +77,14 @@
 				storeToast.error(text);
 			}
 		});
+	});
+
+	onDestroy(() => {
+		if (_audioInteractionHandler) {
+			document.removeEventListener("click", _audioInteractionHandler);
+			document.removeEventListener("keydown", _audioInteractionHandler);
+		}
+		_unsubError?.();
 	});
 
 	async function handleAuthSuccess() {
