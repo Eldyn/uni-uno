@@ -65,6 +65,7 @@ version; each release below corresponds to a `vX.Y.Z` git tag.
   (emitAndWait disconnect rejection).
 - `vitest`, `@testing-library/svelte`, `@testing-library/jest-dom`, `jsdom`
   added as frontend dev dependencies; `npm test` script wired.
+- Google AdSense meta tag for site ownership.
 
 ### Fixed
 
