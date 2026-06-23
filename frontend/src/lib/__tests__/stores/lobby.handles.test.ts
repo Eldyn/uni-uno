@@ -60,7 +60,10 @@ describe("lobby store: handle methods", () => {
 
 	it("create calls emitAndWait with LobbyCreate action and payload", async () => {
 		await storeLobby.create({ is_public: false, name: "Test" });
-		expect(mockEmitAndWait).toHaveBeenCalledWith("lobby_create", { is_public: false, name: "Test" });
+		expect(mockEmitAndWait).toHaveBeenCalledWith("lobby_create", {
+			is_public: false,
+			name: "Test"
+		});
 	});
 
 	it("create does not set isLoadingStart", async () => {
