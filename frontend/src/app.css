@@ -32,18 +32,45 @@
 	font-display: swap;
 }
 
+/*
+ * Dark is the primary theme — its values live in :root.
+ * Light is the secondary theme, applied via the prefers-color-scheme: light
+ * override block below. Every colour that affects visibility is a token here
+ * so light mode never inherits a stranded dark surface.
+ */
 :root {
-	/* Theme */
-	--text: #6b6375;
-	--text-h: #08060d;
-	--bg: #fff;
-	--border: #e5e4e7;
-	--code-bg: #f4f3ec;
-	--accent: #aa3bff;
-	--accent-bg: rgba(170, 59, 255, 0.1);
-	--accent-border: rgba(170, 59, 255, 0.5);
-	--social-bg: rgba(244, 243, 236, 0.5);
-	--shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+	/* Surfaces & text */
+	--text: #9ca3af;
+	--text-h: #f3f4f6;
+	--bg: #16171d;
+	--border: #2e303a;
+	--code-bg: #1f2028;
+
+	/* Accent — muted UI purple (NOT the vibrant card colours). Lighter/softer,
+	   the "previous purple". Per-mode so it stays readable on each background. */
+	--accent: #c084fc;
+	--accent-h: #cd9bff;
+	--accent-bg: rgba(192, 132, 252, 0.15);
+	--accent-border: rgba(192, 132, 252, 0.5);
+	--accent-violet: #9b5de5;
+
+	/* Secondary surfaces (panels, hud, stat boxes) */
+	--surface: #2a2a2d;
+	--surface-2: #333;
+	--surface-deep: #1c1c1e;
+	--surface-violet: #3a1b5c;
+
+	/* Semantic UI colours — deliberately MUTED, distinct from the vibrant card
+	   colours (--redCard/--greenCard). Used for danger/success UI only. */
+	--danger: #d9534f;
+	--success: #4e9a6b;
+	--gold: #ffcc00;
+
+	/* Pixel-art outline / stroke (dark in both themes by design) */
+	--pixel-shadow: #1a1a1a;
+
+	--social-bg: rgba(47, 48, 58, 0.5);
+	--shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
 
 	/* Fonts */
 	--sans: system-ui, "Segoe UI", Roboto, sans-serif;
@@ -51,7 +78,7 @@
 	--heading: "FatPixel", system-ui, "Segoe UI", Roboto, sans-serif;
 	--mono: "JetBrainsMono", ui-monospace, Consolas, monospace;
 
-	/* Card colours & shadows */
+	/* Card colours & shadows (theme-independent) */
 	--cardSize: 5em;
 	--wildCard: white;
 	--redCard: #dc251c;
@@ -78,26 +105,184 @@
 	}
 }
 
-mono {
-	font-family: "MonoPixel";
+@media (prefers-color-scheme: light) {
+	:root {
+		--text: #6b6375;
+		--text-h: #08060d;
+		--bg: #fff;
+		--border: #e5e4e7;
+		--code-bg: #f4f3ec;
+
+		--accent: #aa3bff;
+		--accent-h: #b658ff;
+		--accent-bg: rgba(170, 59, 255, 0.1);
+		--accent-border: rgba(170, 59, 255, 0.5);
+		--accent-violet: #aa3bff;
+
+		--surface: #ededf0;
+		--surface-2: #d9d8dd;
+		--surface-deep: #f4f3ec;
+		--surface-violet: #ede0fb;
+
+		--danger: #cf4a46;
+		--success: #43885d;
+		--gold: #9a6a00;
+
+		--social-bg: rgba(244, 243, 236, 0.5);
+		--shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+	}
 }
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--text: #9ca3af;
-		--text-h: #f3f4f6;
-		--bg: #16171d;
-		--border: #2e303a;
-		--code-bg: #1f2028;
-		--accent: #c084fc;
-		--accent-bg: rgba(192, 132, 252, 0.15);
-		--accent-border: rgba(192, 132, 252, 0.5);
-		--social-bg: rgba(47, 48, 58, 0.5);
-		--shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+/*
+ * @theme inline (NOT plain @theme): generated utilities emit var(--token) so
+ * they stay live and flip with the prefers-color-scheme override. A plain
+ * @theme would freeze the :root value and break theming.
+ */
+@theme inline {
+	--color-accent: var(--accent);
+	--color-accent-h: var(--accent-h);
+	--color-accent-violet: var(--accent-violet);
+	--color-text: var(--text);
+	--color-text-h: var(--text-h);
+	--color-bg: var(--bg);
+	--color-border: var(--border);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-surface-deep: var(--surface-deep);
+	--color-surface-violet: var(--surface-violet);
+	--color-danger: var(--danger);
+	--color-success: var(--success);
+	--color-gold: var(--gold);
+	--color-pixel-shadow: var(--pixel-shadow);
+	--color-red-card: var(--redCard);
+	--color-yellow-card: var(--yellowCard);
+	--color-blue-card: var(--blueCard);
+	--color-green-card: var(--greenCard);
+	--color-black-card: var(--blackCard);
+
+	--font-pixel: var(--pixel);
+	--font-heading: var(--heading);
+	--font-mono: var(--mono);
+	--font-sans: var(--sans);
+}
+
+@layer components {
+	/*
+	 * Canonical button: flat dark-purple, square (corners come only from the
+	 * global button{} pixel-corner clip), no shadow, no press-translate.
+	 * Colour/size differences are inline utility modifiers (bg-*, sizing).
+	 */
+	.btn {
+		font-family: var(--pixel);
+		color: #fff;
+		background: var(--accent);
+		border: none;
+		padding: 0.75rem 1.5rem;
+		cursor: pointer;
+		transition: filter 0.12s ease;
+	}
+	.btn:hover:not(:disabled) {
+		filter: brightness(1.1);
+	}
+	.btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
 	}
 
-	#social .button-icon {
-		filter: invert(1) brightness(2);
+	/* Titles */
+	.title-hero {
+		font-family: var(--heading);
+		font-size: 10rem;
+		line-height: 1;
+		color: #fff;
+		-webkit-text-stroke: 2px var(--pixel-shadow);
+		text-shadow: 5px 5px 0px var(--pixel-shadow);
+	}
+	.title-screen {
+		font-family: var(--heading);
+		font-size: 56px;
+		color: #fff;
+		text-shadow: 2px 2px 0px var(--pixel-shadow);
+	}
+	.title-stats {
+		font-family: var(--pixel);
+		font-size: 1.5rem;
+		color: var(--gold);
+		text-shadow: 2px 2px 0px var(--pixel-shadow);
+	}
+
+	/* Inputs */
+	.input-pixel {
+		font-family: var(--pixel);
+		font-size: 12px;
+		padding: 10px 12px;
+		color: var(--text-h);
+		background: var(--bg);
+		border: 2px solid var(--border);
+		transition: border-color 0.2s;
+	}
+	.input-pixel:focus {
+		outline: none;
+		border-color: var(--accent);
+	}
+	.input-pixel:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	.input-pixel.error {
+		border-color: var(--danger);
+	}
+	/* Larger, darker-backed variant used by the lobby forms */
+	.input-dark {
+		font-size: 16px;
+		padding: 12px;
+		background: rgba(0, 0, 0, 0.3);
+	}
+
+	/* Surfaces */
+	.panel {
+		background: var(--bg);
+		border: 2px solid var(--border);
+		padding: 16px;
+	}
+	.card-outline {
+		background: var(--bg);
+		border: 1px solid var(--border);
+		padding: 16px;
+		transition:
+			border-color 0.2s,
+			box-shadow 0.2s;
+	}
+	.card-outline:hover {
+		border-color: var(--accent);
+		box-shadow: var(--lowShadowHover);
+	}
+
+	/* Modals */
+	.modal-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 10000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(0, 0, 0, 0.75);
+		backdrop-filter: blur(4px);
+	}
+	.modal-content {
+		background: var(--bg);
+		border: 4px solid var(--accent);
+		padding: 30px;
+		box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.6);
+	}
+
+	/* Auth container */
+	.auth-container {
+		max-width: 600px;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		padding: 40px;
+		box-shadow: var(--shadow);
 	}
 }
 
@@ -118,6 +303,21 @@ mono {
 			4px calc(100% - 4px),
 			0 calc(100% - 4px)
 		);
+	}
+}
+
+mono {
+	font-family: "MonoPixel";
+}
+
+/* Social icons are light glyphs — invert them onto the dark base theme,
+   and leave them as-authored in light mode. */
+#social .button-icon {
+	filter: invert(1) brightness(2);
+}
+@media (prefers-color-scheme: light) {
+	#social .button-icon {
+		filter: none;
 	}
 }
 
@@ -152,19 +352,37 @@ button {
 	);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	font-family: var(--heading);
 	font-weight: 500;
 	color: var(--text-h);
 	margin: 0;
 }
 
-h1 { font-size: 3rem; }
-h2 { font-size: 2rem; margin-bottom: 0.5rem; }
-h3 { font-size: 1.5rem; }
-h4 { font-size: 1.25rem; }
-h5 { font-size: 1rem; }
-h6 { font-size: 0.875rem; }
+h1 {
+	font-size: 3rem;
+}
+h2 {
+	font-size: 2rem;
+	margin-bottom: 0.5rem;
+}
+h3 {
+	font-size: 1.5rem;
+}
+h4 {
+	font-size: 1.25rem;
+}
+h5 {
+	font-size: 1rem;
+}
+h6 {
+	font-size: 0.875rem;
+}
 p {
 	margin: 0;
 }

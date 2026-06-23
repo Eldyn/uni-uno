@@ -17,7 +17,7 @@
 </script>
 
 <li class="saved-match-item">
-	<div class="match-content">
+	<div class="match-content pixel-corners">
 		<div class="match-info">
 			<span class="label">Match</span>
 			<span class="id">{save.match_id}</span>
@@ -26,7 +26,7 @@
 		<div class="actions">
 			<button
 				type="button"
-				class="resume-btn"
+				class="btn pixel-corners resume-btn"
 				onclick={() => ws.emit(ClientAction.LobbyResumeSavedMatch, { match_id: save.match_id })}
 			>
 				Start
@@ -67,7 +67,6 @@
 		justify-content: space-between;
 		background: rgba(255, 255, 255, 0.05);
 		padding: 8px 12px;
-		border-radius: 8px;
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		transition: border-color 0.2s;
 	}
@@ -102,45 +101,28 @@
 		gap: 8px;
 	}
 
+	/* Size override on top of the shared flat .btn */
 	.resume-btn {
 		padding: 6px 14px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		border-radius: 4px;
 		font-size: 12px;
 		font-weight: bold;
-		cursor: pointer;
-		transition:
-			transform 0.1s,
-			opacity 0.2s;
-	}
-
-	.resume-btn:hover {
-		opacity: 0.9;
-		transform: translateY(-1px);
-	}
-
-	.resume-btn:active {
-		transform: translateY(1px);
 	}
 
 	.delete-btn {
 		background: none;
 		border: none;
-		color: #ff5650;
+		color: var(--danger);
 		cursor: pointer;
 		padding: 6px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-radius: 4px;
 		transition: all 0.2s;
 		opacity: 0.6;
 	}
 
 	.delete-btn:hover {
-		background: rgba(255, 86, 80, 0.1);
+		background: rgba(220, 37, 28, 0.12);
 		opacity: 1;
 		transform: scale(1.1);
 	}

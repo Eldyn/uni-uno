@@ -19,11 +19,9 @@
 
 <div class="stats-container">
 	<header class="top-bar">
-		<button class="styled-btn pixel-corners" onclick={() => storeNavigation.goto("main")}>
-			Back
-		</button>
+		<button class="btn pixel-corners" onclick={() => storeNavigation.goto("main")}> Back </button>
 		<h1>GLOBAL LEADERBOARD</h1>
-		<button class="styled-btn pixel-corners" onclick={() => storeNavigation.goto("detailedStats")}>
+		<button class="btn pixel-corners" onclick={() => storeNavigation.goto("detailedStats")}>
 			Arsenal
 		</button>
 	</header>
@@ -33,7 +31,7 @@
 			{@const topPlayer = storeStats.leaderboard[0]}
 			<div class="top-player-card pixel-corners">
 				<div class="profile-section">
-					<h2>👑 {topPlayer.username}</h2>
+					<h2><span class="crown-icon">󱟜</span> {topPlayer.username}</h2>
 					<span class="rank-badge pixel-corners">#1 In the world!</span>
 				</div>
 				<div class="stats-grid">
@@ -105,42 +103,16 @@
 </div>
 
 <style>
-	.styled-btn {
-		padding: 8px 16px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		border-radius: 6px; /* Retained as requested */
-		font-size: 14px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: opacity 0.2s;
-		font-family: "Pixel", sans-serif;
-	}
-	.styled-btn:hover {
-		opacity: 0.8;
-	}
-
-	.top-bar h1 {
-		margin: 0;
-		font-size: 1.5rem;
-		color: var(--accent); /* Updated */
-		text-shadow: 2px 2px 0px #000;
-	}
-
-	/* Update highlight references */
 	.top-player-card {
 		background: #2a2a2d;
 		padding: 24px;
-		box-shadow: inset 0 0 0 4px var(--accent); /* Updated */
+		box-shadow: inset 0 0 0 4px var(--accent);
 		position: relative;
 	}
-	/* Global Background Element */
 	.doodle-bg {
 		position: fixed;
 		inset: 0;
 		background-color: #121212;
-		/* Add your doodle texture here: */
 		background-image: url("/assets/bg_stats.png");
 		background-size: cover;
 		z-index: 0;
@@ -150,12 +122,12 @@
 	.top-bar h1 {
 		line-height: 1.3;
 		padding-top: 2px;
-		font-family: "Pixel", sans-serif; /* Ensuring blocky font if available */
+		font-family: "Pixel", sans-serif;
 	}
 
 	.stats-container {
 		position: relative;
-		z-index: 1; /* Sits above the doodle background */
+		z-index: 1;
 		display: flex;
 		flex-direction: column;
 		height: 100vh;
@@ -168,7 +140,7 @@
 		align-items: center;
 		padding: 20px;
 		background-color: #1c1c1e;
-		border-bottom: 4px solid #333; /* Thicker border for pixel look */
+		border-bottom: 4px solid #333;
 	}
 
 	.top-bar h1 {
@@ -188,7 +160,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 30px;
-		padding-bottom: 60px; /* Space for the sticky element */
+		padding-bottom: 60px;
 	}
 
 	.top-player-card {
@@ -212,6 +184,11 @@
 		font-size: 1.8rem;
 		color: var(--accent);
 		text-shadow: 2px 2px 0px #000;
+	}
+
+	.crown-icon {
+		font-family: var(--mono);
+		color: var(--gold);
 	}
 
 	.rank-badge {
@@ -252,9 +229,9 @@
 	}
 	.text-purple {
 		color: #9b5de5;
-	} /* Updated from blue to purple */
+	}
 
-	/* --- Leaderboard List --- */
+	/* Leaderboard list */
 	.leaderboard-section {
 		background: #1c1c1e;
 		padding: 20px;
@@ -289,8 +266,8 @@
 	}
 
 	.leaderboard-row.is-me {
-		background: #3a1b5c; /* Dark purple background */
-		box-shadow: inset 0 0 0 4px #9b5de5; /* Purple border */
+		background: #3a1b5c;
+		box-shadow: inset 0 0 0 4px #9b5de5;
 	}
 
 	.rank-col {
@@ -337,17 +314,15 @@
 		color: #ff3b30;
 	}
 
-	/* Sticky specific styles */
 	.sticky-divider {
-		height: 12px; /* Space between end of list and sticky block */
+		height: 12px;
 	}
 
 	.sticky-me {
 		position: sticky;
-		bottom: -20px; /* Snaps to bottom of the content container */
+		bottom: -20px;
 		margin-top: auto;
 		z-index: 10;
-		/* Dropshadow to show it's floating above */
 		filter: drop-shadow(0px -4px 6px rgba(0, 0, 0, 0.6));
 	}
 

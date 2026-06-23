@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { storeAuth } from "../../stores/auth.svelte";
-	import FormInput from "../common/FormInput.svelte"; // Adjust path if needed
+	import FormInput from "../common/FormInput.svelte";
 
 	let { onRegisterSuccess }: { onRegisterSuccess?: () => void } = $props();
 
-	// 1. Grouped State: Much cleaner than 4 separate interfaces
 	let form = $state({
 		username: "",
 		email: "",
@@ -22,7 +21,6 @@
 	async function handleSubmit(event: SubmitEvent) {
 		event.preventDefault();
 
-		// Clear previous errors
 		errors = { username: "", email: "", password: "", confirmPassword: "" };
 
 		const resErrors = await storeAuth.register(
@@ -32,7 +30,6 @@
 			form.confirmPassword
 		);
 
-		// Map errors if any are returned
 		if (resErrors && Object.keys(resErrors).length > 0) {
 			if (resErrors.username) errors.username = resErrors.username;
 			if (resErrors.email) errors.email = resErrors.email;
@@ -93,39 +90,15 @@
 		autocomplete="new-password"
 	/>
 
-	<button type="submit" disabled={storeAuth.isLoading} class="submit-button">
+	<button type="submit" disabled={storeAuth.isLoading} class="btn pixel-corners">
 		{storeAuth.isLoading ? "Registering..." : "Register"}
 	</button>
 </form>
 
 <style>
-	/* Notice how this file ONLY contains layout styles for the form itself. 
-       All the input and label styles are safely inside FormInput.svelte */
 	.auth-form {
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
-	}
-
-	.submit-button {
-		padding: 10px 16px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-family: "FatPixel";
-		font-size: 10px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: opacity 0.2s;
-	}
-
-	.submit-button:hover:not(:disabled) {
-		opacity: 0.9;
-	}
-
-	.submit-button:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 </style>

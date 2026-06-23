@@ -50,7 +50,7 @@
 		autocomplete="current-password"
 	/>
 
-	<button type="submit" disabled={storeAuth.isLoading} class="submit-button">
+	<button type="submit" disabled={storeAuth.isLoading} class="btn pixel-corners">
 		{storeAuth.isLoading ? "Logging in..." : "Login"}
 	</button>
 </form>
@@ -60,27 +60,5 @@
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
-	}
-
-	.submit-button {
-		padding: 10px 16px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-family: "FatPixel";
-		font-size: 10px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: opacity 0.2s;
-	}
-
-	.submit-button:hover:not(:disabled) {
-		opacity: 0.9;
-	}
-
-	.submit-button:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
 	}
 </style>

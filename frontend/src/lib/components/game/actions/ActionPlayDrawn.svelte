@@ -8,17 +8,23 @@
 		(c) => c.id === storeGame.actionContext.card_id
 	)}
 	<div class="inline-action-container">
-		<div class="prompt-badge">You drew a playable card!</div>
+		<div class="prompt-badge pixel-corners">You drew a playable card!</div>
 		{#if drawnCard}
 			<div class="card-wrapper animate-flip">
 				<GameCard card={drawnCard} style="position: relative; left: 0;" />
 			</div>
 
 			<div class="action-buttons-group">
-				<button class="pixel-btn play-btn" onclick={() => storeGame.submitInput("0")}>
+				<button
+					class="btn pixel-corners sized-btn play-btn"
+					onclick={() => storeGame.submitInput("0")}
+				>
 					Play It
 				</button>
-				<button class="pixel-btn keep-btn" onclick={() => storeGame.submitInput("1")}>
+				<button
+					class="btn pixel-corners sized-btn keep-btn"
+					onclick={() => storeGame.submitInput("1")}
+				>
 					Keep It
 				</button>
 			</div>
@@ -29,7 +35,7 @@
 <style>
 	.inline-action-container {
 		position: absolute;
-		top: 58%; /* Places it right under the center piles */
+		top: 58%;
 		left: 50%;
 		transform: translateX(-50%);
 		display: flex;
@@ -43,7 +49,6 @@
 		background: var(--bg);
 		color: var(--text-h);
 		border: 3px solid var(--accent);
-		border-radius: 8px;
 		padding: 6px 12px;
 		font-family: "Pixel", sans-serif;
 		font-weight: bold;
@@ -91,35 +96,18 @@
 		animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 	}
 
-	.pixel-btn {
+	/* Size override on top of the shared flat .btn */
+	.sized-btn {
 		padding: 10px 20px;
-		font-family: "Pixel", sans-serif;
 		font-size: 14px;
 		font-weight: bold;
-		border: 3px solid #1a1a1a;
-		border-radius: 8px;
-		cursor: pointer;
-		box-shadow: 4px 4px 0px #1a1a1a;
-		transition:
-			transform 0.1s ease,
-			box-shadow 0.1s ease;
-		color: white;
+		border: 3px solid var(--pixel-shadow);
 	}
 
 	.play-btn {
-		background-color: #018d41;
+		background-color: var(--success);
 	}
 	.keep-btn {
-		background-color: #dc251c;
-	}
-	.pixel-btn:hover {
-		transform: translate(-2px, -2px);
-		box-shadow: 6px 6px 0px #1a1a1a;
-		filter: brightness(1.1);
-	}
-
-	.pixel-btn:active {
-		transform: translate(4px, 4px);
-		box-shadow: 0px 0px 0px #1a1a1a;
+		background-color: var(--danger);
 	}
 </style>

@@ -8,7 +8,7 @@
 </script>
 
 <div class="auth-screen">
-	<section class="auth-container">
+	<section class="auth-container pixel-corners w-full">
 		<div class="auth-tabs">
 			<button
 				type="button"
@@ -52,16 +52,6 @@
 		font-family: "Pixel";
 		background-image: url("/assets/bg_main.png");
 		background-size: cover;
-	}
-
-	.auth-container {
-		width: 100%;
-		max-width: 600px;
-		background: var(--bg);
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		padding: 40px;
-		box-shadow: var(--shadow);
 	}
 
 	.auth-tabs {

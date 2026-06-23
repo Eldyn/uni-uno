@@ -14,12 +14,21 @@
 	let currentType = $derived(type === "password" && showPassword ? "text" : type);
 </script>
 
-<div class="form-group {className}">
-	<label for={id}>{label}</label>
+<div class="flex flex-col gap-1.5 {className}">
+	<label for={id} class="font-pixel text-text-h" style="font-size: 14px; font-weight: 500;"
+		>{label}</label
+	>
 
 	{#if type === "password"}
 		<div class="password-input-group">
-			<input {id} type={currentType} bind:value class:error={!!error} {...rest} />
+			<input
+				{id}
+				type={currentType}
+				class="input-pixel"
+				bind:value
+				class:error={!!error}
+				{...rest}
+			/>
 			<button
 				type="button"
 				class="password-toggle"
@@ -27,65 +36,26 @@
 				disabled={rest.disabled}
 				aria-label={showPassword ? "Hide password" : "Show password"}
 			>
-				{showPassword ? "👁" : "👁‍🗨"}
+				{showPassword ? "󰈈" : "󰈉"}
 			</button>
 		</div>
 	{:else}
-		<input {id} type={currentType} bind:value class:error={!!error} {...rest} />
+		<input {id} type={currentType} class="input-pixel" bind:value class:error={!!error} {...rest} />
 	{/if}
 
 	{#if error}
-		<span class="error-text">{error}</span>
+		<span class="text-danger" style="font-size: 12px;">{error}</span>
 	{/if}
 </div>
 
 <style>
-	.form-group {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-	}
-
-	label {
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--text-h);
-		font-family: "Pixel";
-	}
-
-	input {
-		padding: 10px 12px;
-		border: 2px solid var(--border);
-		border-radius: 6px;
-		font-size: 14px;
-		color: var(--text-h);
-		background: var(--bg);
-		transition: border-color 0.2s;
-		font-family: "Pixel";
-		font-size: 12px;
-	}
-
-	input:focus {
-		outline: none;
-		border-color: var(--accent);
-	}
-
-	input:disabled {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	input.error {
-		border-color: #dc2626;
-	}
-
 	.password-input-group {
 		position: relative;
 		display: flex;
 		align-items: center;
 	}
 
-	.password-input-group input {
+	.password-input-group :global(.input-pixel) {
 		flex: 1;
 		padding-right: 40px;
 	}
@@ -96,6 +66,7 @@
 		background: none;
 		border: none;
 		cursor: pointer;
+		font-family: var(--mono);
 		font-size: 18px;
 		padding: 4px 8px;
 		opacity: 0.6;
@@ -108,15 +79,5 @@
 
 	.password-toggle:disabled {
 		cursor: not-allowed;
-	}
-
-	.error-text {
-		font-size: 12px;
-		color: #dc2626;
-	}
-
-	input[type="password"] {
-		font-family: "Pixel";
-		font-size: 12px;
 	}
 </style>

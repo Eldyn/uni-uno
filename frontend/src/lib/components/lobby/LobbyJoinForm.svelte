@@ -32,6 +32,7 @@
 		<input
 			id="invite-code"
 			type="text"
+			class="input-pixel input-dark uppercase"
 			bind:value={roomCodeInput}
 			placeholder="ABC123"
 			disabled={isLoading}
@@ -43,7 +44,7 @@
 		{/if}
 	</div>
 
-	<button type="submit" disabled={isLoading} class="pixel-corners submit-btn">
+	<button type="submit" disabled={isLoading} class="btn pixel-corners submit-btn">
 		{isLoading ? "Joining..." : "JOIN LOBBY"}
 	</button>
 </form>
@@ -61,7 +62,6 @@
 		gap: 8px;
 	}
 
-	/* LABEL COERENTE CON CREATE FORM */
 	label {
 		font-family: "Pixel", sans-serif;
 		font-size: 14px;
@@ -69,52 +69,17 @@
 		text-transform: uppercase;
 	}
 
-	/* INPUT COERENTE CON CREATE FORM */
-	input {
-		padding: 12px;
-		background: rgba(0, 0, 0, 0.3);
-		border: 2px solid var(--border);
-		color: var(--text-h);
-		font-family: "Pixel", monospace;
-		font-size: 16px;
-		text-transform: uppercase; /* Forces visual uppercase */
-		outline: none;
-	}
-
-	input:focus {
-		border-color: var(--accent);
-	}
-
-	input.error {
-		border-color: #ff4444;
-	}
-
 	.error-text {
 		font-family: "Pixel", sans-serif;
 		font-size: 11px;
-		color: #ff4444;
+		color: var(--danger);
 		margin-top: 4px;
 		text-transform: uppercase;
 	}
 
-	/* BOTTONE COERENTE */
+	/* Size override on top of the shared flat .btn */
 	.submit-btn {
 		padding: 15px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		font-family: "Pixel", sans-serif;
 		font-size: 20px;
-		cursor: pointer;
-		transition: filter 0.2s;
-	}
-
-	.submit-btn:hover:not(:disabled) {
-		filter: brightness(1.2);
-	}
-
-	.submit-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
 	}
 </style>
