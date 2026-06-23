@@ -166,6 +166,11 @@ class StoreLobby {
     /** True while the list of saved matches is being fetched. */
     isLoadingSavedMatchList = $state(false);
 
+    /** True while a start-match request is in flight. */
+    isLoadingStart = $state(false);
+
+    #listenersRegistered = false;
+
     /**
      * @brief Derived property to quickly check whether the user is in a lobby.
      * @returns True if the user is in a lobby, false otherwise.
@@ -179,8 +184,8 @@ class StoreLobby {
      * @tag FRONT-LOBBY-MTH-001
      */
     constructor() {
+        this.#registerListeners();
         ws.onOpen(async () => {
-            this.#registerListeners();
             await this.#tryRejoin();
         });
     }
@@ -225,10 +230,16 @@ class StoreLobby {
      * @tag FRONT-LOBBY-MTH-004A
      */
     async startMatch(): Promise<void> {
-        await ws.connect();
-        const response = await ws.emitAndWait(ClientAction.LobbyStartMatch);
-        if (!response.ok) {
-            storeToast.error(response.message);
+        if (this.isLoadingStart) return;
+        this.isLoadingStart = true;
+        try {
+            await ws.connect();
+            const response = await ws.emitAndWait(ClientAction.LobbyStartMatch);
+            if (!response.ok) {
+                storeToast.error(response.message);
+            }
+        } finally {
+            this.isLoadingStart = false;
         }
     }
 
@@ -337,6 +348,9 @@ class StoreLobby {
      * @tag FRONT-LOBBY-PRIV-001
      */
     #registerListeners(): void {
+        if (this.#listenersRegistered) return;
+        this.#listenersRegistered = true;
+
         ws.on(ServerAction.LobbyJoined, async (data) => {
             const lobby = data.lobby as Lobby;
             this.current = lobby;
@@ -354,7 +368,6 @@ class StoreLobby {
 
             if (this.current) {
                 this.current = updatedLobby;
-                console.log(this.current);
             }
 
             const idx = this.available.findIndex((l) => l.invite_code === updatedLobby.invite_code);

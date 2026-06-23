@@ -72,7 +72,7 @@
 	}
 
 	function handleCardClick(cardId: number) {
-		if (!dragging) storeGame.playCard(cardId);
+		if (!dragging && !storeGame.isActionPending) storeGame.playCard(cardId);
 	}
 </script>
 

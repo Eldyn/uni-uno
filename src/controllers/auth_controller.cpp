@@ -270,6 +270,7 @@ std::string AuthController::HashPassword(const std::string& password) {
     //       the buffer with random bytes from OpenSSL's CSPRNG.
     std::vector<unsigned char> salt(kSaltBytes);
     if (RAND_bytes(salt.data(), kSaltBytes) != 1) {
+        throw std::runtime_error("[Auth] CSPRNG failure: RAND_bytes returned 0");
     }
 
     // INFO: 2. Read the pepper from the environment and append it to the

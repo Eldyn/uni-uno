@@ -19,6 +19,7 @@
 					<button
 						type="button"
 						class="btn pixel-corners color-button color-{name}"
+						disabled={storeGame.isActionPending}
 						onclick={() => storeGame.submitInput(String(typeIndex))}
 					>
 						{name.charAt(0).toUpperCase()}

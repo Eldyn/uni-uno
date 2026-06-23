@@ -201,7 +201,9 @@ class StoreAuth {
 	 */
 	updateAvatar(file: File): boolean {
 		try {
+			const prev = this.avatar;
 			this.avatar = URL.createObjectURL(file);
+			if (prev.startsWith("blob:")) URL.revokeObjectURL(prev);
 			storeToast.success("Profile picture updated locally!");
 			return true;
 		} catch {
@@ -214,7 +216,11 @@ class StoreAuth {
 	 * @brief Attempts to log out by sending a request and clears the local state.
 	 */
 	async logout(): Promise<void> {
-		await fetch("/auth/logout", { method: "POST", credentials: "include" });
+		const res = await fetch("/auth/logout", { method: "POST", credentials: "include" });
+		if (!res.ok) {
+			storeToast.error("Logout failed — please try again.");
+			return;
+		}
 		this.#setLoggedOut();
 		storeNavigation.goto("auth");
 	}

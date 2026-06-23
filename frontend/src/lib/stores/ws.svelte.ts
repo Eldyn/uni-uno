@@ -283,6 +283,13 @@ export class WebSocketClient {
 					this.socket = null;
 					this.connectionStatus.status = "disconnected";
 				}
+
+				for (const [, pending] of this.pendingRequests) {
+					clearTimeout(pending.timer);
+					pending.reject(new Error("disconnected"));
+				}
+				this.pendingRequests.clear();
+
 				this._scheduleReconnect();
 			};
 
