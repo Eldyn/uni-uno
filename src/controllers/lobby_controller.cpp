@@ -173,7 +173,9 @@ LobbyController::LobbyController(IActionRouter& router, IBroadcaster& broadcast,
             bool lobby_survived = RemoveMember(id, username, false, "");
 
             if (lobby_survived) {
-                Lobby& lobby = lobbies_.at(id);
+                auto it = lobbies_.find(id);
+                if (it == lobbies_.end()) continue;
+                Lobby& lobby = it->second;
 
                 if (lobby.host == username) {
                     for (const auto& m : lobby.members) {
@@ -193,7 +195,8 @@ LobbyController::LobbyController(IActionRouter& router, IBroadcaster& broadcast,
         }
 
         for (uint32_t id : lobbies_to_update) {
-            BroadcastUpdate(lobbies_.at(id));
+            auto it = lobbies_.find(id);
+            if (it != lobbies_.end()) BroadcastUpdate(it->second);
         }
     });
 
