@@ -4,7 +4,6 @@
  */
 
 #include "common/lobby.hpp"
-#include "webserver.hpp"
 #include "websocket_context.hpp"
 #include <WebSocketProtocol.h>
 #include <controllers/lobby_controller.hpp>
@@ -86,9 +85,12 @@ static void ClampSettings(LobbySettings& settings) {
 
 /**
  * @brief Constructs the LobbyController instance and establishes central inbound routing maps.
- * @param server Reference to the hosting asynchronous web server infrastructure.
+ * @param router    WebSocket action router.
+ * @param broadcast Transport layer for sends/publishes.
+ * @param timers    Timer service for the eviction clock.
  */
-LobbyController::LobbyController(WebServer& server) : action_router_(server.GetActionRouter()), app_(server.GetApp()) {
+LobbyController::LobbyController(IActionRouter& router, IBroadcaster& broadcast, ITimerService& timers)
+    : action_router_(router), broadcaster_(broadcast), timer_service_(timers) {
     reconnect_grace_ms_ = std::max(1000, Env::GetInt("RECONNECT_GRACE_MS", 30'000));
 
     action_router_.On(ws::ClientAction::kLobbyCreate, [this](WsContext ctx, const json& msg) {
@@ -151,30 +153,16 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
         return true;
     });
 
-    server.OnConnectionOpen([this](AppWebSocket* ws, PerSocketData* sd) {
-        this->OnOpen(ws, sd);
-    });
-
-    server.OnConnectionClose([this](AppWebSocket* ws, PerSocketData* sd) {
-        this->OnClose(ws, sd);
-    });
-
-    server.SetActiveMatchProvider([this] { return ActiveMatchCount(); });
-
-    eviction_timer_ = us_create_timer((us_loop_t*)uWS::Loop::get(), 0, sizeof(LobbyController*));
-    *(LobbyController**)us_timer_ext(eviction_timer_) = this;
-
-    us_timer_set(eviction_timer_, [](us_timer_t* t) {
-        auto* self = *(LobbyController**)us_timer_ext(t);
+    timer_service_.Schedule("lobby_eviction", 1000, true, [this] {
         auto  now  = steady_clock::now();
 
         std::vector<std::pair<uint32_t, std::string>> to_evict;
 
-        for (const auto& [id, lobby] : self->lobbies_) {
+        for (const auto& [id, lobby] : lobbies_) {
             for (const auto& m : lobby.members) {
                 if (!m.is_connected && !m.is_bot) {
                     auto elapsed = duration_cast<milliseconds>(now - m.disconnected_at).count();
-                    if (elapsed > self->reconnect_grace_ms_) {
+                    if (elapsed > reconnect_grace_ms_) {
                         to_evict.push_back({id, m.username});
                     }
                 }
@@ -185,12 +173,12 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
 
         for (const auto& [id, username] : to_evict) {
             Logger::Log("[Lobby] Grace expired. Evicting ", username, " from lobby ", id);
-            
-            bool lobby_survived = self->RemoveMember(id, username, false, "");
+
+            bool lobby_survived = RemoveMember(id, username, false, "");
 
             if (lobby_survived) {
-                Lobby& lobby = self->lobbies_.at(id);
-                
+                Lobby& lobby = lobbies_.at(id);
+
                 if (lobby.host == username) {
                     for (const auto& m : lobby.members) {
                         if (m.is_connected && !m.is_bot) {
@@ -201,7 +189,7 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
                     }
                 }
 
-                self->SyncBots(lobby);
+                SyncBots(lobby);
                 lobbies_to_update.insert(id);
             } else {
                 lobbies_to_update.erase(id);
@@ -209,23 +197,18 @@ LobbyController::LobbyController(WebServer& server) : action_router_(server.GetA
         }
 
         for (uint32_t id : lobbies_to_update) {
-            self->BroadcastUpdate(self->lobbies_.at(id));
+            BroadcastUpdate(lobbies_.at(id));
         }
-
-    }, 1000, 1000);
+    });
 
     Logger::Info("[Lobby] Registered — grace window: " + to_string(reconnect_grace_ms_ / 1000) + "s");
 }
 
 /**
- * @brief Destructor that handles explicit system loop timer releases.
+ * @brief Destructor. The eviction timer is owned by the ITimerService and
+ *        cancelled by its destructor — nothing to clean up here.
  */
-LobbyController::~LobbyController() {
-    if (eviction_timer_) {
-        us_timer_close(eviction_timer_);
-        eviction_timer_ = nullptr;
-    }
-}
+LobbyController::~LobbyController() {}
 
 std::size_t LobbyController::ActiveMatchCount() const {
     return static_cast<std::size_t>(std::ranges::count_if(lobbies_, [](const auto& entry) {
@@ -299,7 +282,7 @@ void LobbyController::CheckMatchIntegrity(Lobby& lobby) {
             game_over_payload["winner"] = lobby.members.front().username;
             
             if (lobby.members.front().is_connected && lobby.members.front().socket) {
-                lobby.members.front().socket->send(game_over_payload.dump(), uWS::OpCode::TEXT);
+                broadcaster_.Send(lobby.members.front().socket, game_over_payload.dump(), uWS::OpCode::TEXT);
             }
         }
         
@@ -369,12 +352,12 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
     const string request_id = ws::GetOr<string>(message, "request_id", "");
     auto payload_res = ws::ParsePayload<ws::LobbyCreatePayload>(message);
     if (!payload_res) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
         return;
     }
 
     if (!ctx.socket_data->lobby_code.empty()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kAlreadyInLobby, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kAlreadyInLobby, request_id);
         return;
     }
 
@@ -403,7 +386,7 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
     ctx.socket_data->lobby_code = code;
     
     std::string topic = "lobby_" + code;
-    ctx.socket->subscribe(topic);
+    broadcaster_.Subscribe(ctx.socket, topic);
     SyncBots(lobby);
 
     Logger::Log("[Lobby] Created lobby ", id, " code=", code, " host=", username);
@@ -417,7 +400,7 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
         {"name", lobby.name}
     };
     resp["available_rules"] = game::RuleRegistry::GetAvailableRulesJson();
-    ctx.socket->send(resp.dump(), ctx.op_code);
+    broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
 }
 
 /**
@@ -430,12 +413,12 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     auto payload_res = ws::ParsePayload<ws::LobbyJoinPayload>(message);
 
     if (!payload_res) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
         return;
     }
 
     if (!ctx.socket_data->lobby_code.empty()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kAlreadyInLobby, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kAlreadyInLobby, request_id);
         return;
     }
 
@@ -444,14 +427,14 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
 
     auto lobby_it = lobbies_.find(it->second);
     if (lobby_it == lobbies_.end()) {
         code_to_id_.erase(it); 
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
 
@@ -459,12 +442,12 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     const string& username = ctx.socket_data->username;
 
     if (std::ranges::contains(lobby.members, username, &LobbyMember::username)) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kAlreadyMember, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kAlreadyMember, request_id);
         return;
     }
 
     if (lobby.match && !lobby.settings.allow_bot_takeover) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kJoinDisabledInMatch, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kJoinDisabledInMatch, request_id);
         return;
     }
 
@@ -507,14 +490,14 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     }
 
     if (!joined) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyFull, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyFull, request_id);
         return;
     }
 
     ctx.socket_data->lobby_code = code;
     
     std::string topic = "lobby_" + code;
-    ctx.socket->subscribe(topic);
+    broadcaster_.Subscribe(ctx.socket, topic);
 
     auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, request_id);
     resp["lobby"] = json({
@@ -525,14 +508,14 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
         {"settings",    lobby.settings}
     });
     resp["available_rules"] = game::RuleRegistry::GetAvailableRulesJson();
-    ctx.socket->send(resp.dump(), ctx.op_code);
+    broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
 
     BroadcastUpdate(lobby);
 
     if (lobby.match) {
         auto game_resp = MakeResponse(ws::ServerAction::kGameStateUpdated);
         game_resp["game_state"] = lobby.match->SerializePlayerState(username);
-        ctx.socket->send(game_resp.dump(), ctx.op_code);
+        broadcaster_.Send(ctx.socket, game_resp.dump(), ctx.op_code);
     }
 }
 
@@ -546,7 +529,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
     auto payload_res = ws::ParsePayload<ws::LobbyRejoinPayload>(message);
 
     if (!payload_res) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
         return;
     }
 
@@ -557,7 +540,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
     if (it == code_to_id_.end()) {
         auto resp = MakeResponse(ws::ServerAction::kLobbyEvicted, request_id);
         resp["reason"] = "Lobby expired";
-        ctx.socket->send(resp.dump(), ctx.op_code);
+        broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
         return;
     }
 
@@ -566,7 +549,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
         code_to_id_.erase(it); 
         auto resp = MakeResponse(ws::ServerAction::kLobbyEvicted, request_id);
         resp["reason"] = "Lobby expired or invalid";
-        ctx.socket->send(resp.dump(), ctx.op_code);
+        broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
         return;
     }
 
@@ -575,7 +558,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
 
     if (std::ranges::contains(lobby.members, username, &LobbyMember::username)) {
         string topic = "lobby_" + lobby.invite_code;
-        ctx.socket->subscribe(topic);
+        broadcaster_.Subscribe(ctx.socket, topic);
 
         auto resp = MakeResponse(ws::ServerAction::kLobbyJoined, request_id);
         resp["lobby"] = json({
@@ -587,18 +570,18 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
         });
         resp["available_rules"] = game::RuleRegistry::GetAvailableRulesJson();
 
-        ctx.socket->send(resp.dump(), ctx.op_code);
+        broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
 
         if (lobby.match) {
             auto game_resp = MakeResponse(ws::ServerAction::kGameStateUpdated);
             game_resp["game_state"] = lobby.match->SerializePlayerState(username);
-            ctx.socket->send(game_resp.dump(), ctx.op_code);
+            broadcaster_.Send(ctx.socket, game_resp.dump(), ctx.op_code);
         }
 
         return;
     }
 
-    ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotInLobby, request_id);
+    broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotInLobby, request_id);
 }
 
 /**
@@ -612,13 +595,13 @@ void LobbyController::HandleLeave(WsContext ctx, const json& message) {
     const string  request_id = ws::GetOr<string>(message, "request_id", "");
 
     if (code.empty()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotInLobby, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotInLobby, request_id);
         return;
     }
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
 
@@ -673,7 +656,7 @@ void LobbyController::HandleList(WsContext ctx, const json& message) {
 
     auto resp = MakeResponse(ws::ServerAction::kLobbyList, request_id);
     resp["lobbies"] = list;
-    ctx.socket->send(resp.dump(), ctx.op_code);
+    broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
 }
 
 /**
@@ -687,7 +670,7 @@ void LobbyController::HandlePromote(WsContext ctx, const json& message) {
     auto payload_res = ws::ParsePayload<ws::LobbyPromotePayload>(message);
 
     if (!payload_res) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id);
         return; 
     }
     
@@ -695,31 +678,31 @@ void LobbyController::HandlePromote(WsContext ctx, const json& message) {
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
 
     auto lobby_it = lobbies_.find(it->second);
     if (lobby_it == lobbies_.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
     Lobby& lobby = lobby_it->second;
 
     if (ctx.socket_data->username != lobby.host) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotHost, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotHost, request_id);
         return;
     }
 
     auto target_it = std::ranges::find(lobby.members, username, &LobbyMember::username);
     
     if (target_it == lobby.members.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kUserNotInLobby, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kUserNotInLobby, request_id);
         return;
     }
 
     if (target_it->is_bot) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kCannotPromoteBot, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kCannotPromoteBot, request_id);
         return;
     }
 
@@ -738,7 +721,7 @@ void LobbyController::HandleKick(WsContext ctx, const json& message) {
     auto payload_res = ws::ParsePayload<ws::LobbyKickPayload>(message);
 
     if (!payload_res) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kInvalidPayload, request_id);
         return; 
     }
     
@@ -746,31 +729,31 @@ void LobbyController::HandleKick(WsContext ctx, const json& message) {
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
 
     auto lobby_it = lobbies_.find(it->second);
     if (lobby_it == lobbies_.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
     Lobby& lobby = lobby_it->second;
 
     if (ctx.socket_data->username != lobby.host) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotHost, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotHost, request_id);
         return;
     }
 
     if (username == lobby.host) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kCannotKickSelf, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kCannotKickSelf, request_id);
         return;
     }
 
     auto target_it = std::ranges::find(lobby.members, username, &LobbyMember::username);
     
     if (target_it == lobby.members.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kUserNotInLobby, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kUserNotInLobby, request_id);
         return;
     }
 
@@ -784,7 +767,7 @@ void LobbyController::HandleKick(WsContext ctx, const json& message) {
 
     if (lobby_still_exists) {
         SyncBots(lobbies_.at(lobby_id));
-        ws::SendSuccess(ctx.socket, ctx.op_code, request_id);
+        broadcaster_.SendSuccess(ctx.socket, ctx.op_code, request_id);
         BroadcastUpdate(lobbies_.at(lobby_id));
     }
 }
@@ -800,14 +783,14 @@ void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
 
     Lobby& lobby = lobbies_.at(it->second);
 
     if (ctx.socket_data->username != lobby.host) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotHost, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotHost, request_id);
         return;
     }
 
@@ -835,7 +818,7 @@ void LobbyController::HandleUpdateSettings(WsContext ctx, const json& message) {
         SyncBots(lobby);
     }
 
-    ws::SendSuccess(ctx.socket, uWS::OpCode::TEXT, request_id);
+    broadcaster_.SendSuccess(ctx.socket, uWS::OpCode::TEXT, request_id);
     BroadcastUpdate(lobby);
 }
 
@@ -850,19 +833,19 @@ void LobbyController::HandleGetSavedMatchesList(WsContext ctx, const json& messa
     const string& code = ctx.socket_data->lobby_code;
 
     if (code.empty()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotInLobby, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kNotInLobby, request_id);
         return;
     }
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
 
     auto lobby_it = lobbies_.find(it->second);
     if (lobby_it == lobbies_.end()) {
-        ws::SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(ctx.socket, ctx.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
 
@@ -915,7 +898,7 @@ void LobbyController::HandleGetSavedMatchesList(WsContext ctx, const json& messa
         }
     }
 
-    ws::SendSuccess(ctx.socket, ctx.op_code, request_id, {{"saved_matches", list}});
+    broadcaster_.SendSuccess(ctx.socket, ctx.op_code, request_id, {{"saved_matches", list}});
 }
 
 /**
@@ -929,7 +912,7 @@ void LobbyController::HandleDeleteSavedMatch(WsContext context, const json& mess
     auto payload_res = ws::ParsePayload<ws::LobbyDeleteSavedMatchPayload>(message);
 
     if (!payload_res) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
         return;
     }
     std::string match_id = payload_res->match_id;
@@ -940,7 +923,7 @@ void LobbyController::HandleDeleteSavedMatch(WsContext context, const json& mess
     Lobby& lobby = lobbies_.at(it->second);
 
     if (lobby.host != context.socket_data->username) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kNotHost, request_id);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kNotHost, request_id);
         return;
     }
 
@@ -948,17 +931,17 @@ void LobbyController::HandleDeleteSavedMatch(WsContext context, const json& mess
     auto row = db.QueryOne("SELECT state_json FROM saved_matches WHERE id = ?", {match_id});
     
     if (!row || !row->has_value()) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kSavedMatchNotFound, request_id);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kSavedMatchNotFound, request_id);
         return;
     }
 
     auto delete_status = db.Exec("DELETE FROM saved_matches WHERE id = ?", {match_id});
     if (!delete_status) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kInternalError, request_id);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kInternalError, request_id);
     }
     
     BroadcastUpdate(lobby);
-    ws::SendSuccess(context.socket, context.op_code, request_id);
+    broadcaster_.SendSuccess(context.socket, context.op_code, request_id);
 }
 
 /**
@@ -972,7 +955,7 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
     auto payload_res = ws::ParsePayload<ws::LobbyResumeSavedMatchPayload>(message);
 
     if (!payload_res) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidPayload, request_id, payload_res.error().message);
         return;
     }
     std::string match_id = payload_res->match_id;
@@ -983,7 +966,7 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
     Lobby& lobby = lobbies_.at(it->second);
 
     if (lobby.host != context.socket_data->username) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kNotHost, request_id);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kNotHost, request_id);
         return;
     }
 
@@ -991,7 +974,7 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
     auto row = db.QueryOne("SELECT state_json FROM saved_matches WHERE id = ?", {match_id});
     
     if (!row || !row->has_value()) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kSavedMatchNotFound, request_id);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kSavedMatchNotFound, request_id);
         return;
     }
 
@@ -1010,7 +993,7 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
         
         json response_payload = ws::MakeResponse(ws::ServerAction::kGameStateUpdated);
         response_payload["game_state"] = lobby.match->SerializePlayerState(lobby_member.username);
-        lobby_member.socket->send(response_payload.dump(), uWS::OpCode::TEXT);
+        broadcaster_.Send(lobby_member.socket, response_payload.dump(), uWS::OpCode::TEXT);
     }
 }
 
@@ -1025,24 +1008,24 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
 
     auto it = code_to_id_.find(code);
     if (it == code_to_id_.end()) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kLobbyNotFound, request_id);
         return;
     }
 
     Lobby& lobby = lobbies_.at(it->second);
 
     if (lobby.host != context.socket_data->username) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kNotHost, request_id);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kNotHost, request_id);
         return;
     }
 
     if (lobby.match != nullptr) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kMatchAlreadyStarted, request_id);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kMatchAlreadyStarted, request_id);
         return;
     }
 
     if (lobby.members.size() < 2) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kNotEnoughPlayers, request_id);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kNotEnoughPlayers, request_id);
         return;
     }
 
@@ -1068,10 +1051,10 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
 
         nlohmann::json response_payload = ws::MakeResponse(ws::ServerAction::kGameStateUpdated);
         response_payload["game_state"] = lobby.match->SerializePlayerState(lobby_member.username);
-        lobby_member.socket->send(response_payload.dump(), uWS::OpCode::TEXT);
+        broadcaster_.Send(lobby_member.socket, response_payload.dump(), uWS::OpCode::TEXT);
     }
 
-    ws::SendSuccess(context.socket, uWS::OpCode::TEXT, request_id);
+    broadcaster_.SendSuccess(context.socket, uWS::OpCode::TEXT, request_id);
 }
 
 /**
@@ -1121,7 +1104,7 @@ void LobbyController::BroadcastUpdate(const Lobby& lobby) const {
         {"settings", lobby.settings}
     };
 
-    app_.publish("lobby_" + lobby.invite_code, notification.dump(), uWS::OpCode::TEXT);
+    broadcaster_.Publish("lobby_" + lobby.invite_code, notification.dump(), uWS::OpCode::TEXT);
 }
 
 /**
@@ -1145,7 +1128,7 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
             if (sd) sd->lobby_code.clear();
 
             string topic = "lobby_" + lobby.invite_code;
-            member_it->socket->unsubscribe(topic);
+            broadcaster_.Unsubscribe(member_it->socket, topic);
 
             json response;
             if (explicit_leave) response = MakeResponse(ws::ServerAction::kLobbyLeft, request_id);
@@ -1153,7 +1136,7 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
                 response = MakeResponse(ws::ServerAction::kLobbyEvicted);
                 response["reason"] = "Kicked by host";
             }
-            member_it->socket->send(response.dump(), uWS::OpCode::TEXT);
+            broadcaster_.Send(member_it->socket, response.dump(), uWS::OpCode::TEXT);
         }
 
         if (lobby.match) {
@@ -1170,7 +1153,7 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
                 
                 for (const auto& m : lobby.members) {
                     if (m.is_connected && m.socket && m.username != old_name) {
-                        m.socket->send(game_over_payload.dump(), uWS::OpCode::TEXT);
+                        broadcaster_.Send(m.socket, game_over_payload.dump(), uWS::OpCode::TEXT);
                     }
                 }
                 

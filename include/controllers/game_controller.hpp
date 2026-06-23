@@ -1,10 +1,10 @@
 #pragma once
 
-#include <webserver.hpp>
 #include <controllers/lobby_controller.hpp>
+#include <transport/iaction_router.hpp>
+#include <transport/ibroadcaster.hpp>
+#include <transport/itimer_service.hpp>
 #include <nlohmann/json.hpp>
-#include <unordered_map>
-#include <functional>
 #include <cstdint>
 
 /**
@@ -19,7 +19,7 @@
  * @brief Receives and processes player input during an active match.
  * * Works closely with the `LobbyController` to identify the match
  * associated with the user. This class is also responsible for the lifecycle of the
- * turn timers (libuv) to handle AFK players or bot takeover.
+ * turn timers (via ITimerService) to handle AFK players or bot takeover.
  * @tag CTRL-GAME-001
  */
 class GameController {
@@ -27,20 +27,21 @@ public:
     /**
      * @brief Constructor of the game controller.
      * Registers the `game_*` WebSocket action handlers on the ActionRouter.
-     * @param server The main WebServer instance.
+     * @param router    WebSocket action router (DI seam).
+     * @param broadcast Transport layer for sends/publishes (DI seam).
+     * @param timers    Timer service for turn timers (DI seam).
      * @param lobby_controller Reference to the lobby controller to retrieve the state.
      * @tag CTRL-GAME-MTH-001
      */
-    GameController(WebServer& server, LobbyController& lobby_controller);
+    GameController(IActionRouter& router, IBroadcaster& broadcast,
+                   ITimerService& timers, LobbyController& lobby_controller);
 
 private:
-    ActionRouter& action_router_;       /**< Reference to the WebSocket router. */
-    LobbyController& lobby_controller_; /**< Reference to access the in-memory lobbies. */
+    IActionRouter&    action_router_;    /**< Reference to the WebSocket router. */
+    IBroadcaster&     broadcaster_;      /**< Transport layer for all sends. */
+    ITimerService&    timer_service_;    /**< Timer service for turn/bot timers. */
+    LobbyController&  lobby_controller_; /**< Reference to access the in-memory lobbies. */
 
-    /** * @brief Map associating a Lobby ID with the pointer of the current libuv timer.
-     * Used to activate the AFK protection (e.g. the bot takes over or the move is skipped).
-     */
-    std::unordered_map<uint32_t, struct us_timer_t*> active_turn_timers_;
     int bot_instant_delay_ms_;   /**< Minimum ms between consecutive bot turns in kPlayInstantly mode. */
     int bot_wait_min_ms_;        /**< Lower bound of the randomised "thinking" delay in kWaitUntilTurnEnd mode. */
     int bot_wait_max_ms_;        /**< Upper bound (exclusive) of the randomised "thinking" delay. */
@@ -104,15 +105,14 @@ private:
     /**
      * @brief Creates or updates the turn timer for AFK protection.
      * @param lobby_id ID of the ongoing lobby.
-     * @param timeout_ms Milliseconds before the timeout fires (e.g. 15000ms).
-     * @param callback Function to execute when the timer expires (e.g. auto-play or bot).
+     * @param timeout_ms Milliseconds before the timeout fires.
+     * @param callback Function to execute when the timer expires.
      * @tag CTRL-GAME-TMR-001
      */
     void SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::function<void()> callback);
 
     /**
-     * @brief Stops and destroys the active timer for a given lobby.
-     * Used when a player performs a valid action in time or the match ends.
+     * @brief Stops the active timer for a given lobby.
      * @param lobby_id ID of the lobby whose timer to cancel.
      * @tag CTRL-GAME-TMR-002
      */
