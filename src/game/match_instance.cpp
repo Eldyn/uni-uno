@@ -18,17 +18,16 @@
 
 namespace game {
     void ReshuffleDiscardIntoDraw(GameState* game_state) {
-        if (game_state->discard_pile.size() <= 1) return; 
-        
+        if (game_state->discard_pile.size() <= 1) return;
+
         CompactCard top_card = game_state->discard_pile.back();
         game_state->discard_pile.pop_back();
-    
+
         game_state->draw_pile = std::move(game_state->discard_pile);
         game_state->discard_pile.push_back(top_card);
-    
-        std::random_device random_device;
-        std::mt19937 random_generator(random_device());
-        std::shuffle(game_state->draw_pile.begin(), game_state->draw_pile.end(), random_generator);
+
+        static std::mt19937 rng{std::random_device{}()};
+        std::shuffle(game_state->draw_pile.begin(), game_state->draw_pile.end(), rng);
     }
 
     MatchInstance::MatchInstance(const std::vector<std::pair<std::string, bool>>& players_info, const LobbySettings& settings) : settings_(settings) {
@@ -87,19 +86,24 @@ namespace game {
         }
         active_rules_.push_back(std::make_unique<StandardRule>());
 
-        state_.status = static_cast<MatchStatus>(saved_state["status"].get<int>());
-        state_.active_type = static_cast<Type>(saved_state.value("active_type", 0));
-        state_.current_player_index = saved_state["current_player_index"].get<int>();
-        state_.play_direction = saved_state["play_direction"].get<int>();
+        state_.status               = static_cast<MatchStatus>(saved_state.value("status", 0));
+        state_.active_type          = static_cast<Type>(saved_state.value("active_type", 0));
+        state_.current_player_index = saved_state.value("current_player_index", 0);
+        state_.play_direction       = saved_state.value("play_direction", 1);
 
-        saved_state["draw_pile"].get_to(state_.draw_pile);
-        saved_state["discard_pile"].get_to(state_.discard_pile);
+        if (saved_state.contains("draw_pile"))    saved_state["draw_pile"].get_to(state_.draw_pile);
+        if (saved_state.contains("discard_pile")) saved_state["discard_pile"].get_to(state_.discard_pile);
 
-        for (const auto& player_json : saved_state["players"]) {
+        for (const auto& player_json : saved_state.value("players", json::array())) {
             std::vector<CompactCard> hand;
-            player_json["hand"].get_to(hand);
+            if (player_json.contains("hand")) player_json["hand"].get_to(hand);
 
-            state_.players.emplace_back(player_json["username"], hand, player_json.value("is_bot", false), player_json["has_called_uno"]);
+            state_.players.emplace_back(
+                player_json.value("username", ""),
+                hand,
+                player_json.value("is_bot", false),
+                player_json.value("has_called_uno", false)
+            );
         }
     }
 
@@ -127,9 +131,7 @@ namespace game {
             // INFO: Safely dump their hand back into the draw pile so the
             //       cards aren't lost.
             state_.draw_pile.insert(state_.draw_pile.end(), it->hand.begin(), it->hand.end());
-            std::random_device rd;
-            std::mt19937 g(rd());
-            std::shuffle(state_.draw_pile.begin(), state_.draw_pile.end(), g);
+            std::shuffle(state_.draw_pile.begin(), state_.draw_pile.end(), rng_);
 
             state_.players.erase(it);
 
@@ -181,6 +183,11 @@ namespace game {
     }
     
     void MatchInstance::Tick() {
+        if (state_.effect_queue.size() > 64) {
+            Logger::Error("[Match] effect_queue exceeded 64 — aborting match ", match_id_);
+            state_.status = MatchStatus::kFinished;
+            return;
+        }
         while (!state_.effect_queue.empty()) {
             auto current_effect = std::move(state_.effect_queue.front());
             state_.effect_queue.pop_front();
@@ -621,9 +628,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
             state_.draw_pile.push_back(MakeCard(Type::kWild, Value::kWildDraw4, unique_card_identifier++));
         }
     
-        std::random_device random_device;
-        std::mt19937 random_generator(random_device());
-        std::shuffle(state_.draw_pile.begin(), state_.draw_pile.end(), random_generator);
+        std::shuffle(state_.draw_pile.begin(), state_.draw_pile.end(), rng_);
     }
     
     nlohmann::json MatchInstance::SerializePlayerState(const std::string& username) const {

@@ -3,6 +3,7 @@
 #include <common/lobby.hpp>
 #include <common/ws.hpp>
 #include <atomic>
+#include <random>
 #include <string>
 #include <unordered_map>
 #include <transport/iaction_router.hpp>
@@ -85,10 +86,13 @@ public:
      */
     Lobby* GetLobbyByCode(const std::string& code) {
         auto it = code_to_id_.find(code);
-        if (it != code_to_id_.end()) {
-            return &lobbies_.at(it->second);
+        if (it == code_to_id_.end()) return nullptr;
+        auto jt = lobbies_.find(it->second);
+        if (jt == lobbies_.end()) {
+            code_to_id_.erase(it);
+            return nullptr;
         }
-        return nullptr;
+        return &jt->second;
     }
 
     /**
@@ -263,6 +267,14 @@ private:
     static std::string GenerateInviteCode();
 
     /**
+     * @brief Picks a random bot name not already taken in the lobby.
+     * @param lobby The lobby to check for taken names.
+     * @return std::string An available bot display name.
+     * @tag LOBBY-UTIL-004
+     */
+    std::string GetRandomBotName(const Lobby& lobby);
+
+    /**
      * @brief Serializes the member list into JSON format for sending via WebSocket.
      * @param lobby The lobby whose members to serialize.
      * @return json JSON object representing the members.
@@ -306,6 +318,7 @@ private:
     std::unordered_map<uint32_t, Lobby> lobbies_;        /**< Primary storage of the lobbies. */
     std::unordered_map<std::string, uint32_t> code_to_id_; /**< Secondary index for fast lookup. */
 
-    std::atomic<uint32_t> next_id_{1};   /**< Thread-safe counter for the lobby IDs. */
-    int reconnect_grace_ms_ = 1'000 * 30; /**< Grace period (ms) before eviction (env: RECONNECT_GRACE_MS). */
+    std::atomic<uint32_t> next_id_{1};          /**< Thread-safe counter for the lobby IDs. */
+    int reconnect_grace_ms_ = 1'000 * 30;       /**< Grace period (ms) before eviction (env: RECONNECT_GRACE_MS). */
+    std::mt19937 rng_{std::random_device{}()};  /**< Shared RNG for bot name selection. */
 };
