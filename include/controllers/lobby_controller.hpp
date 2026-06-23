@@ -5,10 +5,10 @@
 #include <atomic>
 #include <string>
 #include <unordered_map>
-#include <App.h>
-#include <action_router.hpp>
+#include <transport/iaction_router.hpp>
+#include <transport/ibroadcaster.hpp>
+#include <transport/itimer_service.hpp>
 #include <websocket_context.hpp>
-#include <webserver.hpp>
 
 /**
  * @file lobby_controller.hpp
@@ -43,12 +43,13 @@ class LobbyController {
 public:
     /**
      * @brief Constructor of the LobbyController.
-     * Registers the WebSocket action handlers on the provided router.
-     * Keeps a reference to `app` for pub/sub broadcasts and the eviction timer.
-     * * @param webserver Reference to the main WebServer.
+     * Registers the WebSocket action handlers and starts the eviction timer.
+     * @param router    WebSocket action router (DI seam).
+     * @param broadcast Transport layer for sends/publishes (DI seam).
+     * @param timers    Timer service for the eviction clock (DI seam).
      * @tag LOBBY-CTRL-001
      */
-    LobbyController(WebServer& webserver);
+    LobbyController(IActionRouter& router, IBroadcaster& broadcast, ITimerService& timers);
 
     /**
      * @brief Destructor. Takes care of cleaning up the associated libuv timers.
@@ -295,16 +296,16 @@ private:
      */
     Lobby* FindLobbyForUser(const std::string& username);
 
-    GameStartedCallback game_started_callback_;     /**< Callback for match start. */
-    PlayerReplacedCallback player_replaced_callback_;/**< Callback for player replacement. */
+    GameStartedCallback game_started_callback_;       /**< Callback for match start. */
+    PlayerReplacedCallback player_replaced_callback_; /**< Callback for player replacement. */
 
-    ActionRouter& action_router_;                   /**< Reference to the WS action router. */
-    AppHttp& app_;                                  /**< Reference to the uWebSockets instance. */
+    IActionRouter& action_router_;  /**< Reference to the WS action router. */
+    IBroadcaster&  broadcaster_;    /**< Transport layer for all sends/publishes. */
+    ITimerService& timer_service_;  /**< Timer service for the eviction clock. */
 
-    std::unordered_map<uint32_t, Lobby> lobbies_;   /**< Primary storage of the lobbies. */
+    std::unordered_map<uint32_t, Lobby> lobbies_;        /**< Primary storage of the lobbies. */
     std::unordered_map<std::string, uint32_t> code_to_id_; /**< Secondary index for fast lookup. */
 
-    std::atomic<uint32_t> next_id_{1};              /**< Thread-safe counter for the lobby IDs. */
-    us_timer_t* eviction_timer_ = nullptr;          /**< libuv timer for evicting disconnected users. */
-    int reconnect_grace_ms_ = 1'000 * 30;           /**< Grace period (ms) before a disconnected user is evicted (env: RECONNECT_GRACE_MS). */
+    std::atomic<uint32_t> next_id_{1};   /**< Thread-safe counter for the lobby IDs. */
+    int reconnect_grace_ms_ = 1'000 * 30; /**< Grace period (ms) before eviction (env: RECONNECT_GRACE_MS). */
 };

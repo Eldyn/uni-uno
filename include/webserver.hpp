@@ -11,6 +11,8 @@
 #include <http_router.hpp>
 #include <websocket_context.hpp>
 #include <common/rate_limiter.hpp>
+#include <transport/uws_broadcaster.hpp>
+#include <transport/uws_timer_service.hpp>
 
 /**
  * @file webserver.hpp
@@ -63,24 +65,38 @@ public:
 
     /**
      * @brief Retrieves a reference to the WebSocket action router.
-     * @return ActionRouter& Router to register the WS message handlers.
+     * @return IActionRouter& Router to register the WS message handlers.
      * @tag SRV-CORE-004
      */
-    ActionRouter& GetActionRouter()   { return ws_router_;   }
+    IActionRouter& GetActionRouter()   { return ws_router_;    }
 
     /**
      * @brief Retrieves a reference to the HTTP request router.
      * @return HttpRouter& Router to register the REST/HTTP routes.
      * @tag SRV-CORE-005
      */
-    HttpRouter&   GetHTTPRouter()     { return http_router_; }
+    HttpRouter&    GetHTTPRouter()     { return http_router_;  }
 
     /**
      * @brief Retrieves the underlying instance of the uWebSockets application.
      * @return AppHttp& The uWS application (SSL or plain per kAppSSL).
      * @tag SRV-CORE-006
      */
-    AppHttp&      GetApp()            { return app_;         }
+    AppHttp&       GetApp()            { return app_;          }
+
+    /**
+     * @brief Retrieves the broadcaster (transport layer for WS sends/publishes).
+     * @return IBroadcaster& The production broadcaster backed by uWS.
+     * @tag SRV-CORE-010
+     */
+    IBroadcaster&  GetBroadcaster()    { return broadcaster_;  }
+
+    /**
+     * @brief Retrieves the timer service for scheduling keyed timers.
+     * @return ITimerService& The production timer service backed by libuv.
+     * @tag SRV-CORE-011
+     */
+    ITimerService& GetTimerService()   { return timer_service_; }
 
     /**
      * @typedef ConnectionHandler
@@ -120,7 +136,10 @@ private:
     string frontend_path_;  /**< Path of the directory with built frontend static files. */
     bool   trust_proxy_;    /**< Honour X-Forwarded-For (set when behind a proxy). */
 
-    AppHttp app_;           /**< Main uWebSockets instance (SSL or plain per kAppSSL). */
+    AppHttp app_;                /**< Main uWebSockets instance (SSL or plain per kAppSSL). */
+    UwsBroadcaster  broadcaster_{app_}; /**< Transport layer: owned broadcaster backed by app_. */
+    UwsTimerService timer_service_;     /**< Timer service backed by the uWS event loop. */
+
     std::map<string, AppWebSocket*> connections_; /**< Map of connected users (Username -> Socket). */
 
     ActionRouter ws_router_;    /**< Handler for dispatching WebSocket messages. */

@@ -9,7 +9,6 @@
 #include "common/payloads.hpp"
 #include "common/env.hpp"
 #include "logger.hpp"
-#include <App.h>
 #include <algorithm>
 
 using json = nlohmann::json;
@@ -19,8 +18,10 @@ using json = nlohmann::json;
  * @param server Reference to the hosting asynchronous web server infrastructure.
  * @param lobby_controller Reference to the central room lifecycle management engine.
  */
-GameController::GameController(WebServer& server, LobbyController& lobby_controller)
-    : action_router_(server.GetActionRouter()), lobby_controller_(lobby_controller) {
+GameController::GameController(IActionRouter& router, IBroadcaster& broadcast,
+                               ITimerService& timers, LobbyController& lobby_controller)
+    : action_router_(router), broadcaster_(broadcast),
+      timer_service_(timers), lobby_controller_(lobby_controller) {
     bot_instant_delay_ms_  = std::max(0, Env::GetInt("BOT_TURN_DELAY_MS", 1000));
     bot_wait_min_ms_       = std::max(0, Env::GetInt("BOT_WAIT_MIN_MS", 500));
     bot_wait_max_ms_       = std::max(bot_wait_min_ms_ + 1, Env::GetInt("BOT_WAIT_MAX_MS", 3500));
@@ -74,7 +75,7 @@ void GameController::HandlePlayCard(WsContext context, const json& message) {
     std::string request_identifier = ws::GetOr<std::string>(message, "request_id", "");
     auto payload_res = ws::ParsePayload<ws::GamePlayCardPayload>(message);
     if (!payload_res) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidPayload, request_identifier, payload_res.error().message);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidPayload, request_identifier, payload_res.error().message);
         return;
     }
     uint16_t card_identifier = payload_res->card_id;
@@ -82,7 +83,7 @@ void GameController::HandlePlayCard(WsContext context, const json& message) {
     bool was_play_successful = active_lobby->match->PlayCard(context.socket_data->username, card_identifier);
     
     if (!was_play_successful) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidMove, request_identifier);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidMove, request_identifier);
         return;
     }
 
@@ -108,7 +109,7 @@ void GameController::HandleDrawCard(WsContext context, const json& message) {
     bool was_draw_successful = active_lobby->match->DrawCard(context.socket_data->username);
     
     if (!was_draw_successful) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kCannotDraw, request_identifier);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kCannotDraw, request_identifier);
         return;
     }
 
@@ -130,7 +131,7 @@ void GameController::HandleProvideInput(WsContext context, const json& message) 
     std::string request_identifier = ws::GetOr<std::string>(message, "request_id", "");
     auto payload_res = ws::ParsePayload<ws::GameSubmitInputPayload>(message);
     if (!payload_res) {
-        ws::SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidPayload, request_identifier, payload_res.error().message);
+        broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidPayload, request_identifier, payload_res.error().message);
         return;
     }
     std::string input_value = payload_res->value;
@@ -175,10 +176,10 @@ void GameController::BroadcastGameState(Lobby* current_lobby) {
             }
         }
 
-        lobby_member.socket->send(response_payload.dump(), uWS::OpCode::TEXT);
+        broadcaster_.Send(lobby_member.socket, response_payload.dump(), uWS::OpCode::TEXT);
 
         if (is_game_over) {
-            lobby_member.socket->send(game_over_payload.dump(), uWS::OpCode::TEXT);
+            broadcaster_.Send(lobby_member.socket, game_over_payload.dump(), uWS::OpCode::TEXT);
         }
     }
         
@@ -312,56 +313,21 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
     }
 }
 
-struct TurnTimerData {
-    std::function<void()> callback;
-    uint32_t lobby_id;
-    GameController* controller;
-};
-
 /**
- * @brief Schedules a single-shot internal event loop timer to execute a deferred task.
- * @param lobby_id Numerical identifier targeting a specific active room map.
- * @param timeout_ms Length of duration in milliseconds before firing execution.
- * @param callback Target functional callback block fired upon timeout completion.
+ * @brief Schedules a single-shot turn timer via the ITimerService.
+ * @param lobby_id Numeric lobby ID, used as the timer key.
+ * @param timeout_ms Milliseconds before the timer fires.
+ * @param callback Invoked when the timer expires.
  */
 void GameController::SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::function<void()> callback) {
-    ClearTurnTimer(lobby_id);
-    struct us_loop_t* loop = (struct us_loop_t*) uWS::Loop::get();
-    
-    struct us_timer_t* timer = us_create_timer(loop, 0, sizeof(TurnTimerData*));
-    auto* timer_data = new TurnTimerData{std::move(callback), lobby_id, this};
-    *(TurnTimerData**)us_timer_ext(timer) = timer_data;
-
-    us_timer_set(timer, [](struct us_timer_t* fired_timer) {
-        TurnTimerData* data = *(TurnTimerData**)us_timer_ext(fired_timer);
-        
-        auto cb = data->callback;
-        auto l_id = data->lobby_id;
-        auto* ctrl = data->controller;
-        
-        ctrl->active_turn_timers_.erase(l_id);
-        if (cb) cb();
-        
-        delete data;
-        us_timer_close(fired_timer);
-        
-    }, timeout_ms, 0);
-
-    active_turn_timers_[lobby_id] = timer;
+    const std::string key = "turn_" + std::to_string(lobby_id);
+    timer_service_.Schedule(key, timeout_ms, false, std::move(callback));
 }
 
 /**
- * @brief Disarms and frees loop memory allocations associated with an outstanding turn timer.
- * @param lobby_id Target internal tracker key identifying the active timer slot.
+ * @brief Cancels the turn timer for a given lobby.
+ * @param lobby_id ID of the lobby whose timer to cancel.
  */
 void GameController::ClearTurnTimer(uint32_t lobby_id) {
-    auto timer_iterator = active_turn_timers_.find(lobby_id);
-    if (timer_iterator != active_turn_timers_.end()) {
-        struct us_timer_t* timer = timer_iterator->second;
-        TurnTimerData* data = *(TurnTimerData**)us_timer_ext(timer);
-        
-        delete data;
-        us_timer_close(timer);
-        active_turn_timers_.erase(timer_iterator);
-    }
+    timer_service_.Cancel("turn_" + std::to_string(lobby_id));
 }

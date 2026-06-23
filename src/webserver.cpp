@@ -234,7 +234,16 @@ void WebServer::RegisterRoutes() {
     const unsigned int   ws_max_backpressure = static_cast<unsigned int>(std::stoul(Env::Get("WS_MAX_BACKPRESSURE", "1048576"))); // 1 MB
     const unsigned short ws_idle_timeout     = static_cast<unsigned short>(std::stoi(Env::Get("WS_IDLE_TIMEOUT", "120")));         // seconds
 
+    // INFO: SHARED_COMPRESSOR negotiates permessage-deflate using one shared
+    //       compressor (no per-socket memory). Gated by WS_COMPRESSION so it
+    //       can be disabled without a rebuild if profiling shows CPU pressure.
+    const bool ws_compression = (Env::Get("WS_COMPRESSION", "1") != "0");
+    const auto compression_mode = ws_compression
+        ? uWS::SHARED_COMPRESSOR
+        : uWS::DISABLED;
+
     app_.ws<PerSocketData>("/*", {
+        .compression = compression_mode,
         .maxPayloadLength = ws_max_payload,
         .idleTimeout = ws_idle_timeout,
         .maxBackpressure = ws_max_backpressure,

@@ -24,9 +24,14 @@ int main() {
         WebServer server(port, ssl_key, ssl_cert, db_path, frontend_path);
 
         AuthController  auth(server.GetHTTPRouter());
-        LobbyController lobby(server);        
+        LobbyController lobby(server.GetActionRouter(), server.GetBroadcaster(), server.GetTimerService());
+
+        server.OnConnectionOpen ([&lobby](AppWebSocket* ws, PerSocketData* sd) { lobby.OnOpen(ws, sd);  });
+        server.OnConnectionClose([&lobby](AppWebSocket* ws, PerSocketData* sd) { lobby.OnClose(ws, sd); });
+        server.SetActiveMatchProvider([&lobby] { return lobby.ActiveMatchCount(); });
+
         StatsController stats(server.GetHTTPRouter());
-        GameController  game(server, lobby);
+        GameController  game(server.GetActionRouter(), server.GetBroadcaster(), server.GetTimerService(), lobby);
 
         // INFO: Logging Middleware
         server.GetHTTPRouter().OnAny([](AppResponse *response, AppRequest *request) {
