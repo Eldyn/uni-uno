@@ -68,6 +68,9 @@ namespace game {
          * @tag EFFECT-STD-MTH-004
          */
         EffectType GetType() const override { return EffectType::kDecideDrawnCard; }
+        nlohmann::json ToJson() const override {
+            return {{"type", static_cast<int>(GetType())}, {"username", username_}, {"card_id", card_id_}};
+        }
     private:
         std::string username_; /**< The user who must make the decision. */
         uint16_t card_id_;     /**< The ID of the card to decide on. */
@@ -104,6 +107,9 @@ namespace game {
          * @tag EFFECT-STD-MTH-006
          */
         EffectType GetType() const override { return EffectType::kDraw; }
+        nlohmann::json ToJson() const override {
+            return {{"type", static_cast<int>(GetType())}, {"count", count_}, {"target", target_username_}};
+        }
     private:
         int count_;                     /**< Quantity of cards. */
         std::string target_username_;   /**< Target of the effect. */
@@ -188,6 +194,9 @@ namespace game {
          * @tag EFFECT-STD-MTH-012
          */
         EffectType GetType() const override { return EffectType::kChooseColor; }
+        nlohmann::json ToJson() const override {
+            return {{"type", static_cast<int>(GetType())}, {"target", target_username_}, {"stack_bonus", stack_bonus_}};
+        }
     private:
         std::string target_username_; /**< User who must provide the colour choice. */
         int stack_bonus_ = 0;         /**< Extra draws added to pending_draws after colour resolves. */

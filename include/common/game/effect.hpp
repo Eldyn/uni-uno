@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <nlohmann/json.hpp>
 
 /**
  * @file include/common/game/effect.hpp
@@ -85,6 +86,8 @@ namespace game {
          * @return EffectResult The result of the application (resolved, error or needs input).
          */
         virtual EffectResult Resolve(GameState* state, MatchInstance* match) = 0;
+
+        virtual nlohmann::json ToJson() const { return {{"type", static_cast<int>(GetType())}}; }
     };
 
 }
