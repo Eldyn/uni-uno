@@ -48,10 +48,7 @@
 					<button class="btn menu-btn pixel-corners" onclick={() => storeNavigation.goto("stats")}>
 						Stats
 					</button>
-					<button
-						class="btn menu-btn pixel-corners"
-						onclick={handleLogout}
-						disabled={logoutPending}
+					<button class="btn menu-btn pixel-corners" onclick={handleLogout} disabled={logoutPending}
 						>Logout</button
 					>
 				</div>
