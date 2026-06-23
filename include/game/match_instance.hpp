@@ -4,6 +4,7 @@
 #include <common/game/gamerule.hpp>
 #include <controllers/lobby_controller.hpp>
 #include <nlohmann/json.hpp>
+#include <random>
 #include <string>
 #include <vector>
 #include <memory>
@@ -209,6 +210,7 @@ namespace game {
         GameState state_;                        /**< The central game state. */
         LobbySettings settings_;                 /**< The rules and preferences of the match. */
         std::string match_id_;                   /**< Unique identifier of the match in the database. */
+        mutable std::mt19937 rng_{std::random_device{}()}; /**< Shared RNG for shuffles. */
 
         std::unordered_map<std::string, PlayerSessionStats> session_stats_; /**< Statistics collected during the match. */
         std::vector<std::unique_ptr<GameRule>> active_rules_;              /**< Set of active rules. */
