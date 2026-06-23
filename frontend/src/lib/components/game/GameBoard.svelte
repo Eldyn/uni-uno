@@ -199,5 +199,4 @@
 	.box.is-turn {
 		box-shadow: 0 0 20px 6px rgba(255, 255, 255, 0.75);
 	}
-
 </style>

@@ -48,6 +48,12 @@ export default defineConfig(({ mode }) => {
 			minify: isDev ? false : "esbuild",
 			sourcemap: isDev,
 			...watch
+		},
+		test: {
+			environment: "jsdom",
+			globals: true,
+			setupFiles: ["./src/lib/__tests__/setup.ts"],
+			include: ["src/**/*.{test,spec}.{ts,svelte.ts}"]
 		}
 	};
 });

@@ -8,6 +8,8 @@
 		"build": "node scripts/generate-schemas.js && vite build",
 		"watch": "vite build --watch --mode development",
 		"preview": "vite preview",
+		"test": "vitest run",
+		"test:ui": "vitest --ui",
 		"lint": "prettier --check .",
 		"format": "prettier --write .",
 		"docs": "typedoc",
@@ -15,6 +17,10 @@
 	},
 	"devDependencies": {
 		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/svelte": "^5.4.2",
+		"@vitest/ui": "^2.1.9",
+		"jsdom": "^25.0.1",
 		"md-to-pdf": "^5.2.5",
 		"prettier": "^3.8.1",
 		"prettier-plugin-svelte": "^3.5.1",
@@ -23,7 +29,8 @@
 		"typedoc": "^0.28.19",
 		"typedoc-plugin-markdown": "^4.12.0",
 		"typescript-svelte-plugin": "^0.3.52",
-		"vite": "^6.3.0"
+		"vite": "^6.3.0",
+		"vitest": "^2.1.9"
 	},
 	"dependencies": {
 		"@dnd-kit-svelte/svelte": "^0.1.6",

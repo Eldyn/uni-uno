@@ -7,7 +7,6 @@
 	import SortableCardSlot from "./SortableCardSlot.svelte";
 	import { useCardBus } from "./card-bus.svelte";
 
-
 	const bus = useCardBus();
 	let handEl = $state<HTMLElement | null>(null);
 	let dragging = $state(false);
@@ -83,7 +82,7 @@
 				{card}
 				{index}
 				isHidden={bus.hiddenCardIds.has(card.id)}
-onCardClick={handleCardClick}
+				onCardClick={handleCardClick}
 			/>
 		{/each}
 	</div>
