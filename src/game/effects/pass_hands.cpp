@@ -4,6 +4,7 @@
 #include <game/game_state.hpp>
 #include <game/match_instance.hpp>
 #include <game/effects/pass_hands.hpp>
+#include <game/effect_registry.hpp>
 
 namespace game {
     EffectResult PassHandsEffect::Resolve(GameState* state, MatchInstance* match) {
@@ -28,4 +29,6 @@ namespace game {
 
         return {EffectStatus::kResolved};
     }
+
+    static EffectRegistrar reg_pass(EffectType::kPassHands, [](const auto&){ return std::make_unique<PassHandsEffect>(); });
 }

@@ -5,6 +5,7 @@
 #include <game/match_instance.hpp>
 #include <game/effects/decide_swap_target.hpp>
 #include <game/effects/pass_hands.hpp>
+#include <game/effect_registry.hpp>
 
 namespace game {
     EffectResult DecideSwapTargetEffect::Resolve(GameState* state, MatchInstance* match) {
@@ -37,4 +38,6 @@ namespace game {
 
         return {EffectStatus::kNeedsInput, Action::kChooseTarget, username_, action_context.dump()};
     };
+
+    static EffectRegistrar reg_swap(EffectType::kDecideSwapTarget, [](const auto& e){ return std::make_unique<DecideSwapTargetEffect>(e.value("username", "")); });
 }

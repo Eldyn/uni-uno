@@ -7,8 +7,7 @@
 #include <game/match_instance.hpp>
 #include <game/rules/standard.hpp>
 #include <game/effects/standard.hpp>
-#include <game/effects/decide_swap_target.hpp>
-#include <game/effects/pass_hands.hpp>
+#include <game/effect_registry.hpp>
 #include <common/game/effect.hpp>
 #include <controllers/lobby_controller.hpp>
 #include <algorithm>
@@ -51,17 +50,17 @@ namespace game {
     json MatchInstance::ExportState() const {
         json state_json;
 
-        state_json["status"]               = state_.status;
-        state_json["active_type"]          = state_.active_type;
-        state_json["current_player_index"] = state_.current_player_index;
-        state_json["play_direction"]       = state_.play_direction;
-        state_json["rules"]                = settings_.active_mods;
-        state_json["pending_draws"]        = state_.pending_draws;
-        state_json["winner"]               = state_.winner;
-        state_json["pending_player"]       = state_.pending_player;
-        state_json["pending_action"]       = static_cast<int>(state_.pending_action);
+        state_json["status"]                = state_.status;
+        state_json["active_type"]           = state_.active_type;
+        state_json["current_player_index"]  = state_.current_player_index;
+        state_json["play_direction"]        = state_.play_direction;
+        state_json["rules"]                 = settings_.active_mods;
+        state_json["pending_draws"]         = state_.pending_draws;
+        state_json["winner"]                = state_.winner;
+        state_json["pending_player"]        = state_.pending_player;
+        state_json["pending_action"]        = static_cast<int>(state_.pending_action);
         state_json["pending_input_context"] = state_.pending_input_context;
-        state_json["provided_input"]       = state_.provided_input;
+        state_json["provided_input"]        = state_.provided_input;
 
         state_json["discard_pile"] = state_.discard_pile;
         state_json["draw_pile"]    = state_.draw_pile;
@@ -105,16 +104,16 @@ namespace game {
         }
         active_rules_.push_back(std::make_unique<StandardRule>());
 
-        state_.status               = static_cast<MatchStatus>(saved_state.value("status", 0));
-        state_.active_type          = static_cast<Type>(saved_state.value("active_type", 0));
-        state_.current_player_index = saved_state.value("current_player_index", 0);
-        state_.play_direction       = saved_state.value("play_direction", 1);
-        state_.pending_draws        = saved_state.value("pending_draws", 0);
-        state_.winner               = saved_state.value("winner", "");
-        state_.pending_player       = saved_state.value("pending_player", "");
-        state_.pending_action       = static_cast<Action>(saved_state.value("pending_action", 0));
+        state_.status                = static_cast<MatchStatus>(saved_state.value("status", 0));
+        state_.active_type           = static_cast<Type>(saved_state.value("active_type", 0));
+        state_.current_player_index  = saved_state.value("current_player_index", 0);
+        state_.play_direction        = saved_state.value("play_direction", 1);
+        state_.pending_draws         = saved_state.value("pending_draws", 0);
+        state_.winner                = saved_state.value("winner", "");
+        state_.pending_player        = saved_state.value("pending_player", "");
+        state_.pending_action        = static_cast<Action>(saved_state.value("pending_action", 0));
         state_.pending_input_context = saved_state.value("pending_input_context", "");
-        state_.provided_input       = saved_state.value("provided_input", "");
+        state_.provided_input        = saved_state.value("provided_input", "");
 
         if (saved_state.contains("draw_pile"))    saved_state["draw_pile"].get_to(state_.draw_pile);
         if (saved_state.contains("discard_pile")) saved_state["discard_pile"].get_to(state_.discard_pile);
@@ -129,37 +128,7 @@ namespace game {
 
         if (saved_state.contains("effect_queue")) {
             for (const auto& e : saved_state["effect_queue"]) {
-                auto type = static_cast<EffectType>(e.value("type", -1));
-                std::unique_ptr<Effect> effect;
-                switch (type) {
-                    case EffectType::kAdvanceTurn:
-                        effect = std::make_unique<AdvanceTurnEffect>();
-                        break;
-                    case EffectType::kDraw:
-                        effect = std::make_unique<DrawEffect>(e.value("count", 0), e.value("target", ""));
-                        break;
-                    case EffectType::kSkip:
-                        effect = std::make_unique<SkipEffect>();
-                        break;
-                    case EffectType::kReverse:
-                        effect = std::make_unique<ReverseEffect>();
-                        break;
-                    case EffectType::kChooseColor:
-                        effect = std::make_unique<ChooseColorEffect>(e.value("target", ""), e.value("stack_bonus", 0));
-                        break;
-                    case EffectType::kDecideDrawnCard:
-                        effect = std::make_unique<DecideDrawnCardEffect>(e.value("username", ""), e.value("card_id", uint16_t(0)));
-                        break;
-                    case EffectType::kDecideSwapTarget:
-                        effect = std::make_unique<DecideSwapTargetEffect>(e.value("username", ""));
-                        break;
-                    case EffectType::kPassHands:
-                        effect = std::make_unique<PassHandsEffect>();
-                        break;
-                    default:
-                        Logger::Warn("[Match] Unknown effect type in saved state: ", e.value("type", -1));
-                        break;
-                }
+                auto effect = EffectRegistry::Create(e);
                 if (effect) state_.effect_queue.push_back(std::move(effect));
             }
         }

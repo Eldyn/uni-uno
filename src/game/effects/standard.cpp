@@ -2,6 +2,7 @@
 #include "game/game_state.hpp"
 #include "game/match_instance.hpp"
 #include <game/effects/standard.hpp>
+#include <game/effect_registry.hpp>
 #include <algorithm>
 
 namespace game {
@@ -77,5 +78,12 @@ namespace game {
 
         return {EffectStatus::kNeedsInput, Action::kPlayDrawn, username_, action_context.dump()};
     }
+
+    static EffectRegistrar reg_advance(EffectType::kAdvanceTurn, [](const auto&)  { return std::make_unique<AdvanceTurnEffect>(); });
+    static EffectRegistrar reg_skip(   EffectType::kSkip,        [](const auto&)  { return std::make_unique<SkipEffect>(); });
+    static EffectRegistrar reg_reverse(EffectType::kReverse,     [](const auto&)  { return std::make_unique<ReverseEffect>(); });
+    static EffectRegistrar reg_draw(   EffectType::kDraw,        [](const auto& e){ return std::make_unique<DrawEffect>(e.value("count", 0), e.value("target", "")); });
+    static EffectRegistrar reg_color(  EffectType::kChooseColor, [](const auto& e){ return std::make_unique<ChooseColorEffect>(e.value("target", ""), e.value("stack_bonus", 0)); });
+    static EffectRegistrar reg_drawn(  EffectType::kDecideDrawnCard, [](const auto& e){ return std::make_unique<DecideDrawnCardEffect>(e.value("username", ""), e.value("card_id", uint16_t(0))); });
 
 }
