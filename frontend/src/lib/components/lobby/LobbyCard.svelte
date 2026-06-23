@@ -11,7 +11,7 @@
 	}
 </script>
 
-<div class="lobby-card" class:full={isFull}>
+<div class="lobby-card card-outline pixel-corners" class:full={isFull}>
 	<div class="lobby-header">
 		<h3 class="lobby-name">{lobby.name}</h3>
 	</div>
@@ -29,32 +29,27 @@
 
 	{#if canJoin}
 		{#if isFull}
-			<button type="button" class="join-button" disabled>Full</button>
+			<button type="button" class="btn pixel-corners" disabled>Full</button>
 		{:else}
-			<button type="button" class="join-button" onclick={handleJoin}>Join</button>
+			<button type="button" class="btn pixel-corners" onclick={handleJoin}>Join</button>
 		{/if}
 	{/if}
 </div>
 
 <style>
 	.lobby-card {
-		background: var(--bg);
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		padding: 16px;
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
-		transition: all 0.2s;
-	}
-
-	.lobby-card:hover:not(.full) {
-		border-color: var(--accent);
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	}
 
 	.lobby-card.full {
 		opacity: 0.6;
+	}
+
+	.lobby-card.full:hover {
+		border-color: var(--border);
+		box-shadow: none;
 	}
 
 	.lobby-header {
@@ -91,27 +86,5 @@
 
 	.info-value {
 		color: var(--text-h);
-	}
-
-	.join-button {
-		padding: 8px 16px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-size: 14px;
-		font-weight: 500;
-		font-family: "Pixel";
-		cursor: pointer;
-		transition: opacity 0.2s;
-	}
-
-	.join-button:hover:not(:disabled) {
-		opacity: 0.9;
-	}
-
-	.join-button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
 	}
 </style>

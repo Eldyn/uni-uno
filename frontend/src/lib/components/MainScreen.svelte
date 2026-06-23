@@ -11,7 +11,7 @@
 		<TextEffects
 			text="UNI!"
 			effect="undulate"
-			class="logo-text"
+			class="logo-text title-hero"
 			font="var(--heading)"
 			amplitude={20}
 			speed={1}
@@ -21,17 +21,24 @@
 
 	<main class="button-container">
 		{#if !storeAuth.isLoggedIn}
-			<button class="pixel-corners" onclick={() => storeNavigation.goto("auth")}> Login </button>
+			<button class="btn menu-btn pixel-corners" onclick={() => storeNavigation.goto("auth")}>
+				Login
+			</button>
 		{:else}
 			<div class="logged-in-menu">
-				<button class="pixel-corners btn-wide" onclick={() => storeNavigation.goto("lobbies")}>
+				<button
+					class="btn menu-btn btn-wide pixel-corners"
+					onclick={() => storeNavigation.goto("lobbies")}
+				>
 					Entra in Stanza
 				</button>
 				<div class="secondary-buttons">
-					<button class="pixel-corners" onclick={() => storeNavigation.goto("stats")}>
+					<button class="btn menu-btn pixel-corners" onclick={() => storeNavigation.goto("stats")}>
 						Stats
 					</button>
-					<button class="pixel-corners" onclick={() => storeAuth.logout()}>Logout</button>
+					<button class="btn menu-btn pixel-corners" onclick={() => storeAuth.logout()}
+						>Logout</button
+					>
 				</div>
 			</div>
 		{/if}
@@ -112,11 +119,11 @@
 		gap: 0.4rem;
 	}
 
+	/* Logo sizing/stroke/shadow live in the shared .title-hero class (app.css),
+	   kept in sync with the #seo-splash hero in index.html. Only the per-char
+	   gap is logo-specific. */
 	.logo-container :global(.logo-text) {
 		gap: 0.4rem;
-		font-size: 10rem;
-		-webkit-text-stroke: 2px #1a1a1a;
-		text-shadow: 5px 5px 0px #1a1a1a;
 	}
 
 	.button-container {
@@ -142,34 +149,12 @@
 		width: 100%;
 	}
 
-	button {
+	/* Hero-sized variant of the shared flat .btn */
+	.menu-btn {
 		padding: 1.5rem 2.5rem;
 		font-size: 1.35rem;
-		font-family: "Pixel", sans-serif;
 		font-weight: 900;
 		letter-spacing: 1.5px;
-
 		line-height: 1.3;
-
-		color: #ffffff;
-		background-color: #8d42d3;
-
-		cursor: pointer;
-		box-shadow: 5px 5px 0px #1a1a1a;
-		transition:
-			transform 0.08s ease,
-			box-shadow 0.08s ease,
-			background-color 0.2s ease;
-	}
-
-	button:hover {
-		background-color: #9c4fe3;
-		transform: translate(-3px, -3px);
-		box-shadow: 8px 8px 0px #1a1a1a;
-	}
-
-	button:active {
-		transform: translate(5px, 5px);
-		box-shadow: 0px 0px 0px #1a1a1a;
 	}
 </style>

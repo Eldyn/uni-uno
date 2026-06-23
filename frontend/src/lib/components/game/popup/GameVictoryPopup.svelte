@@ -8,48 +8,44 @@
 	let winnerIdx = $derived(
 		storeGame.state?.players?.findIndex((p) => p.username === winnerName) ?? -1
 	);
-	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"];
-	let winnerColor = $derived(winnerIdx !== -1 ? PLAYER_COLORS[winnerIdx % 4] : "#0493de");
+	let winnerIsBot = $derived(
+		winnerIdx !== -1 ? (storeGame.state?.players?.[winnerIdx]?.is_bot ?? false) : false
+	);
 
-	let isBot = $derived(winnerName.toLowerCase().includes("bot"));
+	// INFO: Player seat colours mirror the lobby/board. Bots are intentionally
+	//       greyed out — they never get a player identity colour.
+	const PLAYER_COLORS = ["#0493de", "#018d41", "#dc251c", "#fcf604"];
+	const BOT_COLOR = "#6b6b6b";
+	let winnerColor = $derived(
+		winnerIsBot ? BOT_COLOR : winnerIdx !== -1 ? PLAYER_COLORS[winnerIdx % 4] : PLAYER_COLORS[0]
+	);
 </script>
 
 <div class="modal-overlay">
-	<div class="cute-modal-content">
-		<h1 class={isMe ? "text-victory" : "text-defeat"}>
+	<div class="modal-content victory-content pixel-corners">
+		<h1 class="result {isMe ? 'result--win' : 'result--lose'}">
 			{isMe ? "VICTORY!" : "YOU LOST!"}
 		</h1>
 
-		<div class="avatar-wrapper">
-			{#if isBot}
-				<img src="/assets/bot_animated.gif" alt="Bot" />
-			{:else}
-				<TintedSprite src="/assets/base_player.gif" color={winnerColor} />
-			{/if}
+		<div class="avatar-stage">
+			<div class="avatar-glow"></div>
+			<div class="avatar-frame">
+				<TintedSprite src="/assets/base_player.gif" color={winnerColor} fit="contain" />
+				<img class="crown" src="/assets/crown_host.gif" alt="Winner crown" />
+			</div>
 		</div>
 
-		<h2>Winner: <span class="winner-highlight">{winnerName}</span></h2>
-		<button type="button" class="pixel-btn pixel-corners" onclick={() => storeGame.returnToLobby()}>
+		<p class="winner-line">
+			Winner: <span class="winner-name">{winnerName}</span>
+		</p>
+
+		<button type="button" class="btn pixel-corners" onclick={() => storeGame.returnToLobby()}>
 			Back to Lobby
 		</button>
 	</div>
 </div>
 
 <style>
-	.modal-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		z-index: 10000;
-		background: rgba(0, 0, 0, 0.75);
-		backdrop-filter: blur(4px);
-	}
-
 	@keyframes slideDown {
 		0% {
 			transform: translateY(-50px) scale(0.9);
@@ -61,89 +57,103 @@
 		}
 	}
 
-	.cute-modal-content {
+	.victory-content {
 		text-align: center;
-		background: var(--bg);
-		padding: 30px;
-		border-radius: 16px;
-		border: 4px solid var(--accent);
-		box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.6);
 		color: var(--text-h);
 		max-width: max-content;
 		width: 90%;
 		box-sizing: border-box;
-		animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		gap: 18px;
+		animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 		overflow-wrap: break-word;
 		word-wrap: break-word;
 	}
 
-	.text-victory {
+	.result {
+		margin: 0;
+		font-family: "FatPixel", sans-serif;
+		font-size: 2.6rem;
+		letter-spacing: 2px;
+	}
+	.result--win {
 		color: var(--accent);
-		text-shadow: 2px 2px 0px #1a1a1a;
+		text-shadow: 3px 3px 0px var(--pixel-shadow);
 	}
-	.text-defeat {
-		color: #dc251c;
-		text-shadow: 2px 2px 0px #1a1a1a;
+	.result--lose {
+		color: var(--danger);
+		text-shadow: 3px 3px 0px var(--pixel-shadow);
 	}
 
-	.avatar-wrapper {
-		width: 80px; /* Scaled down slightly */
-		height: 80px;
-		margin: 0 auto 20px auto; /* Centered properly */
-		padding: 10px;
+	/* Stage gives the winner's icon the visual spotlight. */
+	.avatar-stage {
+		position: relative;
+		width: 160px;
+		height: 160px;
 		display: flex;
-		justify-content: center;
 		align-items: center;
+		justify-content: center;
 	}
 
-	.cute-modal-content h2 {
-		font-family: "Pixel", sans-serif;
-		font-size: 1.2rem;
-		margin-bottom: 10px;
+	.avatar-glow {
+		position: absolute;
+		inset: -12px;
+		background: radial-gradient(circle, var(--accent-bg) 0%, transparent 70%);
+		animation: pulse 1.6s ease-in-out infinite;
+	}
+
+	@keyframes pulse {
+		0%,
+		100% {
+			transform: scale(1);
+			opacity: 0.7;
+		}
+		50% {
+			transform: scale(1.15);
+			opacity: 1;
+		}
+	}
+
+	/* The crown gif shares the frame's exact box so it layers cleanly over the
+	   head of the base player sprite. */
+	.avatar-frame {
+		position: relative;
+		width: 128px;
+		height: 128px;
+		animation: float 2.2s ease-in-out infinite;
+	}
+	.crown {
+		position: absolute;
+		inset: 0;
 		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		pointer-events: none;
+	}
+
+	@keyframes float {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-6px);
+		}
+	}
+
+	.winner-line {
+		font-family: "Pixel", sans-serif;
+		font-size: 1.15rem;
+		margin: 0;
 		line-height: 1.4;
 	}
-
-	.winner-highlight {
-		color: #ffcc00;
-		text-shadow: 1px 1px 0px #000;
+	.winner-name {
+		color: var(--gold);
+		text-shadow: 1px 1px 0px var(--pixel-shadow);
 		font-weight: bold;
-		font-size: 1.4rem;
+		font-size: 1.35rem;
 		display: inline-block;
-	}
-
-	.cute-modal-content p {
-		font-family: var(--sans);
-		color: var(--text);
-		margin-bottom: 25px;
-		font-size: 0.95rem;
-	}
-
-	.pixel-btn {
-		padding: 12px 24px;
-		background: var(--accent);
-		color: #fff;
-		border: 3px solid #1a1a1a;
-		border-radius: 8px;
-		font-family: "Pixel", sans-serif;
-		font-weight: bold;
-		font-size: 1rem;
-		cursor: pointer;
-		box-shadow: 4px 4px 0px #1a1a1a;
-		transition:
-			transform 0.1s,
-			box-shadow 0.1s;
-	}
-	.pixel-btn:hover {
-		transform: translate(-2px, -2px);
-		box-shadow: 6px 6px 0px #1a1a1a;
-		filter: brightness(1.1);
-	}
-	.pixel-btn:active {
-		transform: translate(4px, 4px);
-		box-shadow: 0px 0px 0px #1a1a1a;
 	}
 </style>

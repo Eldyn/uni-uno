@@ -78,7 +78,9 @@
 
 <div class="stats-container">
 	<header class="top-bar">
-		<button class="styled-btn" onclick={() => storeNavigation.back()}> ↩ Back </button>
+		<button class="btn pixel-corners" onclick={() => storeNavigation.back()}>
+			<span class="back-icon">󰁍</span> Back
+		</button>
 		<h1>CARD ARSENAL</h1>
 		<div style="width: 80px;"></div>
 	</header>
@@ -86,7 +88,7 @@
 	<div class="content">
 		<div class="cards-grid">
 			{#each cardStats as stat (stat.key)}
-				<div class="card-stat-box">
+				<div class="card-stat-box pixel-corners">
 					<div class="card-wrapper">
 						<GameCard
 							card={{ id: 0, color: stat.color as any, value: stat.value as any }}
@@ -141,21 +143,8 @@
 		font-family: "Pixel", sans-serif;
 	}
 
-	.styled-btn {
-		padding: 8px 16px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		border-radius: 6px;
-		font-size: 14px;
-		font-weight: 500;
-		cursor: pointer;
-		transition: opacity 0.2s;
-		font-family: "Pixel", sans-serif;
-	}
-
-	.styled-btn:hover {
-		opacity: 0.8;
+	.back-icon {
+		font-family: var(--mono);
 	}
 
 	.content {
@@ -178,7 +167,6 @@
 		align-items: center;
 		background: #1c1c1e;
 		padding: 15px;
-		border-radius: 12px;
 		box-shadow: 0 8px 0px #111;
 		border: 2px solid #333;
 		transition: transform 0.1s ease;
@@ -190,7 +178,7 @@
 
 	.card-wrapper {
 		margin-bottom: 15px;
-		transform: scale(0.9); /* Prevents the cards from being overly massive */
+		transform: scale(0.9);
 	}
 
 	.stat-info {

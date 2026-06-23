@@ -34,14 +34,14 @@
 		<div class="header-actions">
 			<button
 				type="button"
-				class="pixel-btn pixel-corners"
+				class="btn pixel-corners lobby-btn"
 				onclick={() => storeNavigation.goto("main")}
 			>
 				Back
 			</button>
 			<button
 				type="button"
-				class="pixel-btn pixel-corners logout"
+				class="btn pixel-corners lobby-btn logout"
 				onclick={() => storeAuth.logout()}
 			>
 				Logout
@@ -58,7 +58,7 @@
 			<div class="controls">
 				<button
 					type="button"
-					class="pixel-btn pixel-corners refresh"
+					class="btn pixel-corners lobby-btn refresh"
 					onclick={handleRefresh}
 					disabled={refreshing}
 				>
@@ -122,44 +122,24 @@
 		overflow: hidden;
 	}
 
-	.pixel-btn {
+	/* Size override on top of the shared flat .btn */
+	.lobby-btn {
 		padding: 15px;
-		background: var(--accent);
-		color: white;
-		border: none;
-		font-family: "Pixel", sans-serif;
 		font-size: 20px;
-		cursor: pointer;
 		text-transform: uppercase;
-		transition:
-			filter 0.2s,
-			transform 0.1s;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 	}
 
-	.pixel-btn:hover:not(:disabled) {
-		filter: brightness(1.2);
-	}
-
-	.pixel-btn:active:not(:disabled) {
-		transform: scale(0.95);
-	}
-
-	.pixel-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.pixel-btn.logout {
-		background: #e91e63;
+	.logout {
+		background: var(--danger);
 	}
 
 	.sidebar-form-box {
 		width: 100%;
 		padding: 45px 20px;
-		background: rgb(20, 20, 20);
+		background: var(--surface-deep);
 		border-bottom: 2px solid var(--border);
 		display: flex;
 		justify-content: center;
@@ -213,7 +193,7 @@
 
 	.user-info {
 		font-size: 18px;
-		color: white;
+		color: var(--text-h);
 		margin: 0;
 	}
 	.mono {

@@ -52,7 +52,7 @@
 		<div class="title-container">
 			{#if isEditingName && isHost}
 				<input
-					class="name-input"
+					class="name-input title-screen"
 					bind:value={editedName}
 					onblur={saveName}
 					onkeydown={(e) => e.key === "Enter" && saveName()}
@@ -60,11 +60,11 @@
 					use:focusOnMount
 				/>
 			{:else if isHost}
-				<button type="button" class="lobby-title" onclick={startEditing}>
+				<button type="button" class="lobby-title title-screen" onclick={startEditing}>
 					<h1>{storeLobby.current?.name}</h1>
 				</button>
 			{:else}
-				<h1 class="lobby-title">
+				<h1 class="lobby-title title-screen">
 					{storeLobby.current?.name}
 				</h1>
 			{/if}
@@ -108,6 +108,9 @@
 								color={member.is_bot ? "#666" : PLAYER_COLORS[i % 4]}
 								fit="contain"
 							/>
+							{#if member.is_host}
+								<img class="avatar-crown" src="/assets/crown_host.gif" alt="Host" />
+							{/if}
 						</div>
 
 						<div class="member-info-group">
@@ -126,12 +129,6 @@
 									{/if}
 
 									<span class="member-name">{member.username}</span>
-
-									{#if member.is_host}<span
-											style="color: gold; font-size: 1.5rem;font-family: var(--mono);"
-										>
-											󱟜
-										</span>{/if}
 								</div>
 							</div>
 
@@ -197,7 +194,7 @@
 		</div>
 	</div>
 
-	<button class="leave-button-fixed" onclick={storeLobby.leave} title="Exit Lobby">
+	<button class="leave-button-fixed pixel-corners" onclick={storeLobby.leave} title="Exit Lobby">
 		<img src="/assets/exit.png" alt="Exit" class="exit-icon" />
 	</button>
 </div>
@@ -222,11 +219,21 @@
 		gap: 2rem;
 	}
 
-	/* AVATAR GIGANTI */
 	.member-avatar {
+		position: relative;
 		width: 128px;
 		height: 128px;
 		flex-shrink: 0;
+	}
+
+	/* Crown gif shares the avatar's exact box so it layers over the head. */
+	.avatar-crown {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		pointer-events: none;
 	}
 
 	.member-info-group {
@@ -247,9 +254,8 @@
 		color: white;
 	}
 
-	/* ICONA STATO PIÙ GRANDE */
 	.status-icon {
-		font-size: 2rem; /* Ingrandita */
+		font-size: 2rem;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -268,7 +274,6 @@
 		gap: 8px;
 		background: rgb(0, 0, 0);
 		padding: 8px 16px;
-		border-radius: 8px;
 	}
 	.invite-badge {
 		font-family: var(--mono);
@@ -299,7 +304,6 @@
 		cursor: pointer;
 		background: var(--bg);
 		padding: 10px 20px;
-		border-radius: 8px;
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		font-weight: bold;
 	}
@@ -313,8 +317,7 @@
 		left: 0;
 		z-index: 200;
 		background: var(--bg);
-		border: 2px solid #333;
-		border-radius: 10px;
+		border: 2px solid var(--border);
 		width: 350px;
 		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 	}
@@ -372,24 +375,17 @@
 		left: 40px;
 		width: 80px;
 		height: 80px;
-		background: #d9534f;
-		border: 3px solid #1a1a1a;
-		border-radius: 16px;
-		box-shadow: 6px 6px 0px #1a1a1a;
+		background: var(--danger);
+		border: 3px solid var(--pixel-shadow);
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: all 0.1s;
+		transition: filter 0.12s ease;
 		z-index: 1000;
 	}
 	.leave-button-fixed:hover {
-		transform: translate(-2px, -2px);
-		box-shadow: 8px 8px 0px #1a1a1a;
-	}
-	.leave-button-fixed:active {
-		transform: translate(4px, 4px);
-		box-shadow: 0px 0px 0px #1a1a1a;
+		filter: brightness(1.1);
 	}
 	.exit-icon {
 		width: 36px;
@@ -403,8 +399,8 @@
 		font-size: 3rem;
 		color: white;
 		letter-spacing: 6px;
-		-webkit-text-stroke: 1.5px #1a1a1a;
-		text-shadow: 2px 2px 0px #1a1a1a;
+		-webkit-text-stroke: 1.5px var(--pixel-shadow);
+		text-shadow: 2px 2px 0px var(--pixel-shadow);
 	}
 
 	.members {
@@ -420,27 +416,26 @@
 	}
 
 	.dots-button {
-		background: var(--bg); /* Semi-transparent dark background */
-		border: 2px solid var(--border); /* Border consistent with the rest */
-		width: 22px; /* Fixed width to make it square */
-		height: 42px; /* Fixed height */
+		background: var(--bg);
+		border: 2px solid var(--border);
+		width: 22px;
+		height: 42px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1.8rem; /* Size of the dots */
+		font-size: 1.8rem;
 		cursor: pointer;
 		color: white;
 		transition: all 0.2s;
 		line-height: 0;
-		padding-bottom: 2px; /* Optical adjustment to centre the dots vertically */
+		padding-bottom: 2px;
 	}
 
 	.dots-button:hover {
-		background: var(--bg); /* Changes colour on hover */
+		background: var(--bg);
 		border-color: white;
 	}
 
-	/* Make sure the wrapper is relative to position the menu correctly */
 	.menu-wrapper {
 		position: relative;
 	}
@@ -448,13 +443,11 @@
 	.dropdown-menu {
 		position: absolute;
 		background: var(--bg);
-		border: 2px solid #444;
-		border-radius: 8px;
+		border: 2px solid var(--border);
 		z-index: 100;
 		min-width: 140px;
 	}
 
-	/* Base item style */
 	.dropdown-item {
 		width: 100%;
 		padding: 12px;
@@ -466,16 +459,14 @@
 		font-weight: bold;
 		transition:
 			background 0.2s,
-			filter 0.2s; /* Smooth transition */
+			filter 0.2s;
 	}
 
-	/* HOVER ILLUMINATION EFFECT */
 	.dropdown-item:hover {
-		background: rgba(255, 255, 255, 0.1); /* Slightly lighter background */
-		filter: brightness(1.4); /* Increases the brightness of the text (Promote/Kick) */
+		background: rgba(255, 255, 255, 0.1);
+		filter: brightness(1.4);
 	}
 
-	/* Optional: a small border on the left on hover */
 	.dropdown-item:hover {
 		box-shadow: inset 4px 0 0 var(--accent);
 	}
@@ -487,26 +478,19 @@
 		color: #51cf66;
 	}
 
+	/* Font/size/colour/shadow come from the shared .title-screen class (app.css).
+	   Only the lobby-specific deltas + input reset live here. */
 	.lobby-title,
 	.name-input {
-		font-size: 56px;
 		letter-spacing: -1.68px;
 		margin: 0;
-		@media (max-width: 1024px) {
-			font-size: 36px;
-		}
-		font-family: var(--heading);
-		font-weight: 500;
-		color: var(--text-h);
-
-		font-family: "FatPixel";
-		color: white;
+		padding: 0;
 		background: none;
 		border: none;
 		outline: none;
-		text-shadow: 2px 2px 0px #000;
-		padding: 0;
-		margin: 0;
-		clip-path: none !important; /* Do not use pixel-corners here! */
+		clip-path: none !important;
+		@media (max-width: 1024px) {
+			font-size: 36px;
+		}
 	}
 </style>

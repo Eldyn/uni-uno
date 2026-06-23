@@ -10,13 +10,13 @@
 {#if storeGame.state && !storeGame.actionRequired}
 	<div class="hud-container">
 		<span
-			class="timer"
-			style="background: {storeGame.turnTimeRemaining <= 5 ? '#dc251c' : '#333'};"
+			class="timer pixel-corners"
+			style="background: {storeGame.turnTimeRemaining <= 5 ? 'var(--danger)' : 'var(--surface-2)'};"
 		>
 			00:{storeGame.turnTimeRemaining.toString().padStart(2, "0")}
 		</span>
 
-		<button class="lobby-btn" onclick={handleReturnToLobbies}> Exit </button>
+		<button class="btn pixel-corners exit-btn" onclick={handleReturnToLobbies}> Exit </button>
 	</div>
 {/if}
 
@@ -32,30 +32,14 @@
 
 	.timer {
 		padding: 4px 10px;
-		border-radius: 6px;
 		font-family: monospace;
 		transition: background-color 0.3s ease;
 	}
 
-	.lobby-btn {
-		background-color: #333;
-		color: #fff;
-		border: none;
+	/* Size override on top of the shared flat .btn */
+	.exit-btn {
 		padding: 6px 14px;
-		border-radius: 6px;
 		font-weight: bold;
 		font-size: 0.9rem;
-		cursor: pointer;
-		transition:
-			background-color 0.2s ease,
-			transform 0.1s ease;
-	}
-
-	.lobby-btn:hover {
-		background-color: #b51e16;
-	}
-
-	.lobby-btn:active {
-		transform: scale(0.95);
 	}
 </style>

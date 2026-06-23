@@ -11,14 +11,14 @@
 
 {#if storeGame.actionRequired === Action.ChooseType}
 	<div class="inline-action-container">
-		<div class="cute-bubble">
+		<div class="cute-bubble pixel-corners">
 			<h2 class="choose-color-text">Choose Color!</h2>
 			<br />
 			<div class="color-buttons">
 				{#each TYPE_BUTTONS as { name, typeIndex }}
 					<button
 						type="button"
-						class="color-button color-{name}"
+						class="btn pixel-corners color-button color-{name}"
 						onclick={() => storeGame.submitInput(String(typeIndex))}
 					>
 						{name.charAt(0).toUpperCase()}
@@ -32,7 +32,7 @@
 <style>
 	.inline-action-container {
 		position: absolute;
-		top: 60%; /* Anchored under the pile */
+		top: 60%;
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 200;
@@ -42,7 +42,6 @@
 	.cute-bubble {
 		background: var(--bg);
 		padding: 20px 25px;
-		border-radius: 16px;
 		border: 4px solid var(--accent);
 		text-align: center;
 		box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.4);
@@ -79,47 +78,29 @@
 		justify-content: center;
 	}
 
+	/* Square swatch sizing on top of the shared flat .btn */
 	.color-button {
 		width: 45px;
 		height: 45px;
-		border: 3px solid #1a1a1a;
-		border-radius: 10px;
+		border: 3px solid var(--pixel-shadow);
 		font-weight: bold;
-		font-family: "Pixel", sans-serif;
-		cursor: pointer;
-		box-shadow: 3px 3px 0px #1a1a1a;
-		transition:
-			transform 0.1s ease,
-			box-shadow 0.1s ease,
-			filter 0.2s ease;
 		font-size: 16px;
 	}
 
-	.color-button:hover {
-		transform: translate(-2px, -2px) scale(1.1);
-		box-shadow: 5px 5px 0px #1a1a1a;
-		filter: brightness(1.2);
-	}
-
-	.color-button:active {
-		transform: translate(3px, 3px) scale(1);
-		box-shadow: 0px 0px 0px #1a1a1a;
-	}
-
 	.color-red {
-		background: #dc251c;
+		background: var(--redCard);
 		color: white;
 	}
 	.color-yellow {
-		background: #fcf604;
+		background: var(--yellowCard);
 		color: black;
 	}
 	.color-green {
-		background: #018d41;
+		background: var(--greenCard);
 		color: white;
 	}
 	.color-blue {
-		background: #0493de;
+		background: var(--blueCard);
 		color: white;
 	}
 </style>

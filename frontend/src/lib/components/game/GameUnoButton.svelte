@@ -8,78 +8,56 @@
 
 	let alreadyCalled = $derived(storeGame.localPlayer?.has_called_uno ?? false);
 
-	let canPlayCard = $derived(
-		(storeGame.localPlayer?.hand || []).some((card) => card.can_play)
-	);
+	let canPlayCard = $derived((storeGame.localPlayer?.hand || []).some((card) => card.can_play));
 </script>
 
 {#if isMyTurn && hasTwoCards && canPlayCard}
 	{#if !alreadyCalled}
 		<button
 			type="button"
-			class="uno-floating-button animate-pixel-bounce"
-			onclick={() => {
-				ws.emit(ClientAction.GameCallUno);
-				console.log(ClientAction.GameCallUno);
-			}}
+			class="btn pixel-corners uno-button animate-pixel-bounce"
+			onclick={() => ws.emit(ClientAction.GameCallUno)}
 		>
 			UNO!
 		</button>
 	{:else}
-		<div class="uno-floating-badge">✅ UNO Dichiarato</div>
+		<div class="uno-button uno-button--called pixel-corners">
+			<span class="uno-glyph">󰄬</span>
+			UNO!
+		</div>
 	{/if}
 {/if}
 
 <style>
-	.uno-floating-button {
+	/* Shared floating placement + sizing for both states so the button never
+	   changes size, font, or language when it is pressed. */
+	.uno-button {
 		position: fixed;
 		bottom: 10%;
 		right: 25%;
 		z-index: 150;
-		padding: 12px 24px;
-		border-radius: 5%;
-		background: var(--accent);
-		color: white;
-		border: 4px solid #000;
-		border-radius: 0;
-
-		/* Apply the pixel font */
-		font-family: "Pixel", system-ui, monospace;
-		font-size: 20px; /* Slightly reduced to balance the font width */
-		letter-spacing: 1px;
-		cursor: pointer;
-
-		box-shadow: 6px 6px 0px #000;
-		transition:
-			transform 0.1s,
-			box-shadow 0.1s;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 12px 28px;
+		border: 4px solid var(--pixel-shadow);
+		font-family: var(--pixel);
+		font-size: 22px;
+		letter-spacing: 2px;
+		color: #fff;
 	}
 
-	.uno-floating-button:hover {
-		transform: translate(-2px, -2px);
-		box-shadow: 8px 8px 0px #000;
+	/* Confirmed state: same shape, muted success colour, no bounce. */
+	.uno-button--called {
+		background: var(--success);
+		cursor: default;
 	}
 
-	.uno-floating-button:active {
-		transform: translate(6px, 6px);
-		box-shadow: 0px 0px 0px #000;
-		animation: none;
-	}
-
-	.uno-floating-badge {
-		position: fixed;
-		bottom: 10%;
-		right: 25%;
-		z-index: 150;
-		padding: 10px 20px;
-		background: #018d41;
-		color: white;
-		border: 4px solid #000;
-		border-radius: 0;
-		font-family: "Press Start 2P", system-ui, monospace;
-		font-size: 10px; /* Smaller to fit nicely in the badge */
-		text-transform: uppercase;
-		box-shadow: 6px 6px 0px #000;
+	.uno-glyph {
+		font-family: var(--mono);
+		font-size: 20px;
+		line-height: 1;
 	}
 
 	@keyframes pixel-jump {

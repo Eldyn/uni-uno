@@ -4,17 +4,17 @@
 
 <div class="toast-container">
 	{#each storeToast.items as toast (toast.id)}
-		<div class="toast toast-{toast.type}" role="alert">
+		<div class="toast toast-{toast.type} pixel-corners" role="alert">
 			<div class="toast-content">
 				<span class="toast-icon">
 					{#if toast.type === "success"}
-						✓
+						󰄬
 					{:else if toast.type === "error"}
-						✕
+						󰅖
 					{:else if toast.type === "warning"}
-						⚠
+						󰀪
 					{:else}
-						ℹ
+						󰋽
 					{/if}
 				</span>
 				<span class="toast-message">{toast.message}</span>
@@ -49,7 +49,6 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 12px 16px;
-		border-radius: 6px;
 		font-size: 14px;
 		box-shadow: var(--shadow);
 		animation: slideIn 0.3s ease-out;
@@ -99,6 +98,7 @@
 	}
 
 	.toast-icon {
+		font-family: var(--mono);
 		font-weight: bold;
 		font-size: 16px;
 		flex-shrink: 0;

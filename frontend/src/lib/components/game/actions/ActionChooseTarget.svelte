@@ -4,7 +4,7 @@
 
 {#if storeGame.actionRequired === Action.ChooseTarget}
 	<div class="inline-action-container">
-		<div class="cute-bubble">
+		<div class="cute-bubble pixel-corners">
 			<h2 class="choose-target-text">Select a Target!</h2>
 		</div>
 	</div>
@@ -17,13 +17,12 @@
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 200;
-		pointer-events: none; /* Let clicks pass through if needed, though it's positioned away from players */
+		pointer-events: none;
 	}
 
 	.cute-bubble {
 		background: var(--bg);
 		padding: 15px 25px;
-		border-radius: 16px;
 		border: 4px solid var(--accent);
 		text-align: center;
 		box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.4);
@@ -47,6 +46,6 @@
 		margin: 0 0 5px 0;
 		font-size: 1.2rem;
 		text-transform: uppercase;
-		text-shadow: 2px 2px 0px #1a1a1a;
+		text-shadow: 2px 2px 0px var(--pixel-shadow);
 	}
 </style>

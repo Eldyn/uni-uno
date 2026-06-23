@@ -68,8 +68,8 @@
 	}
 </script>
 
-<div class="lobby-settings-panel" role="region" aria-label="Lobby Settings">
-	<h3 class="settings-title">⚙️ Lobby Settings</h3>
+<div class="lobby-settings-panel panel pixel-corners" role="region" aria-label="Lobby Settings">
+	<h3 class="settings-title"><span class="title-icon">󰒓</span> Lobby Settings</h3>
 
 	<Toggle
 		label="Public Lobby"
@@ -179,10 +179,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
-		padding: 16px;
-		background: var(--bg);
-		border: 2px solid var(--border);
-		border-radius: 6px;
 		width: 100%;
 		box-sizing: border-box;
 	}
@@ -192,6 +188,11 @@
 		font-size: 1.1rem;
 		font-weight: 600;
 		color: var(--text-h);
+	}
+
+	.title-icon {
+		font-family: var(--mono);
+		color: var(--accent);
 	}
 
 	.settings-divider {
