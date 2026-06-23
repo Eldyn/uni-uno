@@ -9,6 +9,63 @@ version; each release below corresponds to a `vX.Y.Z` git tag.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-23
+
+### Changed
+
+- Controller DI (Phase 2A): extracted `IActionRouter`, `IBroadcaster`, and
+  `ITimerService` interfaces; `LobbyController` and `GameController` now take
+  the three narrow interfaces instead of a `WebServer&`, enabling construction
+  without a live uWS loop. `UwsBroadcaster` and `UwsTimerService` wrap the
+  production uWS primitives; `FakeBroadcaster` and `FakeTimerService` serve as
+  test doubles.
+- WS compression enabled by default (`permessage-deflate`, env-gated via
+  `WS_COMPRESSION=0` to disable).
+- `GetLobbyByCode` hardened to return `nullptr` and purge stale secondary-index
+  entries; all ~12 inline `code_to_id_.find` + `lobbies_.at` patterns collapsed
+  to single call-sites.
+- RNG hoisted to a member (`std::mt19937 rng_`) on `LobbyController` and
+  `MatchInstance`, eliminating per-call `random_device` construction.
+- Dead static locals in `SyncBots` removed; SyncBots while-loop indentation
+  fixed.
+- `MatchInstance` deserialization now uses `.value("key", default)` for every
+  field so saves from older schemas load gracefully instead of throwing.
+- Active lobby count capped via `MAX_LOBBIES` env var (default 200).
+- `MatchInstance::Tick` aborts and marks the match finished if `effect_queue`
+  exceeds 64 entries.
+- `GetRandomBotName` promoted from free function to `LobbyController` member.
+
+### Fixed
+
+- `RAND_bytes` failure in `auth_controller` now throws instead of silently
+  continuing with an uninitialised salt.
+- WS subscription dedup: lobby store's `#registerListeners()` moved to the
+  constructor with a latch so handlers are not re-registered on every reconnect.
+- Navigation first-connect latch: localStorage screen-restoration only runs on
+  the first `onOpen` fire.
+- `emitAndWait` pending requests are now rejected with `"disconnected"` on
+  `onclose` instead of hanging until their individual timeouts.
+- Double-submit prevention: `isActionPending` latch added to `storeGame`
+  (`playCard`, `drawCard`, `submitInput`), cleared on `GameStateUpdated` or by
+  a 3 s safety timer.
+- Lobby start-button locked while `isLoadingStart` is true.
+- `logout()` now awaits the POST and shows a toast on failure without clearing
+  local auth state.
+- `updateAvatar()` revokes the previous blob URL before creating a new one.
+- Silent returns in `HandleDeleteSavedMatch` and `HandleResumeSavedMatch` now
+  send `kLobbyNotFound` to the client.
+
+### Added
+
+- Backend doctest suite: `match_instance_test.cpp`, `rules_test.cpp`,
+  `serialization_test.cpp`, `lobby_controller_test.cpp` — engine, rules,
+  round-trip serialization, and controller-handle tests via fake transport.
+- Frontend Vitest harness: `lobby.dedup.test.ts` (WS dedup regression),
+  `game.double-submit.test.ts` (action-pending latch), `ws.failfast.test.ts`
+  (emitAndWait disconnect rejection).
+- `vitest`, `@testing-library/svelte`, `@testing-library/jest-dom`, `jsdom`
+  added as frontend dev dependencies; `npm test` script wired.
+
 ### Fixed
 
 - Renamed the sitemap to `sitemap-index.xml` (and repointed `robots.txt`) to
