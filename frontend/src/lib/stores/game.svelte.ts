@@ -113,11 +113,17 @@ class StoreGame {
 	/** Contextual data attached to the input request. */
 	actionContext = $state<any>(null);
 
+	/** True while a game action is in flight — cleared on next GameStateUpdated. */
+	isActionPending = $state(false);
+
 	/** Seconds remaining to complete the turn, computed locally. */
 	turnTimeRemaining = $state<number>(15);
 
 	/** Reference to the browser's native `setInterval` timer. */
 	#timerInterval: number | null = null;
+
+	/** Safety timeout that releases isActionPending if the server stops responding. */
+	#pendingSafetyTimer: ReturnType<typeof setTimeout> | null = null;
 
 	/** Derived property to instantly identify the local player. */
 	localPlayer = $derived(
@@ -160,6 +166,7 @@ class StoreGame {
 		});
 
 		ws.on(ServerAction.GameStateUpdated, (data: any) => {
+			this.#clearActionPending();
 			const stateJson = data.game_state;
 
 			this.state = {
@@ -201,6 +208,14 @@ class StoreGame {
 				storeNavigation.goto("game");
 			}
 		});
+	}
+
+	#clearActionPending() {
+		if (this.#pendingSafetyTimer !== null) {
+			clearTimeout(this.#pendingSafetyTimer);
+			this.#pendingSafetyTimer = null;
+		}
+		this.isActionPending = false;
 	}
 
 	/**
@@ -254,6 +269,9 @@ class StoreGame {
 	 * @tag FRONT-GAME-MTH-006
 	 */
 	playCard(cardId: number) {
+		if (this.isActionPending) return;
+		this.isActionPending = true;
+		this.#pendingSafetyTimer = setTimeout(() => this.#clearActionPending(), 3000);
 		ws.emit(ClientAction.GamePlayCard, { card_id: cardId });
 	}
 
@@ -262,6 +280,9 @@ class StoreGame {
 	 * @tag FRONT-GAME-MTH-007
 	 */
 	drawCard() {
+		if (this.isActionPending) return;
+		this.isActionPending = true;
+		this.#pendingSafetyTimer = setTimeout(() => this.#clearActionPending(), 3000);
 		ws.emit(ClientAction.GameDrawCard);
 	}
 
@@ -279,6 +300,9 @@ class StoreGame {
 	 * @tag FRONT-GAME-MTH-009
 	 */
 	submitInput(value: string) {
+		if (this.isActionPending) return;
+		this.isActionPending = true;
+		this.#pendingSafetyTimer = setTimeout(() => this.#clearActionPending(), 3000);
 		ws.emit(ClientAction.GameSubmitInput, { value: value });
 	}
 }

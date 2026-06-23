@@ -176,7 +176,7 @@
 				<button
 					class="start-button"
 					onclick={() => storeLobby.startMatch()}
-					disabled={!isHost || !startable}
+					disabled={!isHost || !startable || storeLobby.isLoadingStart}
 				>
 					<div class="animated-text">
 						<TextEffects

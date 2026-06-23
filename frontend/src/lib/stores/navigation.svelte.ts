@@ -35,8 +35,13 @@ class StoreNavigation {
 	/** Stores the previous screen for 'back' navigation. */
 	#previous: AppScreen | null = null;
 
+	#screenRestored = false;
+
 	constructor() {
 		ws.onOpen(() => {
+			if (this.#screenRestored) return;
+			this.#screenRestored = true;
+
 			const localScreen = localStorage.getItem("currentScreen");
 			if (!localScreen) return;
 			if (!storeAuth.isLoggedIn) {
