@@ -45,6 +45,9 @@ namespace game {
          * @tag EFFECT-SWAP-MTH-002
          */
         EffectType GetType() const override { return EffectType::kDecideSwapTarget; }
+        nlohmann::json ToJson() const override {
+            return {{"type", static_cast<int>(GetType())}, {"username", username_}};
+        }
 
     private:
         std::string username_; /**< The user who must select the target. */
