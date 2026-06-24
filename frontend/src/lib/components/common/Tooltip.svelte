@@ -15,6 +15,14 @@
 	let shiftX = $state(0); // 0 = right of cursor, 1 = left of cursor
 	let shiftY = $state(0); // 0 = below cursor, 1 = above cursor
 
+	// INFO: clip-path on ancestor containers (e.g. .pixel-corners) clips position:fixed
+	// descendants. Moving the floating div to <body> escapes any clipped subtree while
+	// Svelte's scoped class keeps the <style> rules intact.
+	function portal(node: HTMLElement) {
+		document.body.appendChild(node);
+		return { destroy: () => node.remove() };
+	}
+
 	function handleMouseMove(e: MouseEvent) {
 		mouseX = e.clientX;
 		mouseY = e.clientY;
@@ -51,6 +59,7 @@
 	{#if isVisible}
 		<div
 			class="minecraft-floating-tooltip"
+			use:portal
 			style:--mouse-x="{mouseX}px"
 			style:--mouse-y="{mouseY}px"
 			style:--shift-x={shiftX ? "-100%" : "15px"}
