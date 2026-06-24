@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>What's New in UNI! | Release Notes & Updates</title>
+		<meta
+			name="description"
+			content="See everything that's new in UNI! — a full release history with the latest fixes, features, and improvements."
+		/>
+		<link rel="canonical" href="https://unii.duckdns.org/changelog.html" />
+		<meta name="robots" content="index, follow" />
+		<link rel="icon" href="/favicon.ico" sizes="any" />
+
+		<meta property="og:type" content="article" />
+		<meta property="og:title" content="What's New in UNI! | Release Notes & Updates" />
+		<meta
+			property="og:description"
+			content="Everything new in UNI! — the full release history with the latest fixes, features, and improvements."
+		/>
+		<meta property="og:url" content="https://unii.duckdns.org/changelog.html" />
+		<meta property="og:image" content="https://unii.duckdns.org/assets/link_image.png" />
+
+		<link rel="stylesheet" href="/seo.css" />
+
+		<style>
+			.release-date {
+				display: block;
+				text-align: center;
+				font-size: 0.85rem;
+				margin-top: -0.9rem;
+				margin-bottom: 0.2rem;
+				opacity: 0.6;
+			}
+		</style>
+
+		<script type="application/ld+json">
+			{
+				"@context": "https://schema.org",
+				"@type": "WebPage",
+				"name": "What's New in UNI!",
+				"url": "https://unii.duckdns.org/changelog.html",
+				"description": "Release notes and update history for UNI!, a free online card game.",
+				"isPartOf": {
+					"@type": "WebSite",
+					"name": "UNI!",
+					"url": "https://unii.duckdns.org"
+				}
+			}
+		</script>
+	</head>
+
+	<body>
+		<header class="site-header">
+			<div class="wrap">
+				<a class="brand" href="/">
+					<img src="/assets/logo.png" alt="UNI! logo" width="32" height="32" />
+					UNI!
+				</a>
+				<nav class="site-nav" aria-label="Primary">
+					<a href="/">Play</a>
+					<a href="/how-to-play.html">How to Play</a>
+					<a href="/faq.html">FAQ</a>
+					<a href="/changelog.html" aria-current="page">Changelog</a>
+					<a href="/about.html">About</a>
+				</nav>
+			</div>
+		</header>
+
+		<main class="wrap">
+			<h2>What's New</h2>
+			<p>
+				Everything we've shipped since day one — new features, fixes, and changes, in plain English.
+			</p>
+
+			<h3>0.4.1</h3>
+			<span class="release-date">June 24, 2026</span>
+			<ul>
+				<li>
+					Fixed an issue where tooltips in the lobby settings panel were being clipped by the panel
+					border instead of floating above the page as intended.
+				</li>
+			</ul>
+
+			<h3>0.4.0</h3>
+			<span class="release-date">June 24, 2026</span>
+			<ul>
+				<li>
+					<strong>Match saving is now complete.</strong> When you quit a saved match and come back,
+					the game picks up exactly where it left off — every active effect, every card in play,
+					nothing lost.
+				</li>
+				<li>
+					Fixed a rare crash that could occur when lobby cleanup happened at the exact moment a
+					player was still leaving.
+				</li>
+				<li>
+					If your connection drops while the game is waiting for a server response, it now recovers
+					cleanly instead of hanging until a timeout.
+				</li>
+				<li>
+					The app now properly cleans up background listeners when you navigate away, preventing
+					them from silently piling up across reconnects.
+				</li>
+				<li>The logout button no longer double-submits if clicked quickly.</li>
+			</ul>
+
+			<h3>0.3.0</h3>
+			<span class="release-date">June 23, 2026</span>
+			<ul>
+				<li>
+					<strong>Full visual redesign.</strong> The entire interface was rebuilt with a consistent
+					design system: sharper pixel aesthetic, unified colours and typography, better proportions,
+					and improved support for smaller screens.
+				</li>
+			</ul>
+
+			<h3>0.2.1</h3>
+			<span class="release-date">June 22, 2026</span>
+			<ul>
+				<li>
+					New standalone pages: <a href="/about.html">About</a>,
+					<a href="/faq.html">FAQ</a>, and <a href="/how-to-play.html">How to Play</a> — now
+					accessible without launching the game.
+				</li>
+				<li>
+					Better search visibility: OpenGraph and Twitter card previews so links look good when
+					shared, a web app manifest so you can install UNI! on your device, and a sitemap.
+				</li>
+			</ul>
+
+			<h3>0.2.0</h3>
+			<span class="release-date">June 22, 2026</span>
+			<ul>
+				<li>
+					<strong>Lobby settings</strong> — the host can now configure the game before it starts:
+					turn time limit, starting hand size, number of bots, bot play style, which rule variants
+					are active, and whether the match is saved when someone quits.
+				</li>
+				<li>
+					Bots can automatically take over for players who disconnect mid-game. Likewise, players
+					joining a lobby can claim a bot's seat.
+				</li>
+				<li>
+					Error messages from the server are now shown as readable text in the game UI rather than
+					raw internal codes.
+				</li>
+				<li>
+					Fixed: host settings are now validated to stay within the allowed range on both the client
+					and server.
+				</li>
+				<li>
+					Fixed: the wild card colour selection screen always appears at the right moment; the +4
+					Wild now correctly waits for the colour choice before applying the penalty to the next
+					player.
+				</li>
+				<li>Fixed: rank colouring for tied players; duplicate pop-up notifications eliminated.</li>
+			</ul>
+
+			<h3>0.1.1</h3>
+			<span class="release-date">June 19, 2026</span>
+			<ul>
+				<li>
+					Cards that you can legally play on your turn are now correctly highlighted — the server
+					sends this information explicitly rather than the client guessing.
+				</li>
+				<li>
+					Fixed: bots in instant-play mode now send each action one step at a time so animations
+					play through correctly instead of skipping.
+				</li>
+				<li>Fixed: kick and promote now complete reliably in all cases.</li>
+			</ul>
+
+			<h3>0.1.0</h3>
+			<span class="release-date">June 18, 2026</span>
+			<p>Hello, World!</p>
+			<p>
+				The first release of UNI! — a four-player card game with lobbies, user accounts, bots,
+				per-game stats, match saving and resuming, and a hand-crafted pixel-art interface. The game
+				you're playing today grew out of a university project, and this is where it all started.
+			</p>
+		</main>
+
+		<footer class="site-footer">
+			<div class="wrap">
+				<nav aria-label="Footer">
+					<a href="/">Play</a>
+					<a href="/how-to-play.html">How to Play</a>
+					<a href="/faq.html">FAQ</a>
+					<a href="/changelog.html">Changelog</a>
+					<a href="/about.html">About</a>
+					<a href="https://github.com/Eldyn/uni">Github</a>
+				</nav>
+
+				<span class="muted">UNI! free &amp; open-source online card game.</span>
+			</div>
+		</footer>
+	</body>
+</html>
