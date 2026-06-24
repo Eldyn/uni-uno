@@ -9,6 +9,12 @@ version; each release below corresponds to a `vX.Y.Z` git tag.
 
 ## [Unreleased]
 
+### Added
+
+- `changelog.html` static page with plain-language release notes for every
+  version, linked from the header and footer of all existing static pages and
+  indexed in `sitemap-index.xml`.
+
 ## [0.4.1] - 2026-06-24
 
 ### Fixed
