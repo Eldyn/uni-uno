@@ -36,6 +36,7 @@ AuthController::AuthController(HttpRouter& router)
     router.Post("/auth/logout", [this](AppResponse* res, AppRequest* req) {
         res->writeStatus("200 OK")
            ->writeHeader("Set-Cookie", "auth_token=; Max-Age=0; HttpOnly; Secure; SameSite=Strict; Path=/")
+           ->writeHeader("Set-Cookie", "ws_token=; Max-Age=0; HttpOnly; Secure; SameSite=None; Path=/")
            ->end();
     });
 
@@ -54,6 +55,7 @@ AuthController::AuthController(HttpRouter& router)
 
         Logger::Info("[Auth] Login successful: " + payload->username);
         res->writeHeader("Set-Cookie", "auth_token=" + *token + "; HttpOnly; Secure; SameSite=Strict; Path=/")
+           ->writeHeader("Set-Cookie", "ws_token=" + *token + "; HttpOnly; Secure; SameSite=None; Path=/")
            ->writeHeader("Content-Type", "application/json")
            ->end("{\"username\": \"" + payload->username + "\"}");
     });
@@ -250,6 +252,7 @@ void AuthController::HandleLogin(AppResponse* response, AppRequest* req) {
 
         Logger::Info("[Auth] Login successful: " + username);
         response->writeHeader("Set-Cookie", "auth_token=" + token + "; HttpOnly; Secure; SameSite=Strict; Path=/")
+                ->writeHeader("Set-Cookie", "ws_token=" + token + "; HttpOnly; Secure; SameSite=None; Path=/")
                 ->writeHeader("Content-Type", "application/json")
                 ->end("{\"username\": \"" + username + "\"}");
     });

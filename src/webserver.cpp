@@ -251,7 +251,10 @@ void WebServer::RegisterRoutes() {
         .sendPingsAutomatically = true,
         .upgrade = [this](AppResponse* res, AppRequest*  req, us_socket_context_t* ctx) {
             std::string_view cookies = req->getHeader("cookie");
-            auto token = http::GetCookieValue(cookies, "auth_token");
+            // INFO: ws_token (SameSite=None) is accepted for cross-origin embeds
+            //       (e.g. itch.io); auth_token (SameSite=Strict) covers direct use.
+            auto token = http::GetCookieValue(cookies, "ws_token");
+            if (!token || token->empty()) token = http::GetCookieValue(cookies, "auth_token");
 
             auto payload = AuthController::VerifyToken(*token);
 

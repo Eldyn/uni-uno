@@ -14,6 +14,17 @@ version; each release below corresponds to a `vX.Y.Z` git tag.
 - `changelog.html` static page with plain-language release notes for every
   version, linked from the header and footer of all existing static pages and
   indexed in `sitemap-index.xml`.
+- `itch-index.html` embed shim for itch.io: a minimal HTML page that iframes
+  the live game, intended to be zipped and uploaded as an HTML game on itch.io.
+
+### Fixed
+
+- Cross-origin embedding (e.g. itch.io) now works: login and WebSocket
+  connections succeed inside a third-party iframe. A secondary `ws_token`
+  cookie (`SameSite=None; Secure`) is issued alongside `auth_token`
+  (`SameSite=Strict`) on every login. The WS upgrade accepts either cookie so
+  embedded contexts can authenticate without relaxing CSRF protection on HTTP
+  endpoints.
 
 ## [0.4.1] - 2026-06-24
 
