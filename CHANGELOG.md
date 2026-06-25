@@ -9,13 +9,18 @@ version; each release below corresponds to a `vX.Y.Z` git tag.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-06-25
+
 ### Added
 
-- `changelog.html` static page with plain-language release notes for every
-  version, linked from the header and footer of all existing static pages and
-  indexed in `sitemap-index.xml`.
-- `itch-index.html` embed shim for itch.io: a minimal HTML page that iframes
-  the live game, intended to be zipped and uploaded as an HTML game on itch.io.
+- **AdSense Interstitials**: Implemented full-screen `AdInterstitial` and `AdBanner` components to gently fund the project without intrusive paywalls.
+- **`ads.txt`**: Added IAB authorized sellers file for AdSense compliance.
+
+### Changed
+
+- **SEO & Landing Page**: Completely overhauled the landing page with better SEO (`"UNO®-style card game online"`) and a brand new "UNI vs. UNO" hook.
+- **How-to-Play**: Streamlined the rules into a punchy, easy-to-read "Rules at a glance" format while teasing the wild custom mechanics.
+- **About**: gave the content more of an identity.
 
 ### Fixed
 
@@ -25,6 +30,7 @@ version; each release below corresponds to a `vX.Y.Z` git tag.
   (`SameSite=Strict`) on every login. The WS upgrade accepts either cookie so
   embedded contexts can authenticate without relaxing CSRF protection on HTTP
   endpoints.
+- Fixed some typescript errors that were not blocking compilation which were previously not noticed
 
 ## [0.4.1] - 2026-06-24
 
@@ -243,7 +249,10 @@ point:
 - WebSocket payload-size, idle-time, and backpressure bounds, malformed-frame
   guards, and path-traversal protection on static file serving.
 
-[unreleased]: https://github.com/Eldyn/uni/compare/v0.3.0...HEAD
+[unreleased]: https://github.com/Eldyn/uni/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/Eldyn/uni/compare/v0.4.1...v0.4.2
+[0.4.1]: https://github.com/Eldyn/uni/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/Eldyn/uni/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Eldyn/uni/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/Eldyn/uni/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Eldyn/uni/compare/v0.1.1...v0.2.0
