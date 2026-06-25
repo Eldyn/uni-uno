@@ -9,6 +9,12 @@ version; each release below corresponds to a `vX.Y.Z` git tag.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-06-26
+
+### Added
+
+- **Google Analytics**: Injected GA4 tracking tags (GTAG) into all HTML pages. *Note: This is a temporary addition for testing purposes to observe how the tracking integrates with our app.*
+
 ## [0.4.2] - 2026-06-25
 
 ### Added
