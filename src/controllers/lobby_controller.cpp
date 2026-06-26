@@ -269,22 +269,29 @@ void LobbyController::SaveMatchStateToDB(Lobby& lobby) {
 }
 
 /**
+ * @brief Tears down the match for the given lobby after a normal match-over.
+ * @param lobby_id ID of the lobby whose match to destroy.
+ */
+void LobbyController::NotifyMatchOver(uint32_t lobby_id) {
+    Lobby* lobby = GetLobbyById(lobby_id);
+    if (!lobby) return;
+    lobby->match.reset();
+    Logger::Info("[MATCH] destroyed after MatchOver in lobby ", lobby_id);
+}
+
+/**
  * @brief Validates remaining room configurations and cleans up abandoned empty environments.
  * @param lobby Reference to the checked targeted room instance.
  */
 void LobbyController::CheckMatchIntegrity(Lobby& lobby) {
     if (lobby.match && lobby.members.size() < 2) {
         Logger::Info("[Lobby] Match aborted for lobby ", lobby.id, " due to disconnections.");
-        
+
         if (lobby.members.size() == 1) {
-            json game_over_payload = ws::MakeResponse(ws::ServerAction::kMatchOver);
-            game_over_payload["winner"] = lobby.members.front().username;
-            
-            if (lobby.members.front().is_connected && lobby.members.front().socket) {
-                broadcaster_.Send(lobby.members.front().socket, game_over_payload.dump(), uWS::OpCode::TEXT);
-            }
+            const std::string& winner = lobby.members.front().username;
+            for (auto& cb : on_match_aborted_) cb(&lobby, winner);
         }
-        
+
         lobby.match.reset();
     }
 }
