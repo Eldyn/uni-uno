@@ -1,9 +1,9 @@
 #pragma once
+#include <controllers/ilobby_store.hpp>
 #include <match/match_instance.hpp>
 #include <common/lobby.hpp>
 #include <common/ws.hpp>
 #include <atomic>
-#include <functional>
 #include <random>
 #include <string>
 #include <unordered_map>
@@ -21,20 +21,6 @@
  */
 
 /**
- * @typedef GameStartedCallback
- * @brief Callback invoked when a match starts.
- * @tag LOBBY-TYP-001
- */
-using MatchStartedCallback = std::function<void(Lobby*)>;
-
-/**
- * @typedef PlayerReplacedCallback
- * @brief Callback invoked when a player is replaced (e.g. by a bot).
- * @tag LOBBY-TYP-002
- */
-using PlayerReplacedCallback = std::function<void(Lobby*)>;
-
-/**
  * @class LobbyController
  * @brief Manages the in-memory state of all the active lobbies.
  * * This class does not use a database: the lobbies are ephemeral and live only
@@ -42,7 +28,7 @@ using PlayerReplacedCallback = std::function<void(Lobby*)>;
  * temporary disconnections and reconnection of clients via WebSocket.
  * * @tag LOBBY-CTRL-000
  */
-class LobbyController {
+class LobbyController : public ILobbyStore {
 public:
     /**
      * @brief Constructor of the LobbyController.
@@ -103,7 +89,7 @@ public:
      * @return Lobby* Pointer to the lobby, or nullptr if not found.
      * @tag LOBBY-CTRL-006
      */
-    Lobby* GetLobbyById(const uint32_t id) {
+    Lobby* GetLobbyById(uint32_t id) override {
         auto it = lobbies_.find(id);
         if (it != lobbies_.end()) {
             return &it->second;
@@ -117,7 +103,7 @@ public:
      * @param callback The function to invoke.
      * @tag LOBBY-CTRL-007
      */
-    void OnGameStarted(MatchStartedCallback callback) { on_game_started_.push_back(std::move(callback)); }
+    void OnGameStarted(MatchStartedCallback callback) override { on_game_started_.push_back(std::move(callback)); }
 
     /**
      * @brief Registers a callback to execute when a player is replaced.
@@ -125,12 +111,28 @@ public:
      * @param callback The function to invoke.
      * @tag LOBBY-CTRL-008
      */
-    void OnPlayerReplaced(PlayerReplacedCallback callback) { on_player_replaced_.push_back(std::move(callback)); }
+    void OnPlayerReplaced(PlayerReplacedCallback callback) override { on_player_replaced_.push_back(std::move(callback)); }
+
+    /**
+     * @brief Registers a callback invoked when a match is aborted due to disconnections.
+     * The callback is responsible for sending the kMatchOver wire frame to the surviving player.
+     * @param callback The function to invoke.
+     * @tag LOBBY-CTRL-009
+     */
+    void OnMatchAborted(MatchAbortedCallback callback) override { on_match_aborted_.push_back(std::move(callback)); }
+
+    /**
+     * @brief Tears down the match for the given lobby after a normal match-over.
+     * Called by MatchController once all kMatchOver frames have been sent.
+     * @param lobby_id ID of the lobby whose match to destroy.
+     * @tag LOBBY-CTRL-010
+     */
+    void NotifyMatchOver(uint32_t lobby_id) override;
 
     /**
      * @brief Saves the current state of the match associated with the lobby to the database.
      * @param lobby Reference to the lobby whose state to save.
-     * @tag LOBBY-CTRL-009
+     * @tag LOBBY-CTRL-011
      */
     void SaveMatchStateToDB(Lobby& lobby);
 
@@ -138,7 +140,7 @@ public:
      * @brief Counts the lobbies whose match is currently in progress (not finished).
      * Used by the deploy gate to avoid swapping the container mid-game.
      * @return std::size_t Number of active matches.
-     * @tag LOBBY-CTRL-010
+     * @tag LOBBY-CTRL-012
      */
     std::size_t ActiveMatchCount() const;
 
@@ -308,8 +310,9 @@ private:
      */
     Lobby* FindLobbyForUser(const std::string& username);
 
-    std::vector<std::function<void(Lobby*)>> on_game_started_;   /**< Multicast callbacks for match start. */
-    std::vector<std::function<void(Lobby*)>> on_player_replaced_; /**< Multicast callbacks for player replacement. */
+    std::vector<MatchStartedCallback>   on_game_started_;    /**< Multicast callbacks for match start. */
+    std::vector<PlayerReplacedCallback> on_player_replaced_; /**< Multicast callbacks for player replacement. */
+    std::vector<MatchAbortedCallback>   on_match_aborted_;   /**< Multicast callbacks for aborted matches (< 2 members). */
 
     IActionRouter& action_router_;  /**< Reference to the WS action router. */
     IBroadcaster&  broadcaster_;    /**< Transport layer for all sends/publishes. */
