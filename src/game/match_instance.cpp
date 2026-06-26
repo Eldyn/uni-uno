@@ -491,7 +491,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
 
             for (const auto& card : state_.players[state_.current_player_index].hand) {
                 const Type t = GetType(card);
-                if      (t == Type::kWild)   continue;
+                if      (t == Type::kWhite)  continue;
                 if      (t == Type::kRed)    counts[0]++;
                 else if (t == Type::kBlue)   counts[1]++;
                 else if (t == Type::kGreen)  counts[2]++;
@@ -570,7 +570,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
                     current_score += 1000;
                 }
 
-                if (card_type != Type::kWild) {
+                if (card_type != Type::kWhite) {
                     if (card_type == dominant_type) {
                         current_score += 20;
                     }
@@ -583,7 +583,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
                     current_score -= 15;
                 }
 
-                if (card_value == Value::kDraw2 || card_value == Value::kWildDraw4) {
+                if (card_value == Value::kDraw2 || card_value == Value::kJollyDraw4) {
                     if (next_player_hand_size == 1) {
                         current_score += 200;
                     } else if (next_player_hand_size <= 3) {
@@ -660,11 +660,11 @@ bool MatchInstance::DrawCard(const std::string& username) {
 
         // 2. Generate Wild Cards (Color-less)
         for (int i = 0; i < settings_.count_wild; ++i) {
-            state_.draw_pile.push_back(MakeCard(Type::kWild, Value::kWild, unique_card_identifier++));
+            state_.draw_pile.push_back(MakeCard(Type::kWhite, Value::kJolly, unique_card_identifier++));
         }
 
         for (int i = 0; i < settings_.count_wild_draw_four; ++i) {
-            state_.draw_pile.push_back(MakeCard(Type::kWild, Value::kWildDraw4, unique_card_identifier++));
+            state_.draw_pile.push_back(MakeCard(Type::kWhite, Value::kJollyDraw4, unique_card_identifier++));
         }
     
         std::shuffle(state_.draw_pile.begin(), state_.draw_pile.end(), rng_);
@@ -694,7 +694,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
         if (state_.last_play.valid) {
             CompactCard lp = state_.last_play.card;
             Type lp_display = GetType(lp);
-            if (lp_display == Type::kWild) lp_display = state_.active_type;
+            if (lp_display == Type::kWhite) lp_display = state_.active_type;
             root["last_play"] = {
                 {"player", state_.last_play.player},
                 {"hand_index", state_.last_play.hand_index},
@@ -711,7 +711,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
             // INFO: Wild cards inherit active_type so the card visually shows
             //       the chosen type.
             Type display_type = GetType(top);
-            if (display_type == Type::kWild) display_type = state_.active_type;
+            if (display_type == Type::kWhite) display_type = state_.active_type;
             root["top_card"] = {
                 {"id", GetId(top)},
                 {"type", static_cast<int>(display_type)},

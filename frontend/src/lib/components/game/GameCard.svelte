@@ -36,39 +36,34 @@
 		onTouchEnd?: (e: TouchEvent) => void;
 	} = $props();
 
-	const actionMap = new Map<CardValue, string>([
-		["skip", "/assets/cards/skip.png"],
-		["reverse", "/assets/cards/reverse.png"],
-		["+2", "/assets/cards/+2.png"],
-		["+4", "/assets/cards/+4.png"],
-		["colorswitch", "/assets/cards/colorswitch.png"]
-	]);
+	const COLOR_MAP: Record<string, string> = {
+		red:    "var(--redCard)",
+		blue:   "var(--blueCard)",
+		green:  "var(--greenCard)",
+		yellow: "var(--yellowCard)",
+		white:  "var(--whiteCard)",
+		black:  "var(--blackCard)"
+	};
 
 	function getCardImage(value: CardValue): string {
-		const staticImage = actionMap.get(value);
-		if (staticImage) return staticImage;
-
-		if (/^\d$/.test(value)) {
-			return `/assets/cards/${value}.png`;
-		}
-
-		return "";
+		return `/assets/cards/${value}.png`;
 	}
 
 	const imgSrc = $derived(getCardImage(card.value));
-	const tint = $derived(card.value !== "colorswitch");
+	const tint = $derived(card.value !== "jolly");
+	const cardColor = $derived(COLOR_MAP[card.type] ?? "inherit");
 	const slotAttach = (node: Element) => attach?.(node);
 </script>
 
 <div
-	class="card {card.type} {extraClass}"
+	class="card {extraClass}"
 	class:card--dragging={isDragged}
 	class:card--drag-target={isDragTarget}
 	class:card--hidden={isHidden}
 	role="button"
 	tabindex="0"
 	draggable="false"
-	style={style || `left: calc(${index} * 2.2em + 1.1em)`}
+	style="{style || `left: calc(${index} * 2.2em + 1.1em)`}; --card-color: {cardColor};"
 	{@attach slotAttach}
 	onclick={() => {
 		onCardClick(card.id);
@@ -113,25 +108,6 @@
 		padding: 0;
 		cursor: grab;
 		touch-action: none;
-	}
-
-	.card.wild {
-		--card-color: var(--wildCard);
-	}
-	.card.red {
-		--card-color: var(--redCard);
-	}
-	.card.yellow {
-		--card-color: var(--yellowCard);
-	}
-	.card.blue {
-		--card-color: var(--blueCard);
-	}
-	.card.green {
-		--card-color: var(--greenCard);
-	}
-	.card.black {
-		--card-color: var(--blackCard);
 	}
 
 	.bckg {

@@ -13,12 +13,12 @@ namespace game {
         Type played_type = GetType(event.played_card);
         Value played_value = GetValue(event.played_card);
 
-        if (played_type == Type::kWild) {
+        if (played_type == Type::kWhite) {
             return;
         }
 
-        // INFO: We check active_type since the top card might be a Wild.
-        //       Since its inherent type is kWild and would return false, we
+        // INFO: We check active_type since the top card might be a White.
+        //       Since its inherent type is kWhite and would return false, we
         //       use the active_type which is whatever the player chose.
         if (played_type == state->active_type) {
             return; 
@@ -50,10 +50,10 @@ namespace game {
             state->effect_queue.push_back(std::make_unique<DrawEffect>(2, next_player));
             state->effect_queue.push_back(std::make_unique<SkipEffect>());
         } 
-        else if (card_value == Value::kWild) {
+        else if (card_value == Value::kJolly) {
             state->effect_queue.push_back(std::make_unique<ChooseColorEffect>(event.player_username));
-        } 
-        else if (card_value == Value::kWildDraw4) {
+        }
+        else if (card_value == Value::kJollyDraw4) {
             std::string next_player = GetNextPlayer(state);
             state->effect_queue.push_back(std::make_unique<ChooseColorEffect>(event.player_username));
             state->effect_queue.push_back(std::make_unique<DrawEffect>(4, next_player));

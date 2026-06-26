@@ -3,9 +3,11 @@
 #include <common/lobby.hpp>
 #include <common/ws.hpp>
 #include <atomic>
+#include <functional>
 #include <random>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <transport/iaction_router.hpp>
 #include <transport/ibroadcaster.hpp>
 #include <transport/itimer_service.hpp>
@@ -111,21 +113,19 @@ public:
 
     /**
      * @brief Registers a callback to execute when a match starts.
+     * Multiple callbacks are supported; all are invoked in registration order.
      * @param callback The function to invoke.
      * @tag LOBBY-CTRL-007
      */
-    void OnGameStarted(GameStartedCallback callback) {
-        game_started_callback_ = std::move(callback);
-    }
+    void OnGameStarted(GameStartedCallback callback) { on_game_started_.push_back(std::move(callback)); }
 
     /**
      * @brief Registers a callback to execute when a player is replaced.
+     * Multiple callbacks are supported; all are invoked in registration order.
      * @param callback The function to invoke.
      * @tag LOBBY-CTRL-008
      */
-    void OnPlayerReplaced(PlayerReplacedCallback callback) {
-        player_replaced_callback_ = std::move(callback);
-    }
+    void OnPlayerReplaced(PlayerReplacedCallback callback) { on_player_replaced_.push_back(std::move(callback)); }
 
     /**
      * @brief Saves the current state of the match associated with the lobby to the database.
@@ -308,8 +308,8 @@ private:
      */
     Lobby* FindLobbyForUser(const std::string& username);
 
-    GameStartedCallback game_started_callback_;       /**< Callback for match start. */
-    PlayerReplacedCallback player_replaced_callback_; /**< Callback for player replacement. */
+    std::vector<std::function<void(Lobby*)>> on_game_started_;   /**< Multicast callbacks for match start. */
+    std::vector<std::function<void(Lobby*)>> on_player_replaced_; /**< Multicast callbacks for player replacement. */
 
     IActionRouter& action_router_;  /**< Reference to the WS action router. */
     IBroadcaster&  broadcaster_;    /**< Transport layer for all sends/publishes. */

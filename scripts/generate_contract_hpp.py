@@ -60,9 +60,15 @@ def walk_constants(node, out):
 
 def render_enum(name, definition):
     """Render a single x-enum as C++ lines. Returns (lines, needs_map)."""
-    values = definition.get("values") or {}
-    if not values:
+    raw_values = definition.get("values") or {}
+    if not raw_values:
         die(f"x-enum '{name}' has no values")
+
+    # Normalize: each entry may be a plain scalar or { value: N, display: "..." }.
+    values = {
+        k: (v["value"] if isinstance(v, dict) else v)
+        for k, v in raw_values.items()
+    }
 
     is_string = any(isinstance(v, str) for v in values.values())
     lines = []
