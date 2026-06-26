@@ -1,5 +1,4 @@
 import { mount } from "svelte";
-import "@hackernoon/pixel-icon-library/fonts/iconfont.css";
 import "./app.css";
 import App from "./App.svelte";
 

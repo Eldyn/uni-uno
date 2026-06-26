@@ -56,8 +56,7 @@
 	}
 
 	const imgSrc = $derived(getCardImage(card.value));
-	const valueTint = $derived(card.value !== "colorswitch");
-	const borderTint = $derived(card.value !== "colorswitch");
+	const tint = $derived(card.value !== "colorswitch");
 	const slotAttach = (node: Element) => attach?.(node);
 </script>
 
@@ -85,7 +84,7 @@
 			<img src="assets/cards/back.png" alt="" class="layer-bg" />
 		{:else}
 			<img src="assets/cards/background.png" alt="" class="layer-bg" />
-			{#if imgSrc && valueTint}
+			{#if imgSrc && tint}
 				<div class="layer-mask">
 					<TintedSprite src={imgSrc} color="var(--card-color)" fit="100% 100%" />
 				</div>
@@ -93,13 +92,9 @@
 				<img src={imgSrc} alt="" class="layer-bg" />
 			{/if}
 
-			{#if borderTint}
-				<div class="layer-mask">
-					<TintedSprite src="/assets/cards/border.png" color="var(--card-color)" fit="100% 100%" />
-				</div>
-			{:else}
-				<img src="/assets/cards/border.png" alt="" class="layer-bg" />
-			{/if}
+			<div class="layer-mask">
+				<TintedSprite src="/assets/cards/border.png" color="var(--card-color)" fit="100% 100%" />
+			</div>
 		{/if}
 	</div>
 </div>

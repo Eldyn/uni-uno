@@ -103,18 +103,13 @@
 				{#each storeLobby.current?.members ?? [] as member, i}
 					<li class="member">
 						<div class="member-avatar">
-							{#if member.is_bot}
-								<img class="avatar-sprite" src="/assets/bot_animated.gif" alt="Bot" />
-							{:else}
-								<TintedSprite
-									src="/assets/base_player.gif"
-									color={PLAYER_COLORS[i % 4]}
-									fit="contain"
-								/>
-							{/if}
-
+							<TintedSprite
+								src="/assets/base_player.gif"
+								color={member.is_bot ? "#666" : PLAYER_COLORS[i % 4]}
+								fit="contain"
+							/>
 							{#if member.is_host}
-								<img class="avatar-crown" src="/assets/crown_host.gif" alt="Host Crown" />
+								<img class="avatar-crown" src="/assets/crown_host.gif" alt="Host" />
 							{/if}
 						</div>
 
@@ -229,12 +224,6 @@
 		width: 128px;
 		height: 128px;
 		flex-shrink: 0;
-	}
-
-	.avatar-sprite {
-		width: 100%;
-		height: 100%;
-		object-fit: contain;
 	}
 
 	/* Crown gif shares the avatar's exact box so it layers over the head. */
