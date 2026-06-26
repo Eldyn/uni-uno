@@ -9,7 +9,7 @@ namespace game {
         void ValidatePlay(const GameState* state, CardPlayedEvent& event) override {
             if (event.is_out_of_turn) return;
 
-            if (GetValue(event.played_card) == Value::kWildDraw4) {
+            if (GetValue(event.played_card) == Value::kJollyDraw4) {
                 auto player_it = std::ranges::find(state->players, event.player_username, &Player::username);
                 
                 if (player_it != state->players.end()) {

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <cstdint>
 #include <App.h>
 
 /**
@@ -22,6 +23,7 @@ struct PerSocketData {
     std::string room;       /**< Current uWS broadcast room (e.g. the lobby ID). */
     std::string lobby_code; /**< The invite code of the lobby the user is in. */
     std::string ip;         /**< Client IP captured at upgrade (for rate limiting). */
+    uint32_t    lobby_id = 0; /**< Numeric ID of the lobby the user is in (0 = none). */
 };
 
 /**

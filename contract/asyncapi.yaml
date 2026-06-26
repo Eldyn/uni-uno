@@ -616,30 +616,30 @@ components:
     Type:
       description: Card type category (formerly Color). Transmitted as an integer index.
       values:
-        Red: 0
-        Blue: 1
-        Green: 2
-        Yellow: 3
-        Wild: 4
+        Red:    { value: 0, display: "red" }
+        Blue:   { value: 1, display: "blue" }
+        Green:  { value: 2, display: "green" }
+        Yellow: { value: 3, display: "yellow" }
+        White:  { value: 4, display: "white" }
 
     Value:
       description: Card face value. Transmitted as an integer index.
       values:
-        "0": 0
-        "1": 1
-        "2": 2
-        "3": 3
-        "4": 4
-        "5": 5
-        "6": 6
-        "7": 7
-        "8": 8
-        "9": 9
-        Skip: 10
-        Reverse: 11
-        Draw2: 12
-        Wild: 13
-        WildDraw4: 14
+        "0":        { value: 0,  display: "0" }
+        "1":        { value: 1,  display: "1" }
+        "2":        { value: 2,  display: "2" }
+        "3":        { value: 3,  display: "3" }
+        "4":        { value: 4,  display: "4" }
+        "5":        { value: 5,  display: "5" }
+        "6":        { value: 6,  display: "6" }
+        "7":        { value: 7,  display: "7" }
+        "8":        { value: 8,  display: "8" }
+        "9":        { value: 9,  display: "9" }
+        Skip:       { value: 10, display: "skip" }
+        Reverse:    { value: 11, display: "reverse" }
+        Draw2:      { value: 12, display: "+2" }
+        Jolly:      { value: 13, display: "jolly" }
+        JollyDraw4: { value: 14, display: "jolly_draw4" }
 
     Action:
       description: Input action the server is waiting for. Transmitted as an integer via action_required.

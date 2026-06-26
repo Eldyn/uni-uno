@@ -132,7 +132,7 @@ function propToZod(prop) {
 }
 
 /** Generate a z.object({...}) string from a schema definition. */
-function schemaToZod(schemaName, schema) {
+function schemaToZod(_schemaName, schema) {
 	const props = schema.properties ?? {};
 	const required = new Set(schema.required ?? []);
 
@@ -219,13 +219,31 @@ lines.push("// Shared enum constants (Type, Value, Action)");
 lines.push("// ---------------------------------------------------------------------------");
 for (const [enumName, enumDef] of Object.entries(xEnums)) {
 	const entries = Object.entries(enumDef.values ?? {});
+
+	// Each entry value may be a plain scalar or an object { value, display }.
+	const resolvedEntries = entries.map(([key, val]) => {
+		if (val !== null && typeof val === "object") {
+			return { key, numericValue: val.value, display: val.display ?? null };
+		}
+		return { key, numericValue: val, display: null };
+	});
+
 	lines.push(`export const ${enumName} = {`);
-	for (const [key, val] of entries) {
-		const rendered = typeof val === "number" ? val : `'${val}'`;
+	for (const { key, numericValue } of resolvedEntries) {
+		const rendered = typeof numericValue === "number" ? numericValue : `'${numericValue}'`;
 		lines.push(`    ${key}: ${rendered},`);
 	}
 	lines.push("} as const;");
 	lines.push(`export type ${enumName} = (typeof ${enumName})[keyof typeof ${enumName}];`);
+
+	// Emit a display-name map array when all entries carry a `display` field.
+	const hasDisplay = resolvedEntries.every((e) => e.display !== null);
+	if (hasDisplay) {
+		const sorted = [...resolvedEntries].sort((a, b) => a.numericValue - b.numericValue);
+		const displayArray = sorted.map((e) => `"${e.display}"`).join(", ");
+		lines.push(`export const ${enumName}Map: readonly string[] = [${displayArray}];`);
+	}
+
 	lines.push("");
 }
 
@@ -286,7 +304,7 @@ lines.push("// -----------------------------------------------------------------
 lines.push("// ClientPayloads — maps each action string to its payload type");
 lines.push("// ---------------------------------------------------------------------------");
 lines.push("export interface ClientPayloads {");
-for (const [msgName, msg] of Object.entries(messages)) {
+for (const [, msg] of Object.entries(messages)) {
 	const actionStr = msg.name;
 	if (!actionStr) continue;
 	const payloadRef = msg.payload?.$ref;

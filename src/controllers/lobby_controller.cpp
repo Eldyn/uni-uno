@@ -306,6 +306,7 @@ void LobbyController::OnOpen(AppWebSocket* ws, PerSocketData* sd) {
             member.is_connected = true;
             member.disconnected_at = steady_clock::time_point{};
             sd->lobby_code = lobby->invite_code;
+            sd->lobby_id   = lobby->id;
 
             BroadcastUpdate(*lobby);
             return;
@@ -385,6 +386,7 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
 
     code_to_id_[code] = id;
     ctx.socket_data->lobby_code = code;
+    ctx.socket_data->lobby_id   = id;
     
     std::string topic = "lobby_" + code;
     broadcaster_.Subscribe(ctx.socket, topic);
@@ -488,7 +490,8 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
     }
 
     ctx.socket_data->lobby_code = code;
-    
+    ctx.socket_data->lobby_id   = lobby.id;
+
     std::string topic = "lobby_" + code;
     broadcaster_.Subscribe(ctx.socket, topic);
 
@@ -952,9 +955,7 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
     lobby.match = std::make_unique<game::MatchInstance>(json::parse(state_json_str), lobby.settings);
     lobby.match->SetMatchId(match_id); 
 
-    if (game_started_callback_) {
-        game_started_callback_(&lobby);
-    }
+    for (auto& cb : on_game_started_) cb(&lobby);
 
     Logger::Info("[Lobby] Match successfully resumed by host in lobby ", lobby.id);
 
@@ -1007,9 +1008,7 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
     lobby.match->SetMatchId("match_" + GenerateInviteCode() + GenerateInviteCode()); 
     lobby.match->Start();
 
-    if (game_started_callback_) {
-        game_started_callback_(&lobby);
-    }
+    for (auto& cb : on_game_started_) cb(&lobby);
 
     Logger::Info("[Lobby] Match started by host '", lobby.host, "' in lobby ", lobby.id);
 
@@ -1143,17 +1142,13 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
 
                 Logger::Info("[Match] Human '", old_name, "' evicted mid-game. Replaced by ", new_bot_name);
 
-                if (was_their_turn && player_replaced_callback_) {
-                    player_replaced_callback_(&lobby);
-                }
+                if (was_their_turn) for (auto& cb : on_player_replaced_) cb(&lobby);
             } else {
                 lobby.match->RemovePlayerMidGame(old_name);
                 lobby.members.erase(member_it);
                 Logger::Info("[Match] Human '", old_name, "' evicted mid-game. Dropped from engine.");
 
-                if (was_their_turn && player_replaced_callback_) {
-                    player_replaced_callback_(&lobby);
-                }
+                if (was_their_turn) for (auto& cb : on_player_replaced_) cb(&lobby);
             }
         } else {
             lobby.members.erase(member_it);

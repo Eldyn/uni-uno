@@ -80,7 +80,7 @@
 
 	/* Card colours & shadows (theme-independent) */
 	--cardSize: 5em;
-	--wildCard: white;
+	--whiteCard: white;
 	--redCard: #dc251c;
 	--yellowCard: #fcf604;
 	--blueCard: #0493de;
