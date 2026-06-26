@@ -1,6 +1,6 @@
 #pragma once
 
-#include <controllers/lobby_controller.hpp>
+#include <controllers/ilobby_store.hpp>
 #include <transport/iaction_router.hpp>
 #include <transport/ibroadcaster.hpp>
 #include <transport/itimer_service.hpp>
@@ -18,7 +18,7 @@
 /**
  * @class MatchController
  * @brief Receives and processes player input during an active match.
- * * Works closely with the `LobbyController` to identify the match
+ * * Works closely with the `ILobbyStore` to identify the match
  * associated with the user. This class is also responsible for the lifecycle of the
  * turn timers (via ITimerService) to handle AFK players or bot takeover.
  * @tag CTRL-GAME-001
@@ -31,17 +31,17 @@ public:
      * @param router    WebSocket action router (DI seam).
      * @param broadcast Transport layer for sends/publishes (DI seam).
      * @param timers    Timer service for turn timers (DI seam).
-     * @param lobby_controller Reference to the lobby controller to retrieve the state.
+     * @param lobby_store Interface to the lobby store for lobby lookup and match lifecycle hooks.
      * @tag CTRL-GAME-MTH-001
      */
     MatchController(IActionRouter& router, IBroadcaster& broadcast,
-                    ITimerService& timers, LobbyController& lobby_controller);
+                    ITimerService& timers, ILobbyStore& lobby_store);
 
 private:
     IActionRouter&    action_router_;    /**< Reference to the WebSocket router. */
     IBroadcaster&     broadcaster_;      /**< Transport layer for all sends. */
     ITimerService&    timer_service_;    /**< Timer service for turn/bot timers. */
-    LobbyController&  lobby_controller_; /**< Reference to access the in-memory lobbies. */
+    ILobbyStore&      lobby_store_;       /**< Interface to access the in-memory lobbies. */
 
     int bot_instant_delay_ms_;   /**< Minimum ms between consecutive bot turns in kPlayInstantly mode. */
     int bot_wait_min_ms_;        /**< Lower bound of the randomised "thinking" delay in kWaitUntilTurnEnd mode. */
