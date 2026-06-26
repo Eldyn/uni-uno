@@ -10,6 +10,7 @@
 #include "common/env.hpp"
 #include "logger.hpp"
 #include <algorithm>
+#include <random>
 
 using json = nlohmann::json;
 
@@ -67,7 +68,7 @@ GameController::GameController(IActionRouter& router, IBroadcaster& broadcast,
  * @param message JSON input structure carrying data properties.
  */
 void GameController::HandlePlayCard(WsContext context, const json& message) {
-    Lobby* active_lobby = lobby_controller_.GetLobbyByCode(context.socket_data->lobby_code);
+    Lobby* active_lobby = lobby_controller_.GetLobbyById(context.socket_data->lobby_id);
     if (!active_lobby || !active_lobby->match) {
         return;
     }
@@ -99,7 +100,7 @@ void GameController::HandlePlayCard(WsContext context, const json& message) {
  * @param message JSON input structure containing callback identifiers.
  */
 void GameController::HandleDrawCard(WsContext context, const json& message) {
-    Lobby* active_lobby = lobby_controller_.GetLobbyByCode(context.socket_data->lobby_code);
+    Lobby* active_lobby = lobby_controller_.GetLobbyById(context.socket_data->lobby_id);
     if (!active_lobby || !active_lobby->match) {
         return;
     }
@@ -125,7 +126,7 @@ void GameController::HandleDrawCard(WsContext context, const json& message) {
  * @param message Input document carrying state selections.
  */
 void GameController::HandleProvideInput(WsContext context, const json& message) {
-    Lobby* active_lobby = lobby_controller_.GetLobbyByCode(context.socket_data->lobby_code);
+    Lobby* active_lobby = lobby_controller_.GetLobbyById(context.socket_data->lobby_id);
     if (!active_lobby || !active_lobby->match) return;
 
     std::string request_identifier = ws::GetOr<std::string>(message, "request_id", "");
@@ -195,7 +196,7 @@ void GameController::BroadcastGameState(Lobby* current_lobby) {
  * @param message Received payload data map document.
  */
 void GameController::HandleCallUno(WsContext context, const json& message) {
-    Lobby* active_lobby = lobby_controller_.GetLobbyByCode(context.socket_data->lobby_code);
+    Lobby* active_lobby = lobby_controller_.GetLobbyById(context.socket_data->lobby_id);
     if (!active_lobby || !active_lobby->match) {
         return;
     }
@@ -219,7 +220,7 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
     if (current_player->is_bot) {
         int bot_thinking_ms = active_lobby->settings.bot_mode == BotTakeoverMode::kPlayInstantly
             ? bot_instant_delay_ms_
-            : bot_wait_min_ms_ + (std::rand() % (bot_wait_max_ms_ - bot_wait_min_ms_));
+            : std::uniform_int_distribution<int>(bot_wait_min_ms_, bot_wait_max_ms_)(rng_);
 
         // INFO: Waiting for each input is tiresome. "Pending Color" -> ~2
         //       seconds, "Draw or Play" -> ~2 seconds. This stacks up. Let's

@@ -8,29 +8,13 @@ import { z } from "zod";
 import { storeNavigation } from "./navigation.svelte";
 import { ClientAction, ServerAction, ws } from "./ws.svelte";
 import { storeAuth } from "./auth.svelte";
-import { Action, Type } from "../generated/schemas";
+import { Action, Type, TypeMap, ValueMap } from "../generated/schemas";
 
-export const TYPE_MAP = ["red", "blue", "green", "yellow", "wild"] as const;
-const VALUE_MAP = [
-	"0",
-	"1",
-	"2",
-	"3",
-	"4",
-	"5",
-	"6",
-	"7",
-	"8",
-	"9",
-	"skip",
-	"reverse",
-	"+2",
-	"colorswitch",
-	"+4"
-] as const;
+export const TYPE_MAP = TypeMap;
+const VALUE_MAP = ValueMap;
 
-export type CardType = (typeof TYPE_MAP)[number];
-export type CardValue = (typeof VALUE_MAP)[number];
+export type CardType = (typeof TypeMap)[number];
+export type CardValue = (typeof ValueMap)[number];
 
 const RawCardSchema = z.object({
 	id: z.number().int(),

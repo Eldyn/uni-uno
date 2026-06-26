@@ -30,7 +30,7 @@ namespace game {
         kBlue   = 1, /**< Blue type */
         kGreen  = 2, /**< Green type */
         kYellow = 3, /**< Yellow type */
-        kWild   = 4  /**< Wild type (no base type) */
+        kWhite  = 4  /**< White type (no base type) */
     };
 
     /**
@@ -42,8 +42,8 @@ namespace game {
         kSkip = 10,       /**< Skip card */
         kReverse = 11,    /**< Reverse card */
         kDraw2 = 12,      /**< Draw Two card */
-        kWild = 13,       /**< Wild Type Change card */
-        kWildDraw4 = 14   /**< Wild Draw Four card */
+        kJolly = 13,      /**< Jolly Type Change card */
+        kJollyDraw4 = 14  /**< Jolly Draw Four card */
     };
 
     /**

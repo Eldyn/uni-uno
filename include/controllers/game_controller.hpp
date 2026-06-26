@@ -6,6 +6,7 @@
 #include <transport/itimer_service.hpp>
 #include <nlohmann/json.hpp>
 #include <cstdint>
+#include <random>
 
 /**
  * @file game_controller.hpp
@@ -46,6 +47,8 @@ private:
     int bot_wait_min_ms_;        /**< Lower bound of the randomised "thinking" delay in kWaitUntilTurnEnd mode. */
     int bot_wait_max_ms_;        /**< Upper bound (exclusive) of the randomised "thinking" delay. */
     int max_instant_bot_steps_;  /**< Safety cap on consecutive bot moves in a single kPlayInstantly burst. */
+
+    std::mt19937 rng_{std::random_device{}()}; /**< Mersenne Twister RNG for bot delay jitter. */
 
     // --- WebSocket Event Handlers ---
 

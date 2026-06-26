@@ -11,7 +11,7 @@ namespace game {
                 Value played_val = GetValue(event.played_card);
                 Value top_val = GetValue(state->discard_pile.back());
                 
-                if (played_val != top_val || (played_val != Value::kDraw2 && played_val != Value::kWildDraw4)) {
+                if (played_val != top_val || (played_val != Value::kDraw2 && played_val != Value::kJollyDraw4)) {
                     event.is_valid_play = false;
                     event.is_handled = true;
                 }
@@ -25,7 +25,7 @@ namespace game {
                 state->pending_draws += 2;
                 event.is_handled = true; // Flag handled so StandardRule doesn't push a skip!
             }
-            else if (card_val == Value::kWildDraw4) {
+            else if (card_val == Value::kJollyDraw4) {
                 // INFO: stack_bonus=4: pending_draws is incremented AFTER the
                 //       colour choice resolves, so other players don't see the
                 //       penalty grow before the colour is picked. Stacking
