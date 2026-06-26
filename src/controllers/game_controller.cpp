@@ -220,7 +220,7 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
     if (current_player->is_bot) {
         int bot_thinking_ms = active_lobby->settings.bot_mode == BotTakeoverMode::kPlayInstantly
             ? bot_instant_delay_ms_
-            : std::uniform_int_distribution<int>(bot_wait_min_ms_, bot_wait_max_ms_)(rng_);
+            : std::uniform_int_distribution<int>(bot_wait_min_ms_, bot_wait_max_ms_ - 1)(rng_);
 
         // INFO: Waiting for each input is tiresome. "Pending Color" -> ~2
         //       seconds, "Draw or Play" -> ~2 seconds. This stacks up. Let's
