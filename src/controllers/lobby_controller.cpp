@@ -309,12 +309,26 @@ void LobbyController::OnOpen(AppWebSocket* ws, PerSocketData* sd) {
         if (member.username == sd->username) {
             Logger::Log("[Lobby] Reconnect: ", sd->username, " back in lobby ", lobby->id);
 
-            member.socket    = ws;
-            member.is_connected = true;
+            member.socket          = ws;
+            member.is_connected    = true;
             member.disconnected_at = steady_clock::time_point{};
-            sd->lobby_code = lobby->invite_code;
-            sd->lobby_id   = lobby->id;
+            sd->lobby_code         = lobby->invite_code;
+            sd->lobby_id           = lobby->id;
 
+            broadcaster_.Subscribe(ws, "lobby_" + lobby->invite_code);
+
+            json resp = ws::MakeResponse(ws::ServerAction::kLobbyJoined);
+            resp["lobby"] = json({
+                {"invite_code", lobby->invite_code},
+                {"host",        lobby->host},
+                {"members",     MemberListJson(*lobby)},
+                {"settings",    lobby->settings},
+                {"name",        lobby->name}
+            });
+            resp["available_rules"] = match::RuleRegistry::GetAvailableRulesJson();
+            broadcaster_.Send(ws, resp.dump(), uWS::OpCode::TEXT);
+
+            SendMatchStateToSocket(*lobby, ws, sd->username, uWS::OpCode::TEXT);
             BroadcastUpdate(*lobby);
             return;
         }
@@ -334,7 +348,7 @@ void LobbyController::OnClose(AppWebSocket* ws, PerSocketData* sd) {
     Lobby& lobby = *lobby_ptr;
 
     for (auto& member : lobby.members) {
-        if (member.username == sd->username) {
+        if (member.username == sd->username && member.socket == ws) {
             Logger::Log("[Lobby] Disconnect: ", sd->username, " in lobby ", lobby.id, " — grace window open");
             member.is_connected    = false;
             member.socket          = nullptr;
@@ -565,11 +579,7 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
 
         broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
 
-        if (lobby.match) {
-            auto game_resp = MakeResponse(ws::ServerAction::kMatchStateUpdated);
-            game_resp["match_state"] = lobby.match->SerializePlayerState(username);
-            broadcaster_.Send(ctx.socket, game_resp.dump(), ctx.op_code);
-        }
+        SendMatchStateToSocket(lobby, ctx.socket, username, ctx.op_code);
 
         return;
     }
@@ -1069,6 +1079,18 @@ json LobbyController::MemberListJson(const Lobby& lobby) {
  * @brief Blasts generalized configuration status changes down to all users currently subscribed to the room thread.
  * @param lobby Targeted state structure tracking information.
  */
+void LobbyController::SendMatchStateToSocket(const Lobby& lobby, AppWebSocket* ws, const std::string& username, uWS::OpCode op_code) const {
+    if (!lobby.match) return;
+    json resp = ws::MakeResponse(ws::ServerAction::kMatchStateUpdated);
+    resp["match_state"] = lobby.match->SerializePlayerState(username);
+    if (lobby.match->IsWaitingForInput() && lobby.match->GetPendingPlayer() == username) {
+        resp["action_required"] = static_cast<int>(lobby.match->GetPendingAction());
+        const std::string ctx = lobby.match->GetPendingInputContext();
+        if (!ctx.empty()) resp["action_context"] = json::parse(ctx);
+    }
+    broadcaster_.Send(ws, resp.dump(), op_code);
+}
+
 void LobbyController::BroadcastUpdate(const Lobby& lobby) const {
     auto notification = MakeResponse(ws::ServerAction::kLobbyUpdated);
     notification["lobby"] = json{
