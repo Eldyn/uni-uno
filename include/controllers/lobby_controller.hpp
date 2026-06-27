@@ -1,5 +1,5 @@
 #pragma once
-#include <game/match_instance.hpp>
+#include <match/match_instance.hpp>
 #include <common/lobby.hpp>
 #include <common/ws.hpp>
 #include <atomic>
@@ -25,7 +25,7 @@
  * @brief Callback invoked when a match starts.
  * @tag LOBBY-TYP-001
  */
-using GameStartedCallback = std::function<void(Lobby*)>;
+using MatchStartedCallback = std::function<void(Lobby*)>;
 
 /**
  * @typedef PlayerReplacedCallback
@@ -117,7 +117,7 @@ public:
      * @param callback The function to invoke.
      * @tag LOBBY-CTRL-007
      */
-    void OnGameStarted(GameStartedCallback callback) { on_game_started_.push_back(std::move(callback)); }
+    void OnGameStarted(MatchStartedCallback callback) { on_game_started_.push_back(std::move(callback)); }
 
     /**
      * @brief Registers a callback to execute when a player is replaced.

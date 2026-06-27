@@ -1,5 +1,5 @@
 #pragma once
-#include <common/game/gamerule.hpp>
+#include <common/match/matchrule.hpp>
 
 /**
  * @file standard.hpp
@@ -9,7 +9,7 @@
  * associated with each type of special card played.
  */
 
-namespace game {
+namespace match {
 
    /**
     * @class StandardRule
@@ -20,7 +20,7 @@ namespace game {
     * an `AdvanceTurnEffect`).
     * @tag RULE-STD-001
     */
-   class StandardRule : public GameRule {
+   class StandardRule : public MatchRule {
     public:
         ~StandardRule() override = default;
 
@@ -28,30 +28,30 @@ namespace game {
          * @brief Intercepts the play attempt, evaluating its legality.
          * Checks whether the played card matches in colour or in value/symbol the card
          * on top of the discard pile (or the active colour for Wilds). Sets `event.is_valid_play` to false otherwise.
-         * @param state Pointer to the current game state.
+         * @param state Pointer to the current match state.
          * @param event Event struct containing the details of the play.
          * @tag RULE-STD-MTH-001
          */
-        void ValidatePlay(const GameState* state, CardPlayedEvent& event) override;
+        void ValidatePlay(const MatchState* state, CardPlayedEvent& event) override;
 
         /**
          * @brief Executes the consequences of a play confirmed as valid.
-         * Enqueues into `GameState::effect_queue` the relevant `Effect` classes based
+         * Enqueues into `MatchState::effect_queue` the relevant `Effect` classes based
          * on the `Value` enumerator extracted from the compact card played.
-         * @param state Pointer to the game state.
+         * @param state Pointer to the match state.
          * @param event The event of the played card.
          * @tag RULE-STD-MTH-002
          */
-        void OnCardPlayed(GameState* state, CardPlayedEvent& event) override;
+        void OnCardPlayed(MatchState* state, CardPlayedEvent& event) override;
 
     private:
         /**
          * @brief Computes who will be the player to suffer the penalties or the next to play.
          * Support method used internally to determine the target (e.g. for `SkipEffect` or `DrawEffect`).
-         * * @param state Pointer to the game state.
+         * * @param state Pointer to the match state.
          * @return std::string Username of the target player computed following the direction of play.
          * @tag RULE-STD-PRIV-001
          */
-        std::string GetNextPlayer(GameState* state);
+        std::string GetNextPlayer(MatchState* state);
    };
-}
+}  // namespace match

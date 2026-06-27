@@ -1,16 +1,16 @@
-#include <common/game/gamerule.hpp>
-#include <game/game_state.hpp>
-#include <game/rule_registry.hpp>
-#include <game/effects/standard.hpp>
+#include <common/match/matchrule.hpp>
+#include <match/match_state.hpp>
+#include <match/rule_registry.hpp>
+#include <match/effects/standard.hpp>
 
-namespace game {
-    class DrawStackingRule : public GameRule {
+namespace match {
+    class DrawStackingRule : public MatchRule {
     public:
-        void ValidatePlay(const GameState* state, CardPlayedEvent& event) override {
+        void ValidatePlay(const MatchState* state, CardPlayedEvent& event) override {
             if (state->pending_draws > 0) {
                 Value played_val = GetValue(event.played_card);
                 Value top_val = GetValue(state->discard_pile.back());
-                
+
                 if (played_val != top_val || (played_val != Value::kDraw2 && played_val != Value::kJollyDraw4)) {
                     event.is_valid_play = false;
                     event.is_handled = true;
@@ -18,9 +18,9 @@ namespace game {
             }
         }
 
-        void OnCardPlayed(GameState* state, CardPlayedEvent& event) override {
+        void OnCardPlayed(MatchState* state, CardPlayedEvent& event) override {
             Value card_val = GetValue(event.played_card);
-            
+
             if (card_val == Value::kDraw2) {
                 state->pending_draws += 2;
                 event.is_handled = true; // Flag handled so StandardRule doesn't push a skip!

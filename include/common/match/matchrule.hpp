@@ -1,16 +1,16 @@
 #pragma once
 
-#include <common/game/card_types.hpp>
-#include <game/game_state.hpp>
+#include <common/match/card_types.hpp>
+#include <match/match_state.hpp>
 
 /**
- * @file include/common/game/gamerule.hpp
+ * @file include/common/match/matchrule.hpp
  * @brief Defines the base engine for applying the game rules.
  *
  * @tag FEAT-CG-003 Flexible Rule Validation (Rule Engine): Interception of plays through dedicated events (CardPlayedEvent) to authorize, reject or extend the standard game mechanics.
  */
 
-namespace game {
+namespace match {
 
     /**
      * @struct CardPlayedEvent
@@ -36,30 +36,30 @@ namespace game {
 
 
     /**
-     * @class GameRule
+     * @class MatchRule
      * @brief Base interface that defines the lifecycle for interpreting a play.
      */
-    class GameRule {
+    class MatchRule {
     public:
-        virtual ~GameRule() = default;
+        virtual ~MatchRule() = default;
 
         /**
          * @brief Evaluates whether the played card complies with the imposed rules.
          * Called before the card is actually accepted by the engine.
-         * @param state The current game state.
+         * @param state The current match state.
          * @param event The event carrying the play data. The method should set event.is_valid_play to false if the move is illegal.
          */
-        virtual void ValidatePlay(const GameState* state, CardPlayedEvent& event) {}
+        virtual void ValidatePlay(const MatchState* state, CardPlayedEvent& event) {}
 
         /**
          * @brief Triggers the consequences arising from a validated play.
          * Called only if ValidatePlay allowed the play. Typically used to instantiate and enqueue
-         * the child instances of `Effect` into the effect queue of `GameState`.
-         * @param state The current game state.
+         * the child instances of `Effect` into the effect queue of `MatchState`.
+         * @param state The current match state.
          * @param event The event containing the resolved play.
          */
-        virtual void OnCardPlayed(GameState* state, CardPlayedEvent& event) {}
+        virtual void OnCardPlayed(MatchState* state, CardPlayedEvent& event) {}
 
-        virtual void OnCardDrawn(GameState* state, CardDrawnEvent& event) {}
+        virtual void OnCardDrawn(MatchState* state, CardDrawnEvent& event) {}
     };
-}
+}  // namespace match

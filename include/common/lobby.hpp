@@ -12,7 +12,7 @@
  * from the management logic that resides in the LobbyController.
  */
 
-namespace game {
+namespace match {
     class MatchInstance;
 }
 
@@ -98,5 +98,5 @@ struct Lobby {
     /** * @brief Instance of the game engine.
      * If nullptr, the lobby is in the waiting phase. If populated, a match is currently in progress.
      */
-    std::unique_ptr<game::MatchInstance> match;
+    std::unique_ptr<match::MatchInstance> match;
 };

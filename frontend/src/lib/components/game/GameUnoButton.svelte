@@ -16,7 +16,7 @@
 		<button
 			type="button"
 			class="btn pixel-corners uno-button animate-pixel-bounce"
-			onclick={() => ws.emit(ClientAction.GameCallUno)}
+			onclick={() => ws.emit(ClientAction.MatchCallUno)}
 		>
 			UNO!
 		</button>

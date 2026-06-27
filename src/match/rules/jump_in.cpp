@@ -1,17 +1,17 @@
-#include <common/game/gamerule.hpp>
-#include <game/game_state.hpp>
-#include <game/rule_registry.hpp>
+#include <common/match/matchrule.hpp>
+#include <match/match_state.hpp>
+#include <match/rule_registry.hpp>
 
-namespace game {
-    class JumpInRule : public GameRule {
+namespace match {
+    class JumpInRule : public MatchRule {
     public:
-        void ValidatePlay(const GameState* state, CardPlayedEvent& event) override {
+        void ValidatePlay(const MatchState* state, CardPlayedEvent& event) override {
             if (event.is_out_of_turn) {
                 if (state->discard_pile.empty()) return;
 
                 CompactCard top_card = state->discard_pile.back();
 
-                if (GetType(event.played_card) == GetType(top_card) && 
+                if (GetType(event.played_card) == GetType(top_card) &&
                     GetValue(event.played_card) == GetValue(top_card)) {
 
                     event.is_valid_play = true;
@@ -20,7 +20,7 @@ namespace game {
             }
         }
 
-        void OnCardPlayed(GameState* state, CardPlayedEvent& event) override {
+        void OnCardPlayed(MatchState* state, CardPlayedEvent& event) override {
             if (event.is_out_of_turn) {
                 auto it = std::ranges::find(state->players, event.player_username, &Player::username);
                 if (it != state->players.end()) {

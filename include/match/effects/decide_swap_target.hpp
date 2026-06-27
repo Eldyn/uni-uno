@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/game/effect.hpp>
+#include <common/match/effect.hpp>
 #include <string>
 
 /**
@@ -10,7 +10,7 @@
  * opponent to swap their entire hand of cards with (typical of the "7" card).
  */
 
-namespace game {
+namespace match {
 
     /**
      * @class DecideSwapTargetEffect
@@ -37,7 +37,7 @@ namespace game {
          * @return EffectResult Returns kNeedsInput to query the client.
          * @tag EFFECT-SWAP-MTH-001
          */
-        EffectResult Resolve(GameState* state, MatchInstance* match) override;
+        EffectResult Resolve(MatchState* state, MatchInstance* match) override;
 
         /**
          * @brief Returns the enumerative type of the effect.
@@ -52,4 +52,4 @@ namespace game {
     private:
         std::string username_; /**< The user who must select the target. */
     };
-}
+}  // namespace match

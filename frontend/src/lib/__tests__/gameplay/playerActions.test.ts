@@ -13,15 +13,15 @@ vi.mock("$lib/stores/ws.svelte", () => ({
 		connect: vi.fn()
 	},
 	ServerAction: {
-		GameOver: "game_over",
-		GameStateUpdated: "game_state_updated"
+		MatchOver: "match_over",
+		MatchStateUpdated: "match_state_updated"
 	},
 	ClientAction: {
-		GamePlayCard: "game_play_card",
-		GameDrawCard: "game_draw_card",
-		GameCallUno: "game_call_uno",
-		GameSubmitInput: "game_submit_input",
-		GameExit: "game_exit"
+		MatchPlayCard: "match_play_card",
+		MatchDrawCard: "match_draw_card",
+		MatchCallUno: "match_call_uno",
+		MatchSubmitInput: "match_submit_input",
+		MatchExit: "match_exit"
 	}
 }));
 
@@ -39,9 +39,9 @@ describe("game store: player action dispatching", () => {
 		vi.useRealTimers();
 	});
 
-	it("playCard emits GamePlayCard with card_id payload", () => {
+	it("playCard emits MatchPlayCard with card_id payload", () => {
 		storeGame.playCard(42);
-		expect(mockEmit).toHaveBeenCalledWith("game_play_card", { card_id: 42 });
+		expect(mockEmit).toHaveBeenCalledWith("match_play_card", { card_id: 42 });
 	});
 
 	it("playCard sets isActionPending true", () => {
@@ -53,12 +53,12 @@ describe("game store: player action dispatching", () => {
 		storeGame.playCard(1);
 		storeGame.playCard(2);
 		expect(mockEmit).toHaveBeenCalledTimes(1);
-		expect(mockEmit).toHaveBeenCalledWith("game_play_card", { card_id: 1 });
+		expect(mockEmit).toHaveBeenCalledWith("match_play_card", { card_id: 1 });
 	});
 
-	it("drawCard emits GameDrawCard", () => {
+	it("drawCard emits MatchDrawCard", () => {
 		storeGame.drawCard();
-		expect(mockEmit).toHaveBeenCalledWith("game_draw_card");
+		expect(mockEmit).toHaveBeenCalledWith("match_draw_card");
 	});
 
 	it("drawCard sets isActionPending true", () => {
@@ -72,9 +72,9 @@ describe("game store: player action dispatching", () => {
 		expect(mockEmit).toHaveBeenCalledTimes(1);
 	});
 
-	it("callUno emits GameCallUno", () => {
+	it("callUno emits MatchCallUno", () => {
 		storeGame.callUno();
-		expect(mockEmit).toHaveBeenCalledWith("game_call_uno");
+		expect(mockEmit).toHaveBeenCalledWith("match_call_uno");
 	});
 
 	it("safety timer releases isActionPending after 3001ms", () => {
