@@ -76,7 +76,7 @@ void StatsController::HandleGetMe(AppResponse* res, AppRequest* req) {
             {"cards_played_reverse", row.GetOr<int>("cards_played_reverse", 0)},
             {"cards_played_draw2", row.GetOr<int>("cards_played_draw2", 0)},
             {"cards_played_draw4", row.GetOr<int>("cards_played_draw4", 0)},
-            {"cards_played_colorswitch", row.GetOr<int>("cards_played_colorswitch", 0)}
+            {"cards_played_jolly", row.GetOr<int>("cards_played_jolly", 0)}
         };
     } else {
         response_data = {
