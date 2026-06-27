@@ -78,7 +78,21 @@
 		</header>
 
 		<main class="wrap">
-			<h3>0.4.4 - Current Release</h3>
+			<h3>0.4.5 - Current Release</h3>
+			<span class="release-date">June 27, 2026</span>
+			<p>A batch of connectivity and in-game fixes — no new features, just a smoother experience when reconnecting, switching browsers, or playing against bots.</p>
+			<ul>
+				<li>Fixed a bug where your own name could briefly show as disconnected in the lobby even while you were actively connected.</li>
+				<li>Fixed a bug where returning to the site without your lobby code (e.g. from a different browser) would leave you stuck — you are now brought straight back into your lobby or active match automatically.</li>
+				<li>Fixed a bug where reconnecting mid-turn (e.g. after a Jolly card was played) could leave you unable to pick a colour until the timer ran out.</li>
+				<li>Fixed a bug where reconnecting with a saved session would trigger duplicate fetches and multiple navigation calls in the background.</li>
+				<li>Fixed a server startup failure that could occur when upgrading from an older build — the server now applies all database changes in a single step on first launch.</li>
+				<li>Fixed a visual glitch where the table background would briefly flash purple when playing a Jolly card — it now keeps the colour from the previous card until a new colour is chosen.</li>
+				<li>Fixed a bug where the game interface would go blank when a bot won the match — the result popup now appears correctly over a full game board.</li>
+				<li>Fixed a bug where playing a Jolly card and ignoring the colour picker would permanently stall the game — the bot now steps in and picks automatically when the turn timer runs out.</li>
+			</ul>
+
+			<h3>0.4.4</h3>
 			<span class="release-date">June 26, 2026</span>
 			<p>Backend and performance improvements — nothing visible has changed, but the game should feel snappier and the server is more robust under the hood.</p>
 			<ul>
