@@ -9,6 +9,20 @@ version; each release below corresponds to a `vX.Y.Z` git tag.
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-06-27
+
+### Fixed
+
+- **Disconnected display race**: `OnClose` now guards `member.socket == ws` before marking a player disconnected, preventing a delayed TCP close from a stale socket from stomping the `is_connected=true` state set by a newer connection.
+- **No-code lobby limbo**: `OnOpen` now subscribes the reconnecting socket to the lobby pub/sub topic and pushes a full `kLobbyJoined` payload (plus live `kMatchStateUpdated` if a match is active), so a session that lost its invite code is brought back into the correct screen without manual rejoin.
+- **Reconnect mid-input**: The `kMatchStateUpdated` push on reconnect now includes `action_required` and `action_context` when the engine is awaiting player input (Wild colour pick, draw-stack confirmation), preventing the input modal from staying hidden after reconnect.
+- **Double `LobbyJoined` on rejoin**: When `lobby_code` is stored in `localStorage`, both the server-proactive `OnOpen` push and the `HandleRejoin` response fired the `LobbyJoined` handler, causing triple state writes, duplicate fetches, and stacked `MatchStateUpdated` listeners. The handler now deduplicates by lobby code; `#tryRejoin` skips its own state setup when the event handler already populated `this.current`.
+- **Listener leak in `#tryRejoin`**: The `MatchStateUpdated` listener registered during rejoin now has a 1 s timeout so it cleans itself up when no active match follows, and is explicitly cancelled on error paths.
+- **DB schema migration v2**: Folds the `cards_played_jolly` column rename together with the users table restructure (`password_hash` → `pass_hash`, new `salt` and `email` columns) into a single migration step. Fixes 500 errors on login/register when upgrading from an older build.
+- **Jolly colour flash**: The playmat and arrow tint now hold the last known non-white colour while the colour-pick action is pending, instead of flashing rebeccapurple.
+- **Game screen wipe on bot win**: `MatchOver` now clears `actionRequired`/`actionContext` on the client, so the game HUD stays visible (it was hidden by the `{#if !actionRequired}` guard while the popup was showing).
+- **Action input stall**: A dedicated per-action timer fires in all bot modes when `IsWaitingForInput()` is true, keyed on `GetPendingPlayer()`. Colour picks and other mid-turn inputs are now auto-handled by a bot after the turn time limit expires — previously this stalled indefinitely in `kPlayInstantly` lobbies.
+
 ## [0.4.4] - 2026-06-26
 
 ### Changed
@@ -267,7 +281,10 @@ point:
 - WebSocket payload-size, idle-time, and backpressure bounds, malformed-frame
   guards, and path-traversal protection on static file serving.
 
-[unreleased]: https://github.com/Eldyn/uni/compare/v0.4.2...HEAD
+[unreleased]: https://github.com/Eldyn/uni/compare/v0.4.5...HEAD
+[0.4.5]: https://github.com/Eldyn/uni/compare/v0.4.4...v0.4.5
+[0.4.4]: https://github.com/Eldyn/uni/compare/v0.4.3...v0.4.4
+[0.4.3]: https://github.com/Eldyn/uni/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/Eldyn/uni/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/Eldyn/uni/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/Eldyn/uni/compare/v0.3.0...v0.4.0
