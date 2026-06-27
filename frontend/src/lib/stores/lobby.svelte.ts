@@ -353,12 +353,26 @@ class StoreLobby {
 
 		ws.on(ServerAction.LobbyJoined, async (data) => {
 			const lobby = data.lobby as Lobby;
+			const alreadyInThisLobby = this.current?.invite_code === lobby.invite_code;
+
 			this.current = lobby;
 			this.availableRules = (data.available_rules as RuleDefinition[]) ?? [];
-
 			localStorage.setItem("lobby_code", lobby.invite_code);
-			storeNavigation.goto("lobby");
 
+			// Deduplicate: OnOpen push + HandleRejoin response both fire this handler.
+			// Only the first arrival does navigation / listener / fetch.
+			if (alreadyInThisLobby) return;
+
+			// If a match state follows immediately (server-proactive reconnect with active match),
+			// navigate to game. The 500ms window is generous — both messages are sent back-to-back.
+			const matchTimeout = setTimeout(() => unsub(), 500);
+			const unsub = ws.on(ServerAction.MatchStateUpdated, () => {
+				clearTimeout(matchTimeout);
+				unsub();
+				storeNavigation.goto("game");
+			});
+
+			storeNavigation.goto("lobby");
 			await this.#fetchSavedMatches();
 		});
 
@@ -422,15 +436,19 @@ class StoreLobby {
 		if (!code) return;
 
 		try {
+			// Guard against MatchStateUpdated leaking past a failed or no-match rejoin.
 			const unsubscribeGameRejoin = ws.on(ServerAction.MatchStateUpdated, (_data) => {
-				storeNavigation.goto("game");
-
+				clearTimeout(rejoinMatchTimeout);
 				unsubscribeGameRejoin();
+				storeNavigation.goto("game");
 			});
+			const rejoinMatchTimeout = setTimeout(() => unsubscribeGameRejoin(), 1000);
 
 			const response = await ws.emitAndWait(ClientAction.LobbyRejoin, { code });
 
 			if (!response.ok) {
+				clearTimeout(rejoinMatchTimeout);
+				unsubscribeGameRejoin();
 				this.#reset();
 				if (response.action !== ServerAction.LobbyEvicted) {
 					storeToast.error(`Could not rejoin lobby: ${response.message}`);
@@ -440,6 +458,10 @@ class StoreLobby {
 
 			const lobby = response.get<Lobby>("lobby");
 			if (!lobby) throw new Error("Invalid lobby data received.");
+
+			// If the LobbyJoined event from OnOpen already populated state for this lobby,
+			// skip duplicate navigation and fetch — the event handler already did the work.
+			if (this.current?.invite_code === lobby.invite_code) return;
 
 			this.current = lobby;
 			this.availableRules = response.getOr<RuleDefinition[]>("available_rules", []);

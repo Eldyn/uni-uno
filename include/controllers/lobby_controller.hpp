@@ -292,6 +292,13 @@ private:
     void BroadcastUpdate(const Lobby& lobby) const;
 
     /**
+     * @brief Sends a `match_state_updated` frame to a single socket, including pending action
+     * context when the engine is waiting for input from that player.
+     * @tag LOBBY-UTIL-004
+     */
+    void SendMatchStateToSocket(const Lobby& lobby, AppWebSocket* ws, const std::string& username, uWS::OpCode op_code) const;
+
+    /**
      * @brief Removes a member from the lobby. Destroys the lobby if it becomes empty.
      * @param lobby_id ID of the lobby.
      * @param username Username of the player to remove.
