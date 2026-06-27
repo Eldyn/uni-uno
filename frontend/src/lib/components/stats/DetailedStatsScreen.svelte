@@ -36,7 +36,7 @@
 		"skip",
 		"reverse",
 		"draw2",
-		"colorswitch",
+		"jolly",
 		"draw4"
 	];
 
@@ -57,9 +57,9 @@
 				color = type;
 				value = "";
 				textCol = COLOR_HEX[type];
-			} else if (type === "colorswitch" || type === "draw4") {
-				color = "wild";
-				value = type === "draw4" ? "+4" : "colorswitch";
+			} else if (type === "jolly" || type === "draw4") {
+				color = "white";
+				value = type === "draw4" ? "+4" : "jolly";
 				label = type === "draw4" ? "JOLLY +4" : "JOLLY";
 				textCol = "var(--accent)";
 			} else if (type === "draw2") {
