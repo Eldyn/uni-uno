@@ -1,8 +1,7 @@
 #pragma once
 
 #include "common/lobby.hpp"
-#include <common/game/gamerule.hpp>
-#include <controllers/lobby_controller.hpp>
+#include <common/match/matchrule.hpp>
 #include <nlohmann/json.hpp>
 #include <random>
 #include <string>
@@ -19,12 +18,12 @@
 
 struct LobbySettings;
 
-namespace game {
+namespace match {
 
     /**
      * @class MatchInstance
      * @brief Represents an active instance of a match.
-     * * Maintains the internal game state (`GameState`), manages the flow of turns,
+     * * Maintains the internal match state (`MatchState`), manages the flow of turns,
      * the execution of moves (playing cards, drawing), and processes the effects and
      * active rules applied to this specific match.
      * * @tag MATCH-INST-000
@@ -120,7 +119,7 @@ namespace game {
         void RemovePlayerMidGame(const std::string& username);
 
         /**
-         * @brief Exports the entire GameState into a savable JSON format.
+         * @brief Exports the entire MatchState into a savable JSON format.
          * @return json Serialized state.
          * @tag MATCH-INST-013
          */
@@ -174,7 +173,7 @@ namespace game {
          * @return true if ended.
          * @tag MATCH-INST-020
          */
-        bool IsGameOver() const { return state_.status == MatchStatus::kFinished; }
+        bool IsMatchOver() const { return state_.status == MatchStatus::kFinished; }
 
         /**
          * @brief Retrieves the username of the winner (if the match is concluded).
@@ -184,7 +183,7 @@ namespace game {
         std::string GetWinner() const { return state_.winner; }
 
         /**
-         * @brief Creates a JSON that represents the masked game state,
+         * @brief Creates a JSON that represents the masked match state,
          * specific to the point of view of the provided player (hiding opponents' hands).
          * * @param username The player for whom the view is generated.
          * @return nlohmann::json The censored state, ready to be sent to the frontend.
@@ -207,13 +206,13 @@ namespace game {
         void SetMatchId(const std::string& id) { match_id_ = id; }
 
     private:
-        GameState state_;                        /**< The central game state. */
+        MatchState state_;                        /**< The central match state. */
         LobbySettings settings_;                 /**< The rules and preferences of the match. */
         std::string match_id_;                   /**< Unique identifier of the match in the database. */
         mutable std::mt19937 rng_{std::random_device{}()}; /**< Shared RNG for shuffles. */
 
         std::unordered_map<std::string, PlayerSessionStats> session_stats_; /**< Statistics collected during the match. */
-        std::vector<std::unique_ptr<GameRule>> active_rules_;              /**< Set of active rules. */
+        std::vector<std::unique_ptr<MatchRule>> active_rules_;              /**< Set of active rules. */
 
         /**
          * @brief Checks whether a given optional rule mod is currently active for this match.
@@ -232,5 +231,4 @@ namespace game {
          */
         void GenerateDeck();
     };
-}
-
+}  // namespace match

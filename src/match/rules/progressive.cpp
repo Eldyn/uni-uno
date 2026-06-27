@@ -1,10 +1,10 @@
-#include <common/game/gamerule.hpp>
-#include <game/rule_registry.hpp>
+#include <common/match/matchrule.hpp>
+#include <match/rule_registry.hpp>
 
-namespace game {
-    class ProgressiveRule : public GameRule {
+namespace match {
+    class ProgressiveRule : public MatchRule {
     public:
-        void OnCardDrawn(GameState* state, CardDrawnEvent& event) override {
+        void OnCardDrawn(MatchState* state, CardDrawnEvent& event) override {
             event.keep_drawing = true; // Tell the DrawCard engine to loop
         }
     };

@@ -1,13 +1,13 @@
-#include "common/game/effect.hpp"
-#include "game/game_state.hpp"
-#include "game/match_instance.hpp"
-#include <game/effects/standard.hpp>
-#include <game/effect_registry.hpp>
+#include "common/match/effect.hpp"
+#include "match/match_state.hpp"
+#include "match/match_instance.hpp"
+#include <match/effects/standard.hpp>
+#include <match/effect_registry.hpp>
 #include <algorithm>
 
-namespace game {
+namespace match {
 
-    EffectResult AdvanceTurnEffect::Resolve(GameState* state, MatchInstance* match) {
+    EffectResult AdvanceTurnEffect::Resolve(MatchState* state, MatchInstance* match) {
         state->current_player_index += state->play_direction;
         int total_players = static_cast<int>(state->players.size());
 
@@ -19,7 +19,7 @@ namespace game {
         return {EffectStatus::kResolved};
     }
 
-    EffectResult DrawEffect::Resolve(GameState* state, MatchInstance* match) {
+    EffectResult DrawEffect::Resolve(MatchState* state, MatchInstance* match) {
         auto player_iterator = std::ranges::find(state->players, target_username_, &Player::username);
         if (player_iterator != state->players.end()) {
             for (int draw_index = 0; draw_index < count_; ++draw_index) {
@@ -35,12 +35,12 @@ namespace game {
         return {EffectStatus::kResolved};
     }
 
-    EffectResult SkipEffect::Resolve(GameState* state, MatchInstance* match) {
+    EffectResult SkipEffect::Resolve(MatchState* state, MatchInstance* match) {
         state->effect_queue.push_front(std::make_unique<AdvanceTurnEffect>());
         return {EffectStatus::kResolved};
     }
 
-    EffectResult ReverseEffect::Resolve(GameState* state, MatchInstance* match) {
+    EffectResult ReverseEffect::Resolve(MatchState* state, MatchInstance* match) {
         state->play_direction *= -1;
         if (state->players.size() == 2) {
             state->effect_queue.push_front(std::make_unique<AdvanceTurnEffect>());
@@ -48,7 +48,7 @@ namespace game {
         return {EffectStatus::kResolved};
     }
 
-    EffectResult ChooseColorEffect::Resolve(GameState* state, MatchInstance* match) {
+    EffectResult ChooseColorEffect::Resolve(MatchState* state, MatchInstance* match) {
         if (!state->provided_input.empty()) {
             state->active_type = static_cast<Type>(std::stoi(state->provided_input));
             state->provided_input.clear();
@@ -58,7 +58,7 @@ namespace game {
         return {EffectStatus::kNeedsInput, Action::kChooseType, target_username_};
     }
 
-    EffectResult DecideDrawnCardEffect::Resolve(GameState* state, MatchInstance* match) {
+    EffectResult DecideDrawnCardEffect::Resolve(MatchState* state, MatchInstance* match) {
         if (!state->provided_input.empty()) {
             std::string choice = state->provided_input;
             state->provided_input.clear();

@@ -124,7 +124,7 @@ class StoreGame {
 	/** Contextual data attached to the input request. */
 	actionContext = $state<any>(null);
 
-	/** True while a game action is in flight — cleared on next GameStateUpdated. */
+	/** True while a game action is in flight — cleared on next MatchStateUpdated. */
 	isActionPending = $state(false);
 
 	/** Seconds remaining to complete the turn, computed locally. */
@@ -166,7 +166,7 @@ class StoreGame {
 	 * @tag FRONT-GAME-MTH-002
 	 */
 	#registerListeners() {
-		ws.on(ServerAction.GameOver, (data) => {
+		ws.on(ServerAction.MatchOver, (data) => {
 			if (!this.state) return;
 
 			const winner = data.winner;
@@ -176,11 +176,11 @@ class StoreGame {
 			this.#clearTimer();
 		});
 
-		ws.on(ServerAction.GameStateUpdated, (data: any) => {
+		ws.on(ServerAction.MatchStateUpdated, (data: any) => {
 			this.#clearActionPending();
-			const parsed = RawGameStateSchema.safeParse(data.game_state);
+			const parsed = RawGameStateSchema.safeParse(data.match_state);
 			if (!parsed.success) {
-				console.error("[GameStateUpdated] payload validation failed:", parsed.error.message);
+				console.error("[MatchStateUpdated] payload validation failed:", parsed.error.message);
 				return;
 			}
 			const stateJson = parsed.data;
@@ -283,7 +283,7 @@ class StoreGame {
 		if (this.isActionPending) return;
 		this.isActionPending = true;
 		this.#pendingSafetyTimer = setTimeout(() => this.#clearActionPending(), 3000);
-		ws.emit(ClientAction.GamePlayCard, { card_id: cardId });
+		ws.emit(ClientAction.MatchPlayCard, { card_id: cardId });
 	}
 
 	/**
@@ -294,7 +294,7 @@ class StoreGame {
 		if (this.isActionPending) return;
 		this.isActionPending = true;
 		this.#pendingSafetyTimer = setTimeout(() => this.#clearActionPending(), 3000);
-		ws.emit(ClientAction.GameDrawCard);
+		ws.emit(ClientAction.MatchDrawCard);
 	}
 
 	/**
@@ -302,7 +302,7 @@ class StoreGame {
 	 * @tag FRONT-GAME-MTH-008
 	 */
 	callUno() {
-		ws.emit(ClientAction.GameCallUno);
+		ws.emit(ClientAction.MatchCallUno);
 	}
 
 	/**
@@ -314,7 +314,7 @@ class StoreGame {
 		if (this.isActionPending) return;
 		this.isActionPending = true;
 		this.#pendingSafetyTimer = setTimeout(() => this.#clearActionPending(), 3000);
-		ws.emit(ClientAction.GameSubmitInput, { value: value });
+		ws.emit(ClientAction.MatchSubmitInput, { value: value });
 	}
 }
 

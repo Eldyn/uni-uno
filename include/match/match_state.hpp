@@ -1,7 +1,7 @@
 #pragma once
 
-#include <common/game/card_types.hpp>
-#include <common/game/effect.hpp>
+#include <common/match/card_types.hpp>
+#include <common/match/effect.hpp>
 #include <deque>
 #include <memory>
 #include <string>
@@ -9,13 +9,13 @@
 #include <chrono>
 
 /**
- * @file game_state.hpp
- * @brief Foundational data structures for representing the state of the "UNO" game.
- * * Contains the pure data decoupled from the routing logic. The game state is
- * the context on which the Effects and the rule Validators (GameRule) act.
+ * @file match_state.hpp
+ * @brief Foundational data structures for representing the state of the "UNO" match.
+ * * Contains the pure data decoupled from the routing logic. The match state is
+ * the context on which the Effects and the rule Validators (MatchRule) act.
  */
 
-namespace game {
+namespace match {
 
     /**
      * @struct PlayerSessionStats
@@ -78,12 +78,12 @@ namespace game {
     };
 
     /**
-     * @struct GameState
+     * @struct MatchState
      * @brief Monolithic data structure that contains the entire "snapshot" of the match at a given instant.
      * It is manipulated by the Effect and MatchInstance classes and serialized to JSON.
      * @tag GAME-STRUCT-003
      */
-    struct GameState {
+    struct MatchState {
         MatchStatus status = MatchStatus::kWaitingToStart; /**< The progression state. */
         std::string winner;                                /**< Username of the winner (if concluded). */
 
@@ -99,7 +99,7 @@ namespace game {
 
         std::deque<std::unique_ptr<Effect>> effect_queue;  /**< Queue of effects to resolve (asynchronous architecture for chained moves). */
 
-        std::string pending_player;                        /**< The user who MUST provide an input before the game continues. */
+        std::string pending_player;                        /**< The user who MUST provide an input before the match continues. */
         Action pending_action = Action::kChooseType;       /**< Action required (meaningful only when pending_player is set). */
         std::string pending_input_context;                 /**< Additional JSON payload to help the client render the input box. */
         std::string provided_input;                        /**< Asynchronous response stored as soon as it is sent by the player for the effect. */
@@ -110,8 +110,8 @@ namespace game {
     /**
      * @brief System utility that moves and reshuffles the cards from the discard pile into the main deck.
      * Invoked automatically by the game engine when `draw_pile` is exhausted.
-     * @param game_state Pointer to the game state to manipulate.
+     * @param match_state Pointer to the match state to manipulate.
      * @tag GAME-UTIL-001
      */
-    void ReshuffleDiscardIntoDraw(GameState* game_state);
-}
+    void ReshuffleDiscardIntoDraw(MatchState* match_state);
+}  // namespace match

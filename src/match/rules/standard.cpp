@@ -1,10 +1,10 @@
-#include <game/rules/standard.hpp>
-#include "game/effects/standard.hpp"
-#include <common/game/effect.hpp>
+#include <match/rules/standard.hpp>
+#include "match/effects/standard.hpp"
+#include <common/match/effect.hpp>
 
-namespace game {
+namespace match {
 
-    void StandardRule::ValidatePlay(const GameState* state, CardPlayedEvent& event) {
+    void StandardRule::ValidatePlay(const MatchState* state, CardPlayedEvent& event) {
         if (event.is_out_of_turn) {
             event.is_valid_play = false;
             return;
@@ -21,35 +21,35 @@ namespace game {
         //       Since its inherent type is kWhite and would return false, we
         //       use the active_type which is whatever the player chose.
         if (played_type == state->active_type) {
-            return; 
+            return;
         }
-    
+
         if (!state->discard_pile.empty()) {
             CompactCard top_card = state->discard_pile.back();
             Value top_value = GetValue(top_card);
-    
+
             if (played_value == top_value) {
-                return; 
+                return;
             }
         }
-    
+
         event.is_valid_play = false;
     }
-    
-    void StandardRule::OnCardPlayed(GameState* state, CardPlayedEvent& event) {
+
+    void StandardRule::OnCardPlayed(MatchState* state, CardPlayedEvent& event) {
         Value card_value = GetValue(event.played_card);
-    
+
         if (card_value == Value::kSkip) {
             state->effect_queue.push_back(std::make_unique<SkipEffect>());
-        } 
+        }
         else if (card_value == Value::kReverse) {
             state->effect_queue.push_back(std::make_unique<ReverseEffect>());
-        } 
+        }
         else if (card_value == Value::kDraw2) {
             std::string next_player = GetNextPlayer(state);
             state->effect_queue.push_back(std::make_unique<DrawEffect>(2, next_player));
             state->effect_queue.push_back(std::make_unique<SkipEffect>());
-        } 
+        }
         else if (card_value == Value::kJolly) {
             state->effect_queue.push_back(std::make_unique<ChooseColorEffect>(event.player_username));
         }
@@ -59,7 +59,7 @@ namespace game {
             state->effect_queue.push_back(std::make_unique<DrawEffect>(4, next_player));
             state->effect_queue.push_back(std::make_unique<SkipEffect>());
         }
-    
+
         // UNO Penalty
         auto player_iterator = std::ranges::find(state->players, event.player_username, &Player::username);
         if (player_iterator != state->players.end() && player_iterator->hand.size() == 1 && !player_iterator->has_called_uno) {
@@ -69,10 +69,10 @@ namespace game {
         player_iterator->has_called_uno = false;
     }
 
-    std::string StandardRule::GetNextPlayer(GameState* state) {
+    std::string StandardRule::GetNextPlayer(MatchState* state) {
         int next_index = state->current_player_index + state->play_direction;
         int total_players = static_cast<int>(state->players.size());
-        
+
         // Safely wrap around the array bounds
         if (next_index >= total_players) {
             next_index %= total_players;
@@ -81,7 +81,7 @@ namespace game {
                 next_index += total_players;
             }
         }
-        
+
         return state->players[next_index].username;
     }
-}
+}  // namespace match

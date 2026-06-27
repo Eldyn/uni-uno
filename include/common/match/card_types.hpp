@@ -9,7 +9,7 @@
  * @tag FEAT-CG-001 Compact Card Representation: Use of a 32-bit integer format (CompactCard) to simultaneously store the type, value and unique ID of the card.
  */
 
-namespace game {
+namespace match {
 
     /**
      * @brief Definition of the CompactCard type.
@@ -86,4 +86,4 @@ namespace game {
                (static_cast<CompactCard>(id) & 0xFFFF);
     }
 
-}  // namespace game
+}  // namespace match

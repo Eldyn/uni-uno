@@ -177,19 +177,19 @@ if(UNI_BUILD_TESTS)
         ${TEST_SOURCES}
         src/common/rate_limiter.cpp
         src/common/login_throttle.cpp
-        src/game/match_instance.cpp
-        src/game/rules/standard.cpp
-        src/game/rules/70.cpp
-        src/game/rules/draw_stacking.cpp
-        src/game/rules/force_play.cpp
-        src/game/rules/jump_in.cpp
-        src/game/rules/no_bluffing.cpp
-        src/game/rules/progressive.cpp
-        src/game/effects/standard.cpp
-        src/game/effects/decide_swap_target.cpp
-        src/game/effects/pass_hands.cpp
+        src/match/match_instance.cpp
+        src/match/rules/standard.cpp
+        src/match/rules/70.cpp
+        src/match/rules/draw_stacking.cpp
+        src/match/rules/force_play.cpp
+        src/match/rules/jump_in.cpp
+        src/match/rules/no_bluffing.cpp
+        src/match/rules/progressive.cpp
+        src/match/effects/standard.cpp
+        src/match/effects/decide_swap_target.cpp
+        src/match/effects/pass_hands.cpp
         src/controllers/lobby_controller.cpp
-        src/controllers/game_controller.cpp
+        src/controllers/match_controller.cpp
         src/action_router.cpp
         src/database.cpp
         src/transport/uws_broadcaster.cpp

@@ -1,5 +1,5 @@
 #pragma once
-#include "common/game/gamerule.hpp"
+#include "common/match/matchrule.hpp"
 #include <unordered_map>
 #include <functional>
 #include <string>
@@ -9,21 +9,21 @@
 
 /**
  * @file rule_registry.hpp
- * @brief Management of the dynamic registration and instantiation of game rules.
+ * @brief Management of the dynamic registration and instantiation of match rules.
  * * This file defines a system based on the Factory Pattern to allow the
- * creation of rules (GameRule) at runtime starting from their textual name (e.g. from JSON).
+ * creation of rules (MatchRule) at runtime starting from their textual name (e.g. from JSON).
  * It uses a static self-registration mechanism to decouple the addition
  * of new rules from the core engine code.
  */
 
-namespace game {
+namespace match {
 
     /**
      * @typedef RuleFactory
      * @brief Defines the type of function capable of generating a new instance of a rule.
      * @tag RULE-REG-TYP-001
      */
-    using RuleFactory = std::function<std::unique_ptr<GameRule>()>;
+    using RuleFactory = std::function<std::unique_ptr<MatchRule>()>;
 
     /**
      * @struct RuleMetadata
@@ -47,7 +47,7 @@ namespace game {
 
     /**
      * @class RuleRegistry
-     * @brief Global (Singleton) registry of the game rule factories.
+     * @brief Global (Singleton) registry of the match rule factories.
      * * Maintains a map that associates an identifying string (the name of the mod/rule)
      * with the `RuleEntry` holding the factory and display metadata.
      * @tag RULE-REG-CLS-001
@@ -67,12 +67,12 @@ namespace game {
         }
 
         /**
-         * @brief Instantiates a new game rule from its name.
+         * @brief Instantiates a new match rule from its name.
          * @param name The textual identifier of the rule (e.g. "seven_zero").
-         * @return std::unique_ptr<GameRule> Unique pointer to the new instance, or `nullptr` if not found.
+         * @return std::unique_ptr<MatchRule> Unique pointer to the new instance, or `nullptr` if not found.
          * @tag RULE-REG-MTH-002
          */
-        static std::unique_ptr<GameRule> Create(const std::string& name) {
+        static std::unique_ptr<MatchRule> Create(const std::string& name) {
             auto& map = GetMap();
             auto it = map.find(name);
             if (it != map.end()) {
@@ -127,4 +127,4 @@ namespace game {
         }
     };
 
-}
+}  // namespace match

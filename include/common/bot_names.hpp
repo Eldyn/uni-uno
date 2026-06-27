@@ -8,7 +8,7 @@
  * @brief Collection of constants for initializing the AI engine (Bot).
  */
 
-namespace game {
+namespace match {
 
     /**
      * @brief Static global list containing predefined names for the CPU-driven bots.
@@ -94,30 +94,30 @@ namespace game {
         "Helena", "Hendrik", "Maaike", "Mees", "Sherry", "St. Jerry", "Terry", 
         "Adventurer Saul", "Croesus", "Guildford", "Dungeon Hub Selector", 
         "Duncan", "Three Weirdos", "Tomioka", "Trinity", "Winona", "Zodd", 
-        "Sam", "Pesthunter Pamela", "Pesthunter Phillip", "Pete", "Maeve", 
-        "Spaceman", "Ravenous Rhino", "Pest Wrangler", "Pest Wrangler?", 
-        "Vinyl Collector", "Bob", "Alabaster", "Alatar", "Argofay Bughunter", 
-        "Argofay Bugshopper", "Argofay Branchstrutter", "Argofay Serialbather", 
-        "Argofay Sonfather", "Argofay Threebrother", "Argofay Trafficker", 
-        "Argofay Trailblazer", "Argofay Tencounter", "Argofay Treemerger", 
-        "Arora", "Ashera", "Barry", "Chef", "Chester", "Chicken", "Cosmo", 
-        "Cow", "Cowboy Nick", "Creed", "Cryptosis", "Dackinoru", "Deer", 
-        "Detective Amog", "Disinfestor", "Dr. Emmett", "Dr. Hibble", "Dr. Phear", 
-        "Dust", "Elise", "Enigma", "Fafnir", "Fairylosopher", "Finplex", 
-        "Frankie", "Garlacius", "Grandma", "Gunther", "Harriette", "Hound", 
-        "Inverted Sirius", "Jacquelle", "Joey McPizza", "Joliet", "Julian", 
-        "Kay", "Kiermet", "Lazarus", "Lonely Ävaeìkx", "Marcia", "Mole", 
-        "Motes Grubber", "Mushroom Guy", "Nene", "Phaser", "Porhtal", "Ramero", 
-        "Reed", "Ribbit", "Rock", "Roger", "Roy", "Seraphine", "Seskel", 
-        "Sheep", "Shifted", "Sick Farmer", "Skylark", "Soma", "Sorcerer Okron", 
-        "Stain", "Tel Kar", "Tybalt", "Unbound Explorer", "Unhinged Kloon", 
-        "Violetta", "Vreike", "Wizardman", "YoshuayrreJ", "Agent Kapustin", 
-        "Agent Komarov", "Agent Kruglov", "Agent Kvasov", "Armorsmith", "Cashier", 
-        "Dante", "Dante Goons", "Elle of the Nether", "Game Agent", "Malmar", 
-        "Minikloon", "Nitroholic_", "Potato King", "Raffle Box", "Relenter", 
-        "Resistance Generals", "Rezzus", "Technoblade", "Technoshop", 
-        "The Lost Adventurer", "Warren", "Worker Emma", "Dean", "Garrett", "Hannah", "Allie", 
-        "Tucker", "jhon", "Arrodes", "Klein Moretti", "Sauron Einhorn Medici", "Eldyn THE GOAT", 
+        "Sam", "Pesthunter Pamela", "Pesthunter Phillip", "Pete", "Maeve",
+        "Spaceman", "Ravenous Rhino", "Pest Wrangler", "Pest Wrangler?",
+        "Vinyl Collector", "Bob", "Alabaster", "Alatar", "Argofay Bughunter",
+        "Argofay Bugshopper", "Argofay Branchstrutter", "Argofay Serialbather",
+        "Argofay Sonfather", "Argofay Threebrother", "Argofay Trafficker",
+        "Argofay Trailblazer", "Argofay Tencounter", "Argofay Treemerger",
+        "Arora", "Ashera", "Barry", "Chef", "Chester", "Chicken", "Cosmo",
+        "Cow", "Cowboy Nick", "Creed", "Cryptosis", "Dackinoru", "Deer",
+        "Detective Amog", "Disinfestor", "Dr. Emmett", "Dr. Hibble", "Dr. Phear",
+        "Dust", "Elise", "Enigma", "Fafnir", "Fairylosopher", "Finplex",
+        "Frankie", "Garlacius", "Grandma", "Gunther", "Harriette", "Hound",
+        "Inverted Sirius", "Jacquelle", "Joey McPizza", "Joliet", "Julian",
+        "Kay", "Kiermet", "Lazarus", "Lonely Ävaeìkx", "Marcia", "Mole",
+        "Motes Grubber", "Mushroom Guy", "Nene", "Phaser", "Porhtal", "Ramero",
+        "Reed", "Ribbit", "Rock", "Roger", "Roy", "Seraphine", "Seskel",
+        "Sheep", "Shifted", "Sick Farmer", "Skylark", "Soma", "Sorcerer Okron",
+        "Stain", "Tel Kar", "Tybalt", "Unbound Explorer", "Unhinged Kloon",
+        "Violetta", "Vreike", "Wizardman", "YoshuayrreJ", "Agent Kapustin",
+        "Agent Komarov", "Agent Kruglov", "Agent Kvasov", "Armorsmith", "Cashier",
+        "Dante", "Dante Goons", "Elle of the Nether", "Game Agent", "Malmar",
+        "Minikloon", "Nitroholic_", "Potato King", "Raffle Box", "Relenter",
+        "Resistance Generals", "Rezzus", "Technoblade", "Technoshop",
+        "The Lost Adventurer", "Warren", "Worker Emma", "Dean", "Garrett", "Hannah", "Allie",
+        "Tucker", "jhon", "Arrodes", "Klein Moretti", "Sauron Einhorn Medici", "Eldyn THE GOAT",
         "<script>console.log('no XSS!')</script>", "Birdie"
     };
-}
+}  // namespace match

@@ -1,4 +1,4 @@
-#include <controllers/game_controller.hpp>
+#include <controllers/match_controller.hpp>
 #include <controllers/lobby_controller.hpp>
 #include <controllers/auth_controller.hpp>
 #include <controllers/stats_controller.hpp>
@@ -31,7 +31,7 @@ int main() {
         server.SetActiveMatchProvider([&lobby] { return lobby.ActiveMatchCount(); });
 
         StatsController stats(server.GetHTTPRouter());
-        GameController  game(server.GetActionRouter(), server.GetBroadcaster(), server.GetTimerService(), lobby);
+        MatchController game(server.GetActionRouter(), server.GetBroadcaster(), server.GetTimerService(), lobby);
 
         // INFO: Logging Middleware
         server.GetHTTPRouter().OnAny([](AppResponse *response, AppRequest *request) {

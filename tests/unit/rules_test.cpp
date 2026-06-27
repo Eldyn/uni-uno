@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
-#include <game/match_instance.hpp>
+#include <match/match_instance.hpp>
 
-using namespace game;
+using namespace match;
 
 static LobbySettings settings_with_mod(const std::string& mod) {
     LobbySettings s;
@@ -18,35 +18,35 @@ static std::vector<std::pair<std::string, bool>> two_humans() {
 TEST_CASE("rules: draw_stacking mod loads without crash") {
     MatchInstance m(two_humans(), settings_with_mod("draw_stacking"));
     CHECK_NOTHROW(m.Start());
-    CHECK_FALSE(m.IsGameOver());
+    CHECK_FALSE(m.IsMatchOver());
 }
 
 TEST_CASE("rules: progressive mod loads without crash") {
     MatchInstance m(two_humans(), settings_with_mod("progressive"));
     CHECK_NOTHROW(m.Start());
-    CHECK_FALSE(m.IsGameOver());
+    CHECK_FALSE(m.IsMatchOver());
 }
 
 TEST_CASE("rules: no_bluffing mod loads without crash") {
     MatchInstance m(two_humans(), settings_with_mod("no_bluffing"));
     CHECK_NOTHROW(m.Start());
-    CHECK_FALSE(m.IsGameOver());
+    CHECK_FALSE(m.IsMatchOver());
 }
 
 TEST_CASE("rules: force_play mod loads without crash") {
     MatchInstance m(two_humans(), settings_with_mod("force_play"));
     CHECK_NOTHROW(m.Start());
-    CHECK_FALSE(m.IsGameOver());
+    CHECK_FALSE(m.IsMatchOver());
 }
 
 TEST_CASE("rules: jump_in mod loads without crash") {
     MatchInstance m(two_humans(), settings_with_mod("jump_in"));
     CHECK_NOTHROW(m.Start());
-    CHECK_FALSE(m.IsGameOver());
+    CHECK_FALSE(m.IsMatchOver());
 }
 
 TEST_CASE("rules: seven_zero mod loads without crash") {
     MatchInstance m(two_humans(), settings_with_mod("seven_zero"));
     CHECK_NOTHROW(m.Start());
-    CHECK_FALSE(m.IsGameOver());
+    CHECK_FALSE(m.IsMatchOver());
 }
