@@ -57,8 +57,8 @@ export interface PlayerStats {
 	cards_played_draw2?: number;
 	/** Counter of '+4' cards played (optional). */
 	cards_played_draw4?: number;
-	/** Counter of 'Colour Change' cards played (optional). */
-	cards_played_colorswitch?: number;
+	/** Counter of 'Jolly' (colour change) cards played (optional). */
+	cards_played_jolly?: number;
 }
 
 /**

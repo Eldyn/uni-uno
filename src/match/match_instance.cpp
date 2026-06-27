@@ -348,8 +348,7 @@ namespace match {
                             cards_played_blue = cards_played_blue + ?,
                             cards_played_green = cards_played_green + ?,
                             cards_played_yellow = cards_played_yellow + ?,
-                            cards_played_wild = cards_played_wild + ?,
-                            
+
                             cards_played_0 = cards_played_0 + ?,
                             cards_played_1 = cards_played_1 + ?,
                             cards_played_2 = cards_played_2 + ?,
@@ -364,13 +363,13 @@ namespace match {
                             cards_played_reverse = cards_played_reverse + ?,
                             cards_played_draw2 = cards_played_draw2 + ?,
                             cards_played_draw4 = cards_played_draw4 + ?,
-                            cards_played_colorswitch = cards_played_colorswitch + ?
+                            cards_played_jolly = cards_played_jolly + ?
                         WHERE username = ?
                     )", {
                         is_winner ? 1 : 0, 
                         is_winner ? 0 : 1,
                         
-                        stats.color_counts[0], stats.color_counts[1], stats.color_counts[2], stats.color_counts[3], stats.color_counts[4],
+                        stats.color_counts[0], stats.color_counts[1], stats.color_counts[2], stats.color_counts[3],
                         
                         stats.value_counts[0], stats.value_counts[1], stats.value_counts[2], stats.value_counts[3], stats.value_counts[4],
                         stats.value_counts[5], stats.value_counts[6], stats.value_counts[7], stats.value_counts[8], stats.value_counts[9],
