@@ -1,5 +1,5 @@
 #pragma once
-#include <common/game/effect.hpp>
+#include <common/match/effect.hpp>
 #include <string>
 #include <cstdint>
 
@@ -10,7 +10,7 @@
  * Draw cards, Choose colour) that are enqueued and resolved by the game engine during a match.
  */
 
-namespace game {
+namespace match {
 
     /**
      * @class AdvanceTurnEffect
@@ -21,13 +21,13 @@ namespace game {
     class AdvanceTurnEffect : public Effect {
     public:
         /**
-         * @brief Resolves the effect by updating the index of the current player in the game state.
-         * @param game_state The current game state.
+         * @brief Resolves the effect by updating the index of the current player in the match state.
+         * @param match_state The current match state.
          * @param match_instance The match instance.
          * @return EffectResult The outcome of the resolution (always kResolved in the absence of errors).
          * @tag EFFECT-STD-MTH-001
          */
-        EffectResult Resolve(GameState* game_state, MatchInstance* match_instance) override;
+        EffectResult Resolve(MatchState* match_state, MatchInstance* match_instance) override;
 
         /**
          * @brief Returns the enumerative type of the effect.
@@ -55,12 +55,12 @@ namespace game {
 
         /**
          * @brief Suspends the game engine while waiting for the user's input.
-         * @param state The game state.
+         * @param state The match state.
          * @param match The match instance.
          * @return EffectResult Returns a kNeedsInput status to ask the client what to do.
          * @tag EFFECT-STD-MTH-003
          */
-        EffectResult Resolve(GameState* state, MatchInstance* match) override;
+        EffectResult Resolve(MatchState* state, MatchInstance* match) override;
 
         /**
          * @brief Returns the enumerative type of the effect.
@@ -94,12 +94,12 @@ namespace game {
         /**
          * @brief Resolves the effect by taking the cards from the deck and adding them to the target's hand.
          * Automatically handles the reshuffling of the discard pile if necessary.
-         * @param state The game state.
+         * @param state The match state.
          * @param match_instance The match instance.
          * @return EffectResult Outcome of the operation.
          * @tag EFFECT-STD-MTH-005
          */
-        EffectResult Resolve(GameState* state, MatchInstance* match_instance) override;
+        EffectResult Resolve(MatchState* state, MatchInstance* match_instance) override;
 
         /**
          * @brief Returns the enumerative type of the effect.
@@ -124,12 +124,12 @@ namespace game {
     public:
         /**
          * @brief Advances the player index by one additional step, effectively skipping them.
-         * @param state The game state.
+         * @param state The match state.
          * @param match_instance The match instance.
          * @return EffectResult Outcome of the operation.
          * @tag EFFECT-STD-MTH-007
          */
-        EffectResult Resolve(GameState* state, MatchInstance* match_instance) override;
+        EffectResult Resolve(MatchState* state, MatchInstance* match_instance) override;
 
         /**
          * @brief Returns the enumerative type of the effect.
@@ -148,12 +148,12 @@ namespace game {
     public:
         /**
          * @brief Reverses the play direction (e.g. from 1 to -1 or vice versa). With 2 players it acts as a Skip.
-         * @param state The game state.
+         * @param state The match state.
          * @param match_instance The match instance.
          * @return EffectResult Outcome of the operation.
          * @tag EFFECT-STD-MTH-009
          */
-        EffectResult Resolve(GameState* state, MatchInstance* match_instance) override;
+        EffectResult Resolve(MatchState* state, MatchInstance* match_instance) override;
 
         /**
          * @brief Returns the enumerative type of the effect.
@@ -181,12 +181,12 @@ namespace game {
 
         /**
          * @brief Suspends execution while waiting for input from the target. If the input is already present, it updates the global colour.
-         * @param state The game state.
+         * @param state The match state.
          * @param match_instance The match instance.
          * @return EffectResult Outcome of the operation or kNeedsInput.
          * @tag EFFECT-STD-MTH-011
          */
-        EffectResult Resolve(GameState* state, MatchInstance* match_instance) override;
+        EffectResult Resolve(MatchState* state, MatchInstance* match_instance) override;
 
         /**
          * @brief Returns the enumerative type of the effect.
@@ -201,4 +201,4 @@ namespace game {
         std::string target_username_; /**< User who must provide the colour choice. */
         int stack_bonus_ = 0;         /**< Extra draws added to pending_draws after colour resolves. */
     };
-}
+}  // namespace match

@@ -1,15 +1,14 @@
-#include "game/rule_registry.hpp"
+#include "match/rule_registry.hpp"
 #include "logger.hpp"
 #include <database.hpp>
-#include <common/game/card_types.hpp>
+#include <common/match/card_types.hpp>
 #include <common/lobby.hpp>
-#include <game/game_state.hpp>
-#include <game/match_instance.hpp>
-#include <game/rules/standard.hpp>
-#include <game/effects/standard.hpp>
-#include <game/effect_registry.hpp>
-#include <common/game/effect.hpp>
-#include <controllers/lobby_controller.hpp>
+#include <match/match_state.hpp>
+#include <match/match_instance.hpp>
+#include <match/rules/standard.hpp>
+#include <match/effects/standard.hpp>
+#include <match/effect_registry.hpp>
+#include <common/match/effect.hpp>
 #include <algorithm>
 #include <memory>
 #include <random>
@@ -17,18 +16,18 @@
 #include <string>
 #include <vector>
 
-namespace game {
-    void ReshuffleDiscardIntoDraw(GameState* game_state) {
-        if (game_state->discard_pile.size() <= 1) return;
+namespace match {
+    void ReshuffleDiscardIntoDraw(MatchState* match_state) {
+        if (match_state->discard_pile.size() <= 1) return;
 
-        CompactCard top_card = game_state->discard_pile.back();
-        game_state->discard_pile.pop_back();
+        CompactCard top_card = match_state->discard_pile.back();
+        match_state->discard_pile.pop_back();
 
-        game_state->draw_pile = std::move(game_state->discard_pile);
-        game_state->discard_pile.push_back(top_card);
+        match_state->draw_pile = std::move(match_state->discard_pile);
+        match_state->discard_pile.push_back(top_card);
 
         static std::mt19937 rng{std::random_device{}()};
-        std::shuffle(game_state->draw_pile.begin(), game_state->draw_pile.end(), rng);
+        std::shuffle(match_state->draw_pile.begin(), match_state->draw_pile.end(), rng);
     }
 
     MatchInstance::MatchInstance(const std::vector<std::pair<std::string, bool>>& players_info, const LobbySettings& settings) : settings_(settings) {
@@ -245,7 +244,7 @@ namespace game {
     }
     
     bool MatchInstance::PlayCard(const std::string& username, uint16_t card_id) {
-        if (IsWaitingForInput() || IsGameOver()) return false;
+        if (IsWaitingForInput() || IsMatchOver()) return false;
 
         Player* current_player = GetPlayer(username);
         if (!current_player) return false;
@@ -398,7 +397,7 @@ namespace game {
     }
     
 bool MatchInstance::DrawCard(const std::string& username) {
-    if (IsWaitingForInput() || IsGameOver()) return false;
+    if (IsWaitingForInput() || IsMatchOver()) return false;
 
     Player* current_player = GetPlayer(username);
     if (!current_player) return false;
@@ -484,7 +483,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
     }
     
     void MatchInstance::TakeBotTurn() {
-        if (IsGameOver()) return;
+        if (IsMatchOver()) return;
 
         auto greatestType = [this]() -> Type {
             int counts[4] = {0, 0, 0, 0};
@@ -681,7 +680,7 @@ bool MatchInstance::DrawCard(const std::string& username) {
 
         root["turn_time_remaining_ms"] = remaining_ms;
 
-        if (IsGameOver()) root["winner"] = state_.winner;
+        if (IsMatchOver()) root["winner"] = state_.winner;
     
         root["match_status"] = static_cast<int>(state_.status);
 

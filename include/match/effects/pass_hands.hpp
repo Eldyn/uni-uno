@@ -1,5 +1,5 @@
 #pragma once
-#include <common/game/effect.hpp>
+#include <common/match/effect.hpp>
 
 /**
  * @file pass_hands.hpp
@@ -9,7 +9,7 @@
  * in the direction of play) or after a player has chosen a target to swap with.
  */
 
-namespace game {
+namespace match {
 
     /**
      * @class PassHandsEffect
@@ -19,14 +19,14 @@ namespace game {
     class PassHandsEffect : public Effect {
     public:
         /**
-         * @brief Resolves the effect by swapping the `hand` vectors within `GameState::players`.
+         * @brief Resolves the effect by swapping the `hand` vectors within `MatchState::players`.
          * If triggered by a global rotation (e.g. the "0" rule), it moves the hands
          * by one position following the current direction of play.
-         * @param state The current game state.
+         * @param state The current match state.
          * @param match The match instance.
          * @return EffectResult The outcome of the operation.
          * @tag EFFECT-PASS-MTH-001
          */
-        EffectResult Resolve(GameState* state, MatchInstance* match) override;
+        EffectResult Resolve(MatchState* state, MatchInstance* match) override;
     };
-}
+}  // namespace match

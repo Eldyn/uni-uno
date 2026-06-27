@@ -113,7 +113,7 @@ void AuthController::HandleRegister(AppResponse* res, AppRequest* /*req*/) {
         }
 
         if (!is_reserved) {
-            for (const auto& bot_name : game::kReservedBotNames) {
+            for (const auto& bot_name : match::kReservedBotNames) {
                 std::string lower_bot = bot_name;
                 std::transform(lower_bot.begin(), lower_bot.end(), lower_bot.begin(),
                                [](unsigned char c){ return std::tolower(c); });

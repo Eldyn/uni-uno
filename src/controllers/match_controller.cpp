@@ -1,9 +1,9 @@
 /**
- * @file game_controller.cpp
- * @brief Implementation of the GameController routing active transaction frames to running match engines.
+ * @file match_controller.cpp
+ * @brief Implementation of the MatchController routing active transaction frames to running match engines.
  */
 
-#include "controllers/game_controller.hpp"
+#include "controllers/match_controller.hpp"
 #include "common/lobby.hpp"
 #include "common/ws.hpp"
 #include "common/payloads.hpp"
@@ -15,37 +15,37 @@
 using json = nlohmann::json;
 
 /**
- * @brief Constructs the GameController and binds the action router triggers to type-safe map strings.
- * @param server Reference to the hosting asynchronous web server infrastructure.
+ * @brief Constructs the MatchController and binds the action router triggers to type-safe map strings.
+ * @param router Reference to the hosting asynchronous web server infrastructure.
  * @param lobby_controller Reference to the central room lifecycle management engine.
  */
-GameController::GameController(IActionRouter& router, IBroadcaster& broadcast,
-                               ITimerService& timers, LobbyController& lobby_controller)
+MatchController::MatchController(IActionRouter& router, IBroadcaster& broadcast,
+                                 ITimerService& timers, LobbyController& lobby_controller)
     : action_router_(router), broadcaster_(broadcast),
       timer_service_(timers), lobby_controller_(lobby_controller) {
     bot_instant_delay_ms_  = std::max(0, Env::GetInt("BOT_TURN_DELAY_MS", 1000));
     bot_wait_min_ms_       = std::max(0, Env::GetInt("BOT_WAIT_MIN_MS", 500));
     bot_wait_max_ms_       = std::max(bot_wait_min_ms_ + 1, Env::GetInt("BOT_WAIT_MAX_MS", 3500));
     max_instant_bot_steps_ = std::max(1, Env::GetInt("MAX_INSTANT_BOT_STEPS", 20));
-    Logger::Info("[Game] Bot instant delay: ", bot_instant_delay_ms_, "ms, wait spread: ",
+    Logger::Info("[Match] Bot instant delay: ", bot_instant_delay_ms_, "ms, wait spread: ",
                  bot_wait_min_ms_, "-", bot_wait_max_ms_, "ms");
 
-    action_router_.On(ws::ClientAction::kGamePlayCard, [this](WsContext context, const json& message) {
+    action_router_.On(ws::ClientAction::kMatchPlayCard, [this](WsContext context, const json& message) {
         HandlePlayCard(context, message);
         return true;
     });
 
-    action_router_.On(ws::ClientAction::kGameDrawCard, [this](WsContext context, const json& message) {
+    action_router_.On(ws::ClientAction::kMatchDrawCard, [this](WsContext context, const json& message) {
         HandleDrawCard(context, message);
         return true;
     });
 
-    action_router_.On(ws::ClientAction::kGameSubmitInput, [this](WsContext context, const json& message) {
+    action_router_.On(ws::ClientAction::kMatchSubmitInput, [this](WsContext context, const json& message) {
         HandleProvideInput(context, message);
         return true;
     });
 
-    action_router_.On(ws::ClientAction::kGameCallUno, [this](WsContext context, const json& message) {
+    action_router_.On(ws::ClientAction::kMatchCallUno, [this](WsContext context, const json& message) {
         HandleCallUno(context, message);
         return true;
     });
@@ -56,10 +56,10 @@ GameController::GameController(IActionRouter& router, IBroadcaster& broadcast,
 
     lobby_controller.OnPlayerReplaced([this](Lobby* active_lobby) {
         OnTurnStarted(active_lobby);
-        BroadcastGameState(active_lobby);
+        BroadcastMatchState(active_lobby);
     });
 
-    Logger::Info("[Game] GameController registered");
+    Logger::Info("[Match] MatchController registered");
 }
 
 /**
@@ -67,7 +67,7 @@ GameController::GameController(IActionRouter& router, IBroadcaster& broadcast,
  * @param context Signaling packet metadata tracking incoming user sockets.
  * @param message JSON input structure carrying data properties.
  */
-void GameController::HandlePlayCard(WsContext context, const json& message) {
+void MatchController::HandlePlayCard(WsContext context, const json& message) {
     Lobby* active_lobby = lobby_controller_.GetLobbyById(context.socket_data->lobby_id);
     if (!active_lobby || !active_lobby->match) {
         return;
@@ -82,16 +82,16 @@ void GameController::HandlePlayCard(WsContext context, const json& message) {
     uint16_t card_identifier = payload_res->card_id;
 
     bool was_play_successful = active_lobby->match->PlayCard(context.socket_data->username, card_identifier);
-    
+
     if (!was_play_successful) {
         broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kInvalidMove, request_identifier);
         return;
     }
 
     active_lobby->match->Tick();
-    ClearTurnTimer(active_lobby->id); 
+    ClearTurnTimer(active_lobby->id);
     OnTurnStarted(active_lobby);
-    BroadcastGameState(active_lobby);
+    BroadcastMatchState(active_lobby);
 }
 
 /**
@@ -99,7 +99,7 @@ void GameController::HandlePlayCard(WsContext context, const json& message) {
  * @param context Signaling packet metadata tracking incoming user sockets.
  * @param message JSON input structure containing callback identifiers.
  */
-void GameController::HandleDrawCard(WsContext context, const json& message) {
+void MatchController::HandleDrawCard(WsContext context, const json& message) {
     Lobby* active_lobby = lobby_controller_.GetLobbyById(context.socket_data->lobby_id);
     if (!active_lobby || !active_lobby->match) {
         return;
@@ -108,7 +108,7 @@ void GameController::HandleDrawCard(WsContext context, const json& message) {
     std::string request_identifier = ws::GetOr<std::string>(message, "request_id", "");
 
     bool was_draw_successful = active_lobby->match->DrawCard(context.socket_data->username);
-    
+
     if (!was_draw_successful) {
         broadcaster_.SendError(context.socket, context.op_code, contract::ErrorCode::kCannotDraw, request_identifier);
         return;
@@ -117,7 +117,7 @@ void GameController::HandleDrawCard(WsContext context, const json& message) {
     active_lobby->match->Tick();
     ClearTurnTimer(active_lobby->id);
     OnTurnStarted(active_lobby);
-    BroadcastGameState(active_lobby);
+    BroadcastMatchState(active_lobby);
 }
 
 /**
@@ -125,7 +125,7 @@ void GameController::HandleDrawCard(WsContext context, const json& message) {
  * @param context Signaling packet metadata tracking incoming user sockets.
  * @param message Input document carrying state selections.
  */
-void GameController::HandleProvideInput(WsContext context, const json& message) {
+void MatchController::HandleProvideInput(WsContext context, const json& message) {
     Lobby* active_lobby = lobby_controller_.GetLobbyById(context.socket_data->lobby_id);
     if (!active_lobby || !active_lobby->match) return;
 
@@ -138,39 +138,39 @@ void GameController::HandleProvideInput(WsContext context, const json& message) 
     std::string input_value = payload_res->value;
     active_lobby->match->ProvideInput(context.socket_data->username, input_value);
     active_lobby->match->Tick();
-    
+
     ClearTurnTimer(active_lobby->id);
     OnTurnStarted(active_lobby);
-    BroadcastGameState(active_lobby);
+    BroadcastMatchState(active_lobby);
 }
 
 /**
- * @brief Serializes complete match configurations, sending unique filtered game boards down to each user.
+ * @brief Serializes complete match configurations, sending unique filtered match boards down to each user.
  * @param current_lobby Target room pointer whose context needs to be synchronized.
  */
-void GameController::BroadcastGameState(Lobby* current_lobby) {
+void MatchController::BroadcastMatchState(Lobby* current_lobby) {
     if (!current_lobby || !current_lobby->match) return;
 
-    bool is_game_over = current_lobby->match->IsGameOver();
+    bool is_match_over = current_lobby->match->IsMatchOver();
     bool is_waiting_for_input = current_lobby->match->IsWaitingForInput();
     std::string pending_player_username = current_lobby->match->GetPendingPlayer();
-    game::Action required_action = current_lobby->match->GetPendingAction();
+    match::Action required_action = current_lobby->match->GetPendingAction();
 
-    json game_over_payload;
-    if (is_game_over) {
-        game_over_payload = ws::MakeResponse(ws::ServerAction::kGameOver);
-        game_over_payload["winner"] = current_lobby->match->GetWinner(); 
+    json match_over_payload;
+    if (is_match_over) {
+        match_over_payload = ws::MakeResponse(ws::ServerAction::kMatchOver);
+        match_over_payload["winner"] = current_lobby->match->GetWinner();
     }
 
     for (const auto& lobby_member : current_lobby->members) {
         if (!lobby_member.is_connected || !lobby_member.socket) continue;
 
-        json response_payload = ws::MakeResponse(ws::ServerAction::kGameStateUpdated);
-        response_payload["game_state"] = current_lobby->match->SerializePlayerState(lobby_member.username);
+        json response_payload = ws::MakeResponse(ws::ServerAction::kMatchStateUpdated);
+        response_payload["match_state"] = current_lobby->match->SerializePlayerState(lobby_member.username);
 
         if (is_waiting_for_input && lobby_member.username == pending_player_username) {
             response_payload["action_required"] = static_cast<int>(required_action);
-            
+
             std::string context_string = current_lobby->match->GetPendingInputContext();
             if (!context_string.empty()) {
                 response_payload["action_context"] = json::parse(context_string);
@@ -179,43 +179,43 @@ void GameController::BroadcastGameState(Lobby* current_lobby) {
 
         broadcaster_.Send(lobby_member.socket, response_payload.dump(), uWS::OpCode::TEXT);
 
-        if (is_game_over) {
-            broadcaster_.Send(lobby_member.socket, game_over_payload.dump(), uWS::OpCode::TEXT);
+        if (is_match_over) {
+            broadcaster_.Send(lobby_member.socket, match_over_payload.dump(), uWS::OpCode::TEXT);
         }
     }
-        
-    if (is_game_over) {
+
+    if (is_match_over) {
         current_lobby->match.reset();
-        Logger::Info("[MATCH] destroyed after GameOver in lobby ", current_lobby->id);
+        Logger::Info("[MATCH] destroyed after MatchOver in lobby ", current_lobby->id);
     }
 }
 
 /**
- * @brief Flags a player's safety verification state within the game rule evaluation layers.
+ * @brief Flags a player's safety verification state within the match rule evaluation layers.
  * @param context Signaling packet metadata tracking incoming user sockets.
  * @param message Received payload data map document.
  */
-void GameController::HandleCallUno(WsContext context, const json& message) {
+void MatchController::HandleCallUno(WsContext context, const json& message) {
     Lobby* active_lobby = lobby_controller_.GetLobbyById(context.socket_data->lobby_id);
     if (!active_lobby || !active_lobby->match) {
         return;
     }
 
     active_lobby->match->CallUno(context.socket_data->username);
-    BroadcastGameState(active_lobby);
+    BroadcastMatchState(active_lobby);
 }
 
 /**
  * @brief Sets turn constraints, routing automatic simulation threads on bot turns or player timeouts.
- * @param active_lobby Target active game room layout evaluated.
+ * @param active_lobby Target active match room layout evaluated.
  */
-void GameController::OnTurnStarted(Lobby* active_lobby) {
-    if (!active_lobby || !active_lobby->match || active_lobby->match->IsGameOver()) {
+void MatchController::OnTurnStarted(Lobby* active_lobby) {
+    if (!active_lobby || !active_lobby->match || active_lobby->match->IsMatchOver()) {
         return;
     }
 
     std::string current_player_username = active_lobby->match->GetCurrentPlayerUsername();
-    game::Player* current_player = active_lobby->match->GetPlayer(current_player_username);
+    match::Player* current_player = active_lobby->match->GetPlayer(current_player_username);
 
     if (current_player->is_bot) {
         int bot_thinking_ms = active_lobby->settings.bot_mode == BotTakeoverMode::kPlayInstantly
@@ -229,23 +229,23 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
 
         auto end_time = std::chrono::steady_clock::now() + std::chrono::milliseconds(active_lobby->settings.turn_time_limit_ms);
         active_lobby->match->SetTurnEndTime(end_time);
-        
+
         uint32_t current_lobby_id = active_lobby->id;
-        
+
         SetTurnTimer(current_lobby_id, bot_thinking_ms, [this, current_lobby_id, current_player_username]() {
             Lobby* verified_lobby = lobby_controller_.GetLobbyById(current_lobby_id);
             if (verified_lobby && verified_lobby->match) {
                 if (verified_lobby->match->GetCurrentPlayerUsername() == current_player_username) {
                     verified_lobby->match->TakeBotTurn();
                     OnTurnStarted(verified_lobby);
-                    BroadcastGameState(verified_lobby);
+                    BroadcastMatchState(verified_lobby);
                 }
             }
         });
-        
+
         return;
     }
-    
+
     bool is_player_connected = false;
     for (const auto& lobby_member : active_lobby->members) {
         if (lobby_member.username == current_player_username) {
@@ -263,13 +263,13 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
         //       PlayCard return false with IsWaitingForInput still false),
         //       stop rather than stack-overflow.
         for (int step = 0; step < max_instant_bot_steps_; ++step) {
-            if (active_lobby->match->IsGameOver()) break;
+            if (active_lobby->match->IsMatchOver()) break;
 
             std::string before = active_lobby->match->GetCurrentPlayerUsername();
             bool was_waiting = active_lobby->match->IsWaitingForInput();
 
             active_lobby->match->TakeBotTurn();
-            BroadcastGameState(active_lobby);
+            BroadcastMatchState(active_lobby);
 
             // INFO: Check whether a connected player's turn has arrived.
             std::string after = active_lobby->match->GetCurrentPlayerUsername();
@@ -295,7 +295,7 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
     }
 
     if (active_lobby->settings.bot_mode == BotTakeoverMode::kWaitUntilTurnEnd) {
-        auto end_time = std::chrono::steady_clock::now() + 
+        auto end_time = std::chrono::steady_clock::now() +
                         std::chrono::milliseconds(active_lobby->settings.turn_time_limit_ms);
         active_lobby->match->SetTurnEndTime(end_time);
 
@@ -307,7 +307,7 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
                     Logger::Info("[MATCH] Bot playing for AFK player: ", current_player_username);
                     verified_lobby->match->TakeBotTurn();
                     OnTurnStarted(verified_lobby);
-                    BroadcastGameState(verified_lobby);
+                    BroadcastMatchState(verified_lobby);
                 }
             }
         });
@@ -320,7 +320,7 @@ void GameController::OnTurnStarted(Lobby* active_lobby) {
  * @param timeout_ms Milliseconds before the timer fires.
  * @param callback Invoked when the timer expires.
  */
-void GameController::SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::function<void()> callback) {
+void MatchController::SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::function<void()> callback) {
     const std::string key = "turn_" + std::to_string(lobby_id);
     timer_service_.Schedule(key, timeout_ms, false, std::move(callback));
 }
@@ -329,6 +329,6 @@ void GameController::SetTurnTimer(uint32_t lobby_id, int timeout_ms, std::functi
  * @brief Cancels the turn timer for a given lobby.
  * @param lobby_id ID of the lobby whose timer to cancel.
  */
-void GameController::ClearTurnTimer(uint32_t lobby_id) {
+void MatchController::ClearTurnTimer(uint32_t lobby_id) {
     timer_service_.Cancel("turn_" + std::to_string(lobby_id));
 }

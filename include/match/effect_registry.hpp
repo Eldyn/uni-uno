@@ -1,5 +1,5 @@
 #pragma once
-#include <common/game/effect.hpp>
+#include <common/match/effect.hpp>
 #include <nlohmann/json.hpp>
 #include <unordered_map>
 #include <functional>
@@ -8,14 +8,14 @@
 
 /**
  * @file effect_registry.hpp
- * @brief Self-registration system for game effects, mirroring RuleRegistry.
+ * @brief Self-registration system for match effects, mirroring RuleRegistry.
  *
  * Each effect's .cpp defines a static EffectRegistrar that inserts its
  * factory into EffectRegistry at startup. EffectRegistry::Create(json)
  * dispatches on the "type" field without a central switch statement.
  */
 
-namespace game {
+namespace match {
 
     using EffectFactory = std::function<std::unique_ptr<Effect>(const nlohmann::json&)>;
 
@@ -54,4 +54,4 @@ namespace game {
         }
     };
 
-}
+}  // namespace match

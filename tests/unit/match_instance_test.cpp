@@ -1,8 +1,8 @@
 #include <doctest/doctest.h>
-#include <game/match_instance.hpp>
-#include <game/game_state.hpp>
+#include <match/match_instance.hpp>
+#include <match/match_state.hpp>
 
-using namespace game;
+using namespace match;
 
 static LobbySettings default_settings() {
     LobbySettings s;
@@ -18,7 +18,7 @@ static std::vector<std::pair<std::string, bool>> two_humans() {
 TEST_CASE("match: start → playing status") {
     MatchInstance m(two_humans(), default_settings());
     m.Start();
-    CHECK_FALSE(m.IsGameOver());
+    CHECK_FALSE(m.IsMatchOver());
 }
 
 TEST_CASE("match: draw card grows hand") {

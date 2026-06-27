@@ -11,9 +11,9 @@
  * @tag FEAT-CG-002 Asynchronous Effect Handling (Effect Engine): Polymorphic, event- and state-based architecture to process and suspend the resolution of effects while waiting for user input.
  */
 
-namespace game {
+namespace match {
 
-    struct GameState;
+    struct MatchState;
     class MatchInstance;
 
     /**
@@ -85,9 +85,9 @@ namespace game {
          * @param match Pointer to the match instance (MatchInstance) to coordinate input/bots.
          * @return EffectResult The result of the application (resolved, error or needs input).
          */
-        virtual EffectResult Resolve(GameState* state, MatchInstance* match) = 0;
+        virtual EffectResult Resolve(MatchState* state, MatchInstance* match) = 0;
 
         virtual nlohmann::json ToJson() const { return {{"type", static_cast<int>(GetType())}}; }
     };
 
-}
+}  // namespace match

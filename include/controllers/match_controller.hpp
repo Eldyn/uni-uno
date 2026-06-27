@@ -9,33 +9,33 @@
 #include <random>
 
 /**
- * @file game_controller.hpp
- * @brief Controller for handling in-game events and the flow of turns.
- * * Dispatches the WebSocket messages concerning game actions (playing cards,
+ * @file match_controller.hpp
+ * @brief Controller for handling in-match events and the flow of turns.
+ * * Dispatches the WebSocket messages concerning match actions (playing cards,
  * drawing, declaring UNO) to the respective MatchInstance instances.
  */
 
 /**
- * @class GameController
+ * @class MatchController
  * @brief Receives and processes player input during an active match.
  * * Works closely with the `LobbyController` to identify the match
  * associated with the user. This class is also responsible for the lifecycle of the
  * turn timers (via ITimerService) to handle AFK players or bot takeover.
  * @tag CTRL-GAME-001
  */
-class GameController {
+class MatchController {
 public:
     /**
-     * @brief Constructor of the game controller.
-     * Registers the `game_*` WebSocket action handlers on the ActionRouter.
+     * @brief Constructor of the match controller.
+     * Registers the `match_*` WebSocket action handlers on the ActionRouter.
      * @param router    WebSocket action router (DI seam).
      * @param broadcast Transport layer for sends/publishes (DI seam).
      * @param timers    Timer service for turn timers (DI seam).
      * @param lobby_controller Reference to the lobby controller to retrieve the state.
      * @tag CTRL-GAME-MTH-001
      */
-    GameController(IActionRouter& router, IBroadcaster& broadcast,
-                   ITimerService& timers, LobbyController& lobby_controller);
+    MatchController(IActionRouter& router, IBroadcaster& broadcast,
+                    ITimerService& timers, LobbyController& lobby_controller);
 
 private:
     IActionRouter&    action_router_;    /**< Reference to the WebSocket router. */
@@ -84,7 +84,7 @@ private:
      */
     void HandleCallUno(WsContext context, const nlohmann::json& message);
 
-    // --- Core Game Flow ---
+    // --- Core Match Flow ---
 
     /**
      * @brief Callback/Hook triggered at the start of each new player turn.
@@ -95,13 +95,13 @@ private:
     void OnTurnStarted(Lobby* active_lobby);
 
     /**
-     * @brief Sends the censored game state to all connected members.
+     * @brief Sends the censored match state to all connected members.
      * Iterating over each user, it uses `MatchInstance::SerializePlayerState` to
      * hide opponents' hands and forwards the WS message.
      * @param current_lobby Pointer to the lobby to update.
      * @tag CTRL-GAME-FLW-002
      */
-    void BroadcastGameState(Lobby* current_lobby);
+    void BroadcastMatchState(Lobby* current_lobby);
 
     // --- Timer Management Helpers ---
 

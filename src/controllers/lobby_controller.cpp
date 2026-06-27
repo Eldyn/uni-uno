@@ -12,7 +12,7 @@
 #include <common/env.hpp>
 #include <common/ws.hpp>
 #include <common/payloads.hpp>
-#include <game/rule_registry.hpp>
+#include <match/rule_registry.hpp>
 #include <logger.hpp>
 #include <openssl/rand.h>
 #include <algorithm>
@@ -40,7 +40,7 @@ static constexpr int  kAlphabetLen    = 36;
 std::string LobbyController::GetRandomBotName(const Lobby& lobby) {
     std::vector<std::string> available;
 
-    for (const auto& name : game::kReservedBotNames) {
+    for (const auto& name : match::kReservedBotNames) {
         bool taken = std::ranges::any_of(lobby.members, [&](const LobbyMember& m) {
             return m.username == name;
         });
@@ -212,7 +212,7 @@ LobbyController::~LobbyController() {}
 std::size_t LobbyController::ActiveMatchCount() const {
     return static_cast<std::size_t>(std::ranges::count_if(lobbies_, [](const auto& entry) {
         const Lobby& lobby = entry.second;
-        return lobby.match && !lobby.match->IsGameOver();
+        return lobby.match && !lobby.match->IsMatchOver();
     }));
 }
 
@@ -221,7 +221,7 @@ std::size_t LobbyController::ActiveMatchCount() const {
  * @param lobby Reference to the target active lobby containing the current game match.
  */
 void LobbyController::SaveMatchStateToDB(Lobby& lobby) {
-    if (!lobby.match || lobby.match->IsGameOver()) return;
+    if (!lobby.match || lobby.match->IsMatchOver()) return;
     if (!lobby.settings.save_state) return;
 
     json saved_state = lobby.match->ExportState();
@@ -277,7 +277,7 @@ void LobbyController::CheckMatchIntegrity(Lobby& lobby) {
         Logger::Info("[Lobby] Match aborted for lobby ", lobby.id, " due to disconnections.");
         
         if (lobby.members.size() == 1) {
-            json game_over_payload = ws::MakeResponse(ws::ServerAction::kGameOver);
+            json game_over_payload = ws::MakeResponse(ws::ServerAction::kMatchOver);
             game_over_payload["winner"] = lobby.members.front().username;
             
             if (lobby.members.front().is_connected && lobby.members.front().socket) {
@@ -402,7 +402,7 @@ void LobbyController::HandleCreate(WsContext ctx, const json& message) {
         {"settings", lobby.settings},
         {"name", lobby.name}
     };
-    resp["available_rules"] = game::RuleRegistry::GetAvailableRulesJson();
+    resp["available_rules"] = match::RuleRegistry::GetAvailableRulesJson();
     broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
 }
 
@@ -459,7 +459,7 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
                 member.is_bot = false;
                 
                 if (lobby.match) {
-                    game::Player* engine_player = lobby.match->GetPlayer(old_bot_name);
+                    match::Player* engine_player = lobby.match->GetPlayer(old_bot_name);
                     if (engine_player) {
                         engine_player->username = username;
                         engine_player->is_bot = false;
@@ -503,14 +503,14 @@ void LobbyController::HandleJoin(WsContext ctx, const json& message) {
         {"members",     MemberListJson(lobby)},
         {"settings",    lobby.settings}
     });
-    resp["available_rules"] = game::RuleRegistry::GetAvailableRulesJson();
+    resp["available_rules"] = match::RuleRegistry::GetAvailableRulesJson();
     broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
 
     BroadcastUpdate(lobby);
 
     if (lobby.match) {
-        auto game_resp = MakeResponse(ws::ServerAction::kGameStateUpdated);
-        game_resp["game_state"] = lobby.match->SerializePlayerState(username);
+        auto game_resp = MakeResponse(ws::ServerAction::kMatchStateUpdated);
+        game_resp["match_state"] = lobby.match->SerializePlayerState(username);
         broadcaster_.Send(ctx.socket, game_resp.dump(), ctx.op_code);
     }
 }
@@ -554,13 +554,13 @@ void LobbyController::HandleRejoin(WsContext ctx, const json& message) {
             {"settings",    lobby.settings},
             {"name",        lobby.name}
         });
-        resp["available_rules"] = game::RuleRegistry::GetAvailableRulesJson();
+        resp["available_rules"] = match::RuleRegistry::GetAvailableRulesJson();
 
         broadcaster_.Send(ctx.socket, resp.dump(), ctx.op_code);
 
         if (lobby.match) {
-            auto game_resp = MakeResponse(ws::ServerAction::kGameStateUpdated);
-            game_resp["game_state"] = lobby.match->SerializePlayerState(username);
+            auto game_resp = MakeResponse(ws::ServerAction::kMatchStateUpdated);
+            game_resp["match_state"] = lobby.match->SerializePlayerState(username);
             broadcaster_.Send(ctx.socket, game_resp.dump(), ctx.op_code);
         }
 
@@ -952,7 +952,7 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
     }
 
     std::string state_json_str = row->value().Get<std::string>("state_json");
-    lobby.match = std::make_unique<game::MatchInstance>(json::parse(state_json_str), lobby.settings);
+    lobby.match = std::make_unique<match::MatchInstance>(json::parse(state_json_str), lobby.settings);
     lobby.match->SetMatchId(match_id); 
 
     for (auto& cb : on_game_started_) cb(&lobby);
@@ -962,8 +962,8 @@ void LobbyController::HandleResumeSavedMatch(WsContext context, const json& mess
     for (const auto& lobby_member : lobby.members) {
         if (!lobby_member.is_connected || !lobby_member.socket) continue;
         
-        json response_payload = ws::MakeResponse(ws::ServerAction::kGameStateUpdated);
-        response_payload["game_state"] = lobby.match->SerializePlayerState(lobby_member.username);
+        json response_payload = ws::MakeResponse(ws::ServerAction::kMatchStateUpdated);
+        response_payload["match_state"] = lobby.match->SerializePlayerState(lobby_member.username);
         broadcaster_.Send(lobby_member.socket, response_payload.dump(), uWS::OpCode::TEXT);
     }
 }
@@ -1004,7 +1004,7 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
         players_info.push_back({lobby_member.username, lobby_member.is_bot});
     }
 
-    lobby.match = std::make_unique<game::MatchInstance>(players_info, lobby.settings);
+    lobby.match = std::make_unique<match::MatchInstance>(players_info, lobby.settings);
     lobby.match->SetMatchId("match_" + GenerateInviteCode() + GenerateInviteCode()); 
     lobby.match->Start();
 
@@ -1017,8 +1017,8 @@ void LobbyController::HandleStartGame(WsContext context, const nlohmann::json& m
             continue;
         }
 
-        nlohmann::json response_payload = ws::MakeResponse(ws::ServerAction::kGameStateUpdated);
-        response_payload["game_state"] = lobby.match->SerializePlayerState(lobby_member.username);
+        nlohmann::json response_payload = ws::MakeResponse(ws::ServerAction::kMatchStateUpdated);
+        response_payload["match_state"] = lobby.match->SerializePlayerState(lobby_member.username);
         broadcaster_.Send(lobby_member.socket, response_payload.dump(), uWS::OpCode::TEXT);
     }
 
@@ -1115,7 +1115,7 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
                 Logger::Info("[Match] Human '", old_name, "' quit. Aborting and saving game.");
                 SaveMatchStateToDB(lobby);
                 
-                json game_over_payload = ws::MakeResponse(ws::ServerAction::kGameOver);
+                json game_over_payload = ws::MakeResponse(ws::ServerAction::kMatchOver);
                 game_over_payload["winner"] = ""; 
                 game_over_payload["reason"] = "A player left. The game state has been safely saved.";
                 
@@ -1134,7 +1134,7 @@ bool LobbyController::RemoveMember(uint32_t lobby_id, const string& username, bo
                 member_it->is_bot = true;
                 member_it->is_connected = true;
 
-                game::Player* engine_player = lobby.match->GetPlayer(old_name);
+                match::Player* engine_player = lobby.match->GetPlayer(old_name);
                 if (engine_player) {
                     engine_player->username = new_bot_name;
                     engine_player->is_bot = true;

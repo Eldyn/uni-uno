@@ -299,7 +299,7 @@ class StoreLobby {
 
 		try {
 			await ws.connect();
-			const response = await ws.emitAndWait(ClientAction.LobbyJoin, { code });
+			const response = await ws.emitAndWait(ClientAction.LobbyJoin, { code: code.toUpperCase() });
 
 			if (!response.ok) storeToast.error(response.message);
 		} catch (error) {
@@ -422,7 +422,7 @@ class StoreLobby {
 		if (!code) return;
 
 		try {
-			const unsubscribeGameRejoin = ws.on(ServerAction.GameStateUpdated, (_data) => {
+			const unsubscribeGameRejoin = ws.on(ServerAction.MatchStateUpdated, (_data) => {
 				storeNavigation.goto("game");
 
 				unsubscribeGameRejoin();

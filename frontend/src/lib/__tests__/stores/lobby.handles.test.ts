@@ -18,7 +18,7 @@ vi.mock("$lib/stores/ws.svelte", () => ({
 		LobbyUpdated: "lobby_updated",
 		LobbyLeft: "lobby_left",
 		LobbyEvicted: "lobby_evicted",
-		GameStateUpdated: "game_state_updated"
+		MatchStateUpdated: "match_state_updated"
 	},
 	ClientAction: {
 		LobbyCreate: "lobby_create",

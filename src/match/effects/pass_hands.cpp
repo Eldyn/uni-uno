@@ -1,13 +1,13 @@
 #include <nlohmann/json.hpp>
-#include <common/game/gamerule.hpp>
-#include <common/game/effect.hpp>
-#include <game/game_state.hpp>
-#include <game/match_instance.hpp>
-#include <game/effects/pass_hands.hpp>
-#include <game/effect_registry.hpp>
+#include <common/match/matchrule.hpp>
+#include <common/match/effect.hpp>
+#include <match/match_state.hpp>
+#include <match/match_instance.hpp>
+#include <match/effects/pass_hands.hpp>
+#include <match/effect_registry.hpp>
 
-namespace game {
-    EffectResult PassHandsEffect::Resolve(GameState* state, MatchInstance* match) {
+namespace match {
+    EffectResult PassHandsEffect::Resolve(MatchState* state, MatchInstance* match) {
         int num_players = static_cast<int>(state->players.size());
         if (num_players <= 1) return {EffectStatus::kResolved};
 

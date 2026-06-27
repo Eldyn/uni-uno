@@ -1,7 +1,7 @@
 #include <doctest/doctest.h>
-#include <game/match_instance.hpp>
+#include <match/match_instance.hpp>
 
-using namespace game;
+using namespace match;
 
 static LobbySettings default_settings() {
     LobbySettings s;

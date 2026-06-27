@@ -34,19 +34,19 @@ channels:
           - $ref: "#/components/messages/LobbyUpdated"
           - $ref: "#/components/messages/LobbyLeft"
           - $ref: "#/components/messages/LobbyEvicted"
-          - $ref: "#/components/messages/GameStateUpdated"
-          - $ref: "#/components/messages/GameOver"
+          - $ref: "#/components/messages/MatchStateUpdated"
+          - $ref: "#/components/messages/MatchOver"
           - $ref: "#/components/messages/ChatMessage"
 
     publish:
       summary: Messages sent from the Client to the Server.
       message:
         oneOf:
-          - $ref: "#/components/messages/GamePlayCard"
-          - $ref: "#/components/messages/GameDrawCard"
-          - $ref: "#/components/messages/GameSubmitInput"
-          - $ref: "#/components/messages/GameCallUno"
-          - $ref: "#/components/messages/GameExit"
+          - $ref: "#/components/messages/MatchPlayCard"
+          - $ref: "#/components/messages/MatchDrawCard"
+          - $ref: "#/components/messages/MatchSubmitInput"
+          - $ref: "#/components/messages/MatchCallUno"
+          - $ref: "#/components/messages/MatchExit"
           - $ref: "#/components/messages/LobbyListRequest"
           - $ref: "#/components/messages/LobbyCreate"
           - $ref: "#/components/messages/LobbyJoin"
@@ -215,43 +215,43 @@ components:
           reason:
             type: string
 
-    GameStateUpdated:
-      name: game_state_updated
-      title: Game State Broadcast
+    MatchStateUpdated:
+      name: match_state_updated
+      title: Match State Broadcast
       payload:
         type: object
-        required: [action, game_state]
+        required: [action, match_state]
         properties:
           action:
             type: string
-            enum: ["game_state_updated"]
-          game_state:
+            enum: ["match_state_updated"]
+          match_state:
             type: object
             description: >
-              Opaque per-player serialized game state produced by
-              MatchInstance::SerializePlayerState(). Structure owned by the game engine.
+              Opaque per-player serialized match state produced by
+              MatchInstance::SerializePlayerState(). Structure owned by the match engine.
           action_required:
             type: integer
             description: >
               Integer index of the Action enum value the server is waiting for.
-              Present only when the server awaits a game_submit_input from this player.
+              Present only when the server awaits a match_submit_input from this player.
               0 = ChooseType, 1 = PlayDrawn, 2 = ChooseTarget.
           action_context:
             type: object
             description: Additional context for the required action (e.g. available colours).
 
-    GameOver:
-      name: game_over
+    MatchOver:
+      name: match_over
       title: Match Ended
       payload:
         type: object
         properties:
           action:
             type: string
-            enum: ["game_over"]
+            enum: ["match_over"]
           winner:
             type: string
-            description: Username of the winning player, or empty string if game was abandoned.
+            description: Username of the winning player, or empty string if match was abandoned.
           reason:
             type: string
 
@@ -273,51 +273,51 @@ components:
 
     # --- Client → Server (payloads reference components/schemas for code generation) ---
 
-    GamePlayCard:
-      name: game_play_card
+    MatchPlayCard:
+      name: match_play_card
       title: Play a Card
       payload:
         $ref: "#/components/schemas/GamePlayCardPayload"
 
-    GameDrawCard:
-      name: game_draw_card
+    MatchDrawCard:
+      name: match_draw_card
       title: Draw a Card
       payload:
         type: object
         properties:
           action:
             type: string
-            enum: ["game_draw_card"]
+            enum: ["match_draw_card"]
           request_id:
             type: string
 
-    GameSubmitInput:
-      name: game_submit_input
+    MatchSubmitInput:
+      name: match_submit_input
       title: Submit Mandatory Input (e.g. colour choice)
       payload:
         $ref: "#/components/schemas/GameSubmitInputPayload"
 
-    GameCallUno:
-      name: game_call_uno
+    MatchCallUno:
+      name: match_call_uno
       title: Declare UNO
       payload:
         type: object
         properties:
           action:
             type: string
-            enum: ["game_call_uno"]
+            enum: ["match_call_uno"]
           request_id:
             type: string
 
-    GameExit:
-      name: game_exit
+    MatchExit:
+      name: match_exit
       title: Exit Match
       payload:
         type: object
         properties:
           action:
             type: string
-            enum: ["game_exit"]
+            enum: ["match_exit"]
           request_id:
             type: string
 
