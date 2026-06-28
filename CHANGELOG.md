@@ -14,6 +14,12 @@ version; each release below corresponds to a `vX.Y.Z` git tag.
 - **Stats screen in cross-origin embed**: `/stats/me` now accepts `ws_token` (`SameSite=None`) as a fallback so the card arsenal loads correctly inside itch.io iframes.
 - **Card arsenal asset 404s**: colour-aggregate cards now use `border.png` instead of an empty path; the Jolly +4 card now correctly maps to `jolly_draw4.png`.
 
+## [0.4.6] - 2026-06-28
+
+### Fixed
+
+- **Google Analytics cookies rejected**: `gtag` config now sets `cookie_domain: 'unii.duckdns.org'` explicitly. `duckdns.org` is a public suffix so browsers blocked cookies scoped to the parent domain.
+
 ## [0.4.5] - 2026-06-27
 
 ### Fixed
@@ -286,7 +292,8 @@ point:
 - WebSocket payload-size, idle-time, and backpressure bounds, malformed-frame
   guards, and path-traversal protection on static file serving.
 
-[unreleased]: https://github.com/Eldyn/uni/compare/v0.4.5...HEAD
+[unreleased]: https://github.com/Eldyn/uni/compare/v0.4.6...HEAD
+[0.4.6]: https://github.com/Eldyn/uni/compare/v0.4.5...v0.4.6
 [0.4.5]: https://github.com/Eldyn/uni/compare/v0.4.4...v0.4.5
 [0.4.4]: https://github.com/Eldyn/uni/compare/v0.4.3...v0.4.4
 [0.4.3]: https://github.com/Eldyn/uni/compare/v0.4.2...v0.4.3
