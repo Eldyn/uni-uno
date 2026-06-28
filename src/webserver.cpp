@@ -136,6 +136,10 @@ void WebServer::RegisterRoutes() {
            ->end(json({{"active_matches", count}}).dump());
     });
 
+    app_.head("/*", [this](AppResponse *res, AppRequest *req) {
+        HandleHead(res, req);
+    });
+
     app_.get("/*", [this](AppResponse *res, AppRequest *req) {
         HandleGet(res, req);
     });
@@ -317,6 +321,46 @@ std::string MakeETag(const fs::path& file) {
 
 }  // namespace
 
+void WebServer::HandleHead(AppResponse *res, AppRequest *req) {
+    auto is_alive = std::make_shared<bool>(true);
+    res->onAborted([is_alive]() { *is_alive = false; });
+
+    if (!*is_alive) return;
+
+    string url = string(req->getUrl());
+    string relativePath = (url == "/") ? "index.html" : url.substr(1);
+    string if_none_match = string(req->getHeader("if-none-match"));
+
+    std::error_code ec;
+    fs::path root     = fs::weakly_canonical(fs::path(frontend_path_), ec);
+    fs::path filePath = fs::weakly_canonical(root / relativePath, ec);
+    fs::path rel      = filePath.lexically_relative(root);
+    const bool within_root = !ec && !rel.empty() && *rel.begin() != "..";
+
+    if (within_root && fs::exists(filePath) && !fs::is_directory(filePath)) {
+        string pathStr = filePath.string();
+        string etag = MakeETag(filePath);
+
+        if (!etag.empty() && if_none_match == etag) {
+            res->writeStatus("304 Not Modified")
+                ->writeHeader("Cache-Control", CacheControlFor(relativePath))
+                ->writeHeader("ETag", etag)
+                ->end();
+            return;
+        }
+
+        res->writeHeader("Content-Type", GetMimeType(pathStr))
+            ->writeHeader("Cache-Control", CacheControlFor(relativePath))
+            ->writeHeader("X-Content-Type-Options", "nosniff");
+        if (!etag.empty()) {
+            res->writeHeader("ETag", etag);
+        }
+        res->end();
+    } else {
+        res->writeStatus("404 Not Found")->end();
+    }
+}
+
 void WebServer::HandleGet(AppResponse *res, AppRequest *req) {
     auto is_alive = std::make_shared<bool>(true);
     res->onAborted([is_alive]() {*is_alive = false;});
@@ -449,6 +493,7 @@ string WebServer::GetMimeType(const string &path) {
     if (path.ends_with(".png"))    return "image/png";
     if (path.ends_with(".woff2"))  return "font/woff2";
     if (path.ends_with(".woff"))   return "font/woff";
+    if (path.ends_with(".xml"))    return "application/xml";
     return "application/octet-stream";
 }
 

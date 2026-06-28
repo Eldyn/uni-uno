@@ -184,6 +184,7 @@ private:
      * @tag SRV-PRIV-004
      */
     void HandleGet (AppResponse*, AppRequest*);
+    void HandleHead(AppResponse*, AppRequest*);
 
     /**
      * @brief Handles the successful WebSocket upgrade event.
