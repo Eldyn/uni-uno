@@ -11,6 +11,7 @@ import {
 	validateUsername,
 	validatePasswordMatch
 } from "../utils/validation";
+import { storeAnalytics } from "./analytics.svelte";
 import { storeNavigation } from "./navigation.svelte";
 import { storeToast } from "./toast.svelte";
 
@@ -111,9 +112,12 @@ class StoreAuth {
 			});
 
 			if (res.ok) {
+				storeAnalytics.track("sign_up");
 				storeToast.success("Account created! You can now log in.");
 				return {};
 			}
+
+			storeAnalytics.track("auth_error", { method: "register", reason: String(res.status) });
 
 			if (res.status === 409) {
 				return { username: "Username or email is already taken." };
@@ -167,8 +171,11 @@ class StoreAuth {
 			if (res.ok) {
 				const data = await res.json();
 				this.#setLoggedIn(data.username, data.avatar || "");
+				storeAnalytics.track("login");
 				return {};
 			}
+
+			storeAnalytics.track("auth_error", { method: "login", reason: String(res.status) });
 
 			// 401 is always "bad credentials" — don't leak which field is wrong
 			if (res.status === 401) {
@@ -222,6 +229,7 @@ class StoreAuth {
 			return;
 		}
 		this.#setLoggedOut();
+		storeAnalytics.track("logout");
 		storeNavigation.goto("auth");
 	}
 

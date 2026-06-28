@@ -48,17 +48,19 @@
 				}
 			}
 		</script>
-	
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DCRB2ENVJB"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
 
-    gtag('config', 'G-DCRB2ENVJB', { cookie_domain: 'unii.duckdns.org' });
-  </script>
-</head>
+		<!-- Google tag (gtag.js) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-DCRB2ENVJB"></script>
+		<script>
+			window.dataLayer = window.dataLayer || [];
+			function gtag() {
+				dataLayer.push(arguments);
+			}
+			gtag("js", new Date());
+
+			gtag("config", "G-DCRB2ENVJB", { cookie_domain: "unii.duckdns.org" });
+		</script>
+	</head>
 
 	<body>
 		<header class="site-header">
@@ -79,36 +81,88 @@
 
 		<main class="wrap">
 			<h3>Unreleased</h3>
+			<ul>
+				<li>
+					Added anonymous gameplay analytics so we can see which rules and game modes people
+					actually play, and where things break. We only record gameplay actions (like starting a
+					match and which rules it used) — never your messages or any personal information — and the
+					data is used only to research and improve the game. If your browser blocks analytics,
+					everything keeps working normally.
+				</li>
+			</ul>
 
 			<h3>0.4.6 - Current Release</h3>
 			<span class="release-date">June 28, 2026</span>
 			<ul>
 				<li>Fixed Google Analytics not loading in correctly.</li>
 				<li>Fixed the Card Arsenal not loading when playing inside the itch.io embed.</li>
-				<li>Fixed missing card images in the Card Arsenal for colour categories and the Jolly +4 card.</li>
+				<li>
+					Fixed missing card images in the Card Arsenal for colour categories and the Jolly +4 card.
+				</li>
 			</ul>
 
 			<h3>0.4.5</h3>
 			<span class="release-date">June 27, 2026</span>
-			<p>A batch of connectivity and in-game fixes — no new features, just a smoother experience when reconnecting, switching browsers, or playing against bots.</p>
+			<p>
+				A batch of connectivity and in-game fixes — no new features, just a smoother experience when
+				reconnecting, switching browsers, or playing against bots.
+			</p>
 			<ul>
-				<li>Fixed a bug where your own name could briefly show as disconnected in the lobby even while you were actively connected.</li>
-				<li>Fixed a bug where returning to the site without your lobby code (e.g. from a different browser) would leave you stuck — you are now brought straight back into your lobby or active match automatically.</li>
-				<li>Fixed a bug where reconnecting mid-turn (e.g. after a Jolly card was played) could leave you unable to pick a colour until the timer ran out.</li>
-				<li>Fixed a bug where reconnecting with a saved session would trigger duplicate fetches and multiple navigation calls in the background.</li>
-				<li>Fixed a server startup failure that could occur when upgrading from an older build — the server now applies all database changes in a single step on first launch.</li>
-				<li>Fixed a visual glitch where the table background would briefly flash purple when playing a Jolly card — it now keeps the colour from the previous card until a new colour is chosen.</li>
-				<li>Fixed a bug where the game interface would go blank when a bot won the match — the result popup now appears correctly over a full game board.</li>
-				<li>Fixed a bug where playing a Jolly card and ignoring the colour picker would permanently stall the game — the bot now steps in and picks automatically when the turn timer runs out.</li>
+				<li>
+					Fixed a bug where your own name could briefly show as disconnected in the lobby even while
+					you were actively connected.
+				</li>
+				<li>
+					Fixed a bug where returning to the site without your lobby code (e.g. from a different
+					browser) would leave you stuck — you are now brought straight back into your lobby or
+					active match automatically.
+				</li>
+				<li>
+					Fixed a bug where reconnecting mid-turn (e.g. after a Jolly card was played) could leave
+					you unable to pick a colour until the timer ran out.
+				</li>
+				<li>
+					Fixed a bug where reconnecting with a saved session would trigger duplicate fetches and
+					multiple navigation calls in the background.
+				</li>
+				<li>
+					Fixed a server startup failure that could occur when upgrading from an older build — the
+					server now applies all database changes in a single step on first launch.
+				</li>
+				<li>
+					Fixed a visual glitch where the table background would briefly flash purple when playing a
+					Jolly card — it now keeps the colour from the previous card until a new colour is chosen.
+				</li>
+				<li>
+					Fixed a bug where the game interface would go blank when a bot won the match — the result
+					popup now appears correctly over a full game board.
+				</li>
+				<li>
+					Fixed a bug where playing a Jolly card and ignoring the colour picker would permanently
+					stall the game — the bot now steps in and picks automatically when the turn timer runs
+					out.
+				</li>
 			</ul>
 
 			<h3>0.4.4</h3>
 			<span class="release-date">June 26, 2026</span>
-			<p>Backend and performance improvements — nothing visible has changed, but the game should feel snappier and the server is more robust under the hood.</p>
+			<p>
+				Backend and performance improvements — nothing visible has changed, but the game should feel
+				snappier and the server is more robust under the hood.
+			</p>
 			<ul>
-				<li>The server now handles database updates automatically on startup, so future upgrades will apply without any downtime or manual intervention.</li>
-				<li>In-game actions are now processed faster internally, reducing the overhead on every card play and draw.</li>
-				<li>Various internal systems were cleaned up and standardised to make the codebase easier to maintain going forward.</li>
+				<li>
+					The server now handles database updates automatically on startup, so future upgrades will
+					apply without any downtime or manual intervention.
+				</li>
+				<li>
+					In-game actions are now processed faster internally, reducing the overhead on every card
+					play and draw.
+				</li>
+				<li>
+					Various internal systems were cleaned up and standardised to make the codebase easier to
+					maintain going forward.
+				</li>
 			</ul>
 
 			<h3>0.4.3</h3>

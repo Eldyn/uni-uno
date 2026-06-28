@@ -18,6 +18,7 @@ export {
 
 import type { ClientPayloads, ServerActionType } from "$lib/generated/schemas";
 import { outgoingSchemas } from "$lib/generated/schemas";
+import { storeAnalytics } from "./analytics.svelte";
 import { errorText } from "./errors";
 import { z } from "zod";
 
@@ -313,7 +314,9 @@ export class WebSocketClient {
 		this.reconnectTimer = setTimeout(() => {
 			this.reconnectTimer = null;
 			if (document.visibilityState === "hidden") return;
+			const elapsedDelayMs = this.reconnectDelayMs;
 			this.reconnectDelayMs = Math.min(this.reconnectDelayMs * 2, 16_000);
+			storeAnalytics.track("ws_reconnect", { delay_ms: elapsedDelayMs });
 			this._connectOnce().catch(() => this._scheduleReconnect());
 		}, this.reconnectDelayMs);
 	}

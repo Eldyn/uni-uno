@@ -5,7 +5,9 @@
  */
 
 import { z } from "zod";
+import { storeAnalytics } from "./analytics.svelte";
 import { storeNavigation } from "./navigation.svelte";
+import { storeLobby } from "./lobby.svelte";
 import { ClientAction, ServerAction, ws } from "./ws.svelte";
 import { storeAuth } from "./auth.svelte";
 import { Action, Type, TypeMap, ValueMap } from "../generated/schemas";
@@ -136,6 +138,9 @@ class StoreGame {
 	/** Safety timeout that releases isActionPending if the server stops responding. */
 	#pendingSafetyTimer: ReturnType<typeof setTimeout> | null = null;
 
+	/** Timestamp (ms) when this client entered the current match, for duration analytics. */
+	#matchStartedAt: number | null = null;
+
 	/** Derived property to instantly identify the local player. */
 	localPlayer = $derived(
 		this.state?.players.find((p) => p.username === storeAuth.username) ?? null
@@ -153,6 +158,7 @@ class StoreGame {
 	 */
 	returnToLobby() {
 		this.#clearTimer();
+		this.#matchStartedAt = null;
 		this.state = null;
 		this.actionRequired = null;
 		this.actionContext = null;
@@ -176,6 +182,18 @@ class StoreGame {
 			this.actionContext = null;
 
 			this.#clearTimer();
+
+			// MatchOver fires on every client; emit the analytics event only from
+			// the host so a single match counts once (mirrors host-only match_start).
+			if (storeLobby.current?.host === storeAuth.username) {
+				storeAnalytics.track("match_end", {
+					duration_seconds:
+						this.#matchStartedAt !== null
+							? Math.round((Date.now() - this.#matchStartedAt) / 1000)
+							: undefined
+				});
+			}
+			this.#matchStartedAt = null;
 		});
 
 		ws.on(ServerAction.MatchStateUpdated, (data: any) => {
@@ -218,6 +236,7 @@ class StoreGame {
 			this.#syncTurnTimer(remainingMs);
 
 			if (storeNavigation.current === "lobby") {
+				this.#matchStartedAt = Date.now();
 				storeNavigation.goto("game");
 			}
 		});
@@ -285,6 +304,7 @@ class StoreGame {
 		if (this.isActionPending) return;
 		this.isActionPending = true;
 		this.#pendingSafetyTimer = setTimeout(() => this.#clearActionPending(), 3000);
+		storeAnalytics.track("play_card");
 		ws.emit(ClientAction.MatchPlayCard, { card_id: cardId });
 	}
 
@@ -296,6 +316,7 @@ class StoreGame {
 		if (this.isActionPending) return;
 		this.isActionPending = true;
 		this.#pendingSafetyTimer = setTimeout(() => this.#clearActionPending(), 3000);
+		storeAnalytics.track("draw_card");
 		ws.emit(ClientAction.MatchDrawCard);
 	}
 
@@ -304,6 +325,7 @@ class StoreGame {
 	 * @tag FRONT-GAME-MTH-008
 	 */
 	callUno() {
+		storeAnalytics.track("call_uno");
 		ws.emit(ClientAction.MatchCallUno);
 	}
 

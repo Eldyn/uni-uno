@@ -4,6 +4,7 @@
  * Handles creation, joining, settings updates and the public list.
  */
 
+import { storeAnalytics } from "./analytics.svelte";
 import { storeNavigation } from "./navigation.svelte";
 import { storeToast } from "./toast.svelte";
 import { ClientAction, ServerAction, ws } from "./ws.svelte";
@@ -237,10 +238,45 @@ class StoreLobby {
 			const response = await ws.emitAndWait(ClientAction.LobbyStartMatch);
 			if (!response.ok) {
 				storeToast.error(response.message);
+			} else {
+				this.#trackMatchStart();
 			}
 		} finally {
 			this.isLoadingStart = false;
 		}
+	}
+
+	/**
+	 * @brief Reports a started match and its ruleset to analytics (host-only).
+	 * Only the host can call `startMatch()`, so this fires exactly once per game,
+	 * keeping match and rule-usage counts accurate. The unused `count_*` deck
+	 * fields are deliberately omitted. See analytics.svelte.ts for the data-use
+	 * policy: gameplay research only, no personal data.
+	 * @tag FRONT-LOBBY-PRIV-002
+	 */
+	#trackMatchStart(): void {
+		const s = this.current?.settings;
+		const active_mods = s?.active_mods ?? [];
+		storeAnalytics.track("match_start", {
+			settings_json: JSON.stringify({
+				active_mods,
+				is_public: s?.is_public,
+				turn_time_limit_ms: s?.turn_time_limit_ms,
+				starting_cards: s?.starting_cards,
+				bot_count: s?.bot_count,
+				bot_mode: s?.bot_mode,
+				allow_bot_takeover: s?.allow_bot_takeover,
+				allow_bot_replacement: s?.allow_bot_replacement,
+				save_state: s?.save_state,
+				quit_deletes_match: s?.quit_deletes_match
+			}),
+			mods: active_mods.join(",") || "none",
+			mod_count: active_mods.length,
+			starting_cards: s?.starting_cards,
+			turn_time_limit_ms: s?.turn_time_limit_ms,
+			bot_count: s?.bot_count,
+			player_count: this.current?.member_count
+		});
 	}
 
 	/**
@@ -277,6 +313,8 @@ class StoreLobby {
 
 			if (!response.ok) {
 				storeToast.error(response.message);
+			} else {
+				storeAnalytics.track("lobby_create", { is_public: data.is_public });
 			}
 		} finally {
 			this.isLoadingJoin = false;
@@ -302,6 +340,7 @@ class StoreLobby {
 			const response = await ws.emitAndWait(ClientAction.LobbyJoin, { code: code.toUpperCase() });
 
 			if (!response.ok) storeToast.error(response.message);
+			else storeAnalytics.track("lobby_join");
 		} catch (error) {
 			storeToast.error(String(error));
 		} finally {
@@ -340,6 +379,7 @@ class StoreLobby {
 	 */
 	leave(): void {
 		ws.emit(ClientAction.LobbyLeave);
+		storeAnalytics.track("lobby_leave");
 	}
 
 	/**

@@ -20,6 +20,7 @@
 	import { ErrorCode } from "./lib/generated/schemas";
 	import { errorText } from "./lib/stores/errors";
 	import { storeToast } from "./lib/stores/toast.svelte";
+	import { storeAnalytics } from "./lib/stores/analytics.svelte";
 	import { storeAuth } from "./lib/stores/auth.svelte";
 	import { storeLobby as _storeLobby } from "./lib/stores/lobby.svelte";
 	// Eagerly construct the game store so its WebSocket listeners (state capture
@@ -69,7 +70,12 @@
 			const code = data.code as string | undefined;
 			const text = errorText(code, data.detail as string | undefined);
 
-			if (!text) return; // intentionally silent (e.g. invalid_move)
+			if (!text) return; // intentionally silent (e.g. invalid_move) — also skip analytics
+
+			storeAnalytics.track("server_error", {
+				code: code ?? "unknown",
+				rate_limited: code === ErrorCode.RateLimited
+			});
 
 			if (code === ErrorCode.RateLimited) {
 				storeToast.warning(text);

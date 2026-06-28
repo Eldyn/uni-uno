@@ -4,6 +4,7 @@
  * Keeps a history limited to one level in memory to handle the "Back" action.
  */
 
+import { storeAnalytics } from "./analytics.svelte";
 import { storeAuth } from "./auth.svelte";
 import { ws } from "./ws.svelte";
 
@@ -63,6 +64,7 @@ class StoreNavigation {
 		this.#previous = this.current;
 		this.current = screen;
 		localStorage.setItem("currentScreen", screen);
+		storeAnalytics.track("screen_view", { screen });
 	}
 
 	/**
